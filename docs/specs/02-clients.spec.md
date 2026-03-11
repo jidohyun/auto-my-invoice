@@ -10,7 +10,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | 클라이언트(거래처) 정보 관리 |
-| **Context** | `InvoiceFlow.Clients` |
+| **Context** | `AutoMyInvoice.Clients` |
 | **의존성** | 01-accounts (User) |
 | **예상 기간** | Week 2~3 |
 
@@ -21,7 +21,7 @@
 ### 1.1 Client
 
 ```elixir
-defmodule InvoiceFlow.Clients.Client do
+defmodule AutoMyInvoice.Clients.Client do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -42,8 +42,8 @@ defmodule InvoiceFlow.Clients.Client do
     field :total_invoiced, :decimal, default: Decimal.new(0)
     field :total_paid, :decimal, default: Decimal.new(0)
 
-    belongs_to :user, InvoiceFlow.Accounts.User
-    has_many :invoices, InvoiceFlow.Invoices.Invoice
+    belongs_to :user, AutoMyInvoice.Accounts.User
+    has_many :invoices, AutoMyInvoice.Invoices.Invoice
 
     timestamps(type: :utc_datetime)
   end
@@ -74,7 +74,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreateClients do
+defmodule AutoMyInvoice.Repo.Migrations.CreateClients do
   use Ecto.Migration
 
   def change do
@@ -108,12 +108,12 @@ end
 ## 3. Context Functions
 
 ```elixir
-defmodule InvoiceFlow.Clients do
+defmodule AutoMyInvoice.Clients do
   @moduledoc "클라이언트 관리 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Clients.Client
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Clients.Client
 
   ## 조회
 
@@ -170,7 +170,7 @@ defmodule InvoiceFlow.Clients do
   @spec recalculate_stats(Client.t()) :: {:ok, Client.t()}
   def recalculate_stats(%Client{} = client) do
     stats =
-      from(i in InvoiceFlow.Invoices.Invoice,
+      from(i in AutoMyInvoice.Invoices.Invoice,
         where: i.client_id == ^client.id,
         select: %{
           total_invoiced: sum(i.amount),
@@ -241,10 +241,10 @@ end
 ### 4.3 LiveView 이벤트 핸들러
 
 ```elixir
-defmodule InvoiceFlowWeb.ClientLive.Index do
-  use InvoiceFlowWeb, :live_view
+defmodule AutoMyInvoiceWeb.ClientLive.Index do
+  use AutoMyInvoiceWeb, :live_view
 
-  alias InvoiceFlow.Clients
+  alias AutoMyInvoice.Clients
 
   @impl true
   def mount(_params, _session, socket) do

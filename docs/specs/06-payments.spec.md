@@ -9,7 +9,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | Paddle 결제 연동, Webhook 처리, 결제 상태 관리, 구독 빌링 |
-| **Context** | `InvoiceFlow.Payments` + `InvoiceFlow.Billing` |
+| **Context** | `AutoMyInvoice.Payments` + `AutoMyInvoice.Billing` |
 | **의존성** | 03-invoices (Invoice), 05-reminders (Reminder), 01-accounts (User) |
 | **예상 기간** | Week 6~8 |
 
@@ -20,7 +20,7 @@
 ### 1.1 Payment
 
 ```elixir
-defmodule InvoiceFlow.Payments.Payment do
+defmodule AutoMyInvoice.Payments.Payment do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -37,7 +37,7 @@ defmodule InvoiceFlow.Payments.Payment do
     field :paid_at, :utc_datetime
     field :raw_webhook, :map             # Paddle 원본 페이로드
 
-    belongs_to :invoice, InvoiceFlow.Invoices.Invoice
+    belongs_to :invoice, AutoMyInvoice.Invoices.Invoice
 
     timestamps(type: :utc_datetime)
   end
@@ -56,7 +56,7 @@ end
 ### 1.2 PaddleWebhookEvent
 
 ```elixir
-defmodule InvoiceFlow.Payments.PaddleWebhookEvent do
+defmodule AutoMyInvoice.Payments.PaddleWebhookEvent do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -84,7 +84,7 @@ end
 ### 1.3 Subscription (Billing)
 
 ```elixir
-defmodule InvoiceFlow.Billing.Subscription do
+defmodule AutoMyInvoice.Billing.Subscription do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -102,7 +102,7 @@ defmodule InvoiceFlow.Billing.Subscription do
     field :current_period_end, :utc_datetime
     field :cancelled_at, :utc_datetime
 
-    belongs_to :user, InvoiceFlow.Accounts.User
+    belongs_to :user, AutoMyInvoice.Accounts.User
 
     timestamps(type: :utc_datetime)
   end
@@ -124,7 +124,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreatePayments do
+defmodule AutoMyInvoice.Repo.Migrations.CreatePayments do
   use Ecto.Migration
 
   def change do
@@ -186,14 +186,14 @@ end
 ## 3. Paddle 결제 링크 생성
 
 ```elixir
-defmodule InvoiceFlow.Payments.PaddleClient do
+defmodule AutoMyInvoice.Payments.PaddleClient do
   @moduledoc "Paddle Billing API 클라이언트"
 
   @base_url "https://api.paddle.com"
 
   @spec create_payment_link(Invoice.t()) :: {:ok, String.t()} | {:error, term()}
   def create_payment_link(%{id: invoice_id, amount: amount, currency: currency} = invoice) do
-    invoice = InvoiceFlow.Repo.preload(invoice, [:client, :user])
+    invoice = AutoMyInvoice.Repo.preload(invoice, [:client, :user])
 
     body = %{
       items: [
@@ -220,7 +220,7 @@ defmodule InvoiceFlow.Payments.PaddleClient do
         user_id: invoice.user_id
       },
       checkout: %{
-        url: InvoiceFlowWeb.Endpoint.url() <> "/payments/success"
+        url: AutoMyInvoiceWeb.Endpoint.url() <> "/payments/success"
       }
     }
 
@@ -266,10 +266,10 @@ defmodule InvoiceFlow.Payments.PaddleClient do
     end
   end
 
-  defp price_id_for("starter"), do: Application.fetch_env!(:invoice_flow, :paddle_starter_price_id)
-  defp price_id_for("pro"), do: Application.fetch_env!(:invoice_flow, :paddle_pro_price_id)
+  defp price_id_for("starter"), do: Application.fetch_env!(:auto_my_invoice, :paddle_starter_price_id)
+  defp price_id_for("pro"), do: Application.fetch_env!(:auto_my_invoice, :paddle_pro_price_id)
 
-  defp api_key, do: Application.fetch_env!(:invoice_flow, :paddle_api_key)
+  defp api_key, do: Application.fetch_env!(:auto_my_invoice, :paddle_api_key)
 end
 ```
 
@@ -278,11 +278,11 @@ end
 ## 4. Webhook Controller
 
 ```elixir
-defmodule InvoiceFlowWeb.WebhookController do
-  use InvoiceFlowWeb, :controller
+defmodule AutoMyInvoiceWeb.WebhookController do
+  use AutoMyInvoiceWeb, :controller
 
-  alias InvoiceFlow.Payments
-  alias InvoiceFlow.Payments.PaddleWebhookEvent
+  alias AutoMyInvoice.Payments
+  alias AutoMyInvoice.Payments.PaddleWebhookEvent
 
   plug :verify_paddle_signature
 
@@ -325,15 +325,15 @@ defmodule InvoiceFlowWeb.WebhookController do
   end
 
   defp process_event("subscription.activated", %{"data" => data}) do
-    InvoiceFlow.Billing.activate_subscription(data)
+    AutoMyInvoice.Billing.activate_subscription(data)
   end
 
   defp process_event("subscription.canceled", %{"data" => data}) do
-    InvoiceFlow.Billing.cancel_subscription(data)
+    AutoMyInvoice.Billing.cancel_subscription(data)
   end
 
   defp process_event("subscription.updated", %{"data" => data}) do
-    InvoiceFlow.Billing.update_subscription(data)
+    AutoMyInvoice.Billing.update_subscription(data)
   end
 
   defp process_event(_event_type, _data), do: :ok  # 미지원 이벤트 무시
@@ -341,7 +341,7 @@ defmodule InvoiceFlowWeb.WebhookController do
   ## 서명 검증
 
   defp verify_paddle_signature(conn, _opts) do
-    webhook_secret = Application.fetch_env!(:invoice_flow, :paddle_webhook_secret)
+    webhook_secret = Application.fetch_env!(:auto_my_invoice, :paddle_webhook_secret)
 
     with [signature] <- get_req_header(conn, "paddle-signature"),
          {:ok, body, conn} <- read_body(conn),
@@ -380,14 +380,14 @@ end
 ### 5.1 Payments Context
 
 ```elixir
-defmodule InvoiceFlow.Payments do
+defmodule AutoMyInvoice.Payments do
   @moduledoc "결제 처리 및 Webhook 관리 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Payments.{Payment, PaddleWebhookEvent, PaddleClient}
-  alias InvoiceFlow.{Invoices, Reminders}
-  alias InvoiceFlow.PubSubTopics
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Payments.{Payment, PaddleWebhookEvent, PaddleClient}
+  alias AutoMyInvoice.{Invoices, Reminders}
+  alias AutoMyInvoice.PubSubTopics
 
   ## 결제 링크
 
@@ -414,7 +414,7 @@ defmodule InvoiceFlow.Payments do
          {:ok, invoice} <- Invoices.mark_as_paid(invoice) do
       # 실시간 알림
       Phoenix.PubSub.broadcast(
-        InvoiceFlow.PubSub,
+        AutoMyInvoice.PubSub,
         PubSubTopics.payment_received(invoice.id),
         {:payment_received, invoice}
       )
@@ -505,13 +505,13 @@ end
 ### 5.2 Billing Context
 
 ```elixir
-defmodule InvoiceFlow.Billing do
+defmodule AutoMyInvoice.Billing do
   @moduledoc "구독 플랜 및 빌링 관리 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Billing.Subscription
-  alias InvoiceFlow.Accounts
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Billing.Subscription
+  alias AutoMyInvoice.Accounts
 
   ## 구독 활성화 (Webhook)
 

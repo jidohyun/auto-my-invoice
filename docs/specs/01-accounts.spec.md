@@ -11,7 +11,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | 사용자 인증, 프로필 관리, OAuth 연동 |
-| **Context** | `InvoiceFlow.Accounts` |
+| **Context** | `AutoMyInvoice.Accounts` |
 | **의존성** | 00-foundation |
 | **예상 기간** | Week 1~2 |
 
@@ -22,7 +22,7 @@
 ### 1.1 User
 
 ```elixir
-defmodule InvoiceFlow.Accounts.User do
+defmodule AutoMyInvoice.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -48,8 +48,8 @@ defmodule InvoiceFlow.Accounts.User do
     field :plan, :string, default: "free"  # free | starter | pro
     field :paddle_customer_id, :string
 
-    has_many :invoices, InvoiceFlow.Invoices.Invoice
-    has_many :clients, InvoiceFlow.Clients.Client
+    has_many :invoices, AutoMyInvoice.Invoices.Invoice
+    has_many :clients, AutoMyInvoice.Clients.Client
 
     timestamps(type: :utc_datetime)
   end
@@ -97,7 +97,7 @@ defmodule InvoiceFlow.Accounts.User do
   defp maybe_validate_unique_email(changeset, opts) do
     if Keyword.get(opts, :validate_email, true) do
       changeset
-      |> unsafe_validate_unique(:email, InvoiceFlow.Repo)
+      |> unsafe_validate_unique(:email, AutoMyInvoice.Repo)
       |> unique_constraint(:email)
     else
       changeset
@@ -123,7 +123,7 @@ end
 ### 1.2 UserToken
 
 ```elixir
-defmodule InvoiceFlow.Accounts.UserToken do
+defmodule AutoMyInvoice.Accounts.UserToken do
   use Ecto.Schema
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -144,7 +144,7 @@ defmodule InvoiceFlow.Accounts.UserToken do
     field :context, :string  # "session" | "reset_password" | "confirm"
     field :sent_to, :string
 
-    belongs_to :user, InvoiceFlow.Accounts.User
+    belongs_to :user, AutoMyInvoice.Accounts.User
 
     timestamps(type: :utc_datetime, updated_at: false)
   end
@@ -156,7 +156,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreateUsers do
+defmodule AutoMyInvoice.Repo.Migrations.CreateUsers do
   use Ecto.Migration
 
   def change do
@@ -205,12 +205,12 @@ end
 ## 3. Context Functions
 
 ```elixir
-defmodule InvoiceFlow.Accounts do
+defmodule AutoMyInvoice.Accounts do
   @moduledoc "사용자 인증 및 프로필 관리 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Accounts.{User, UserToken}
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Accounts.{User, UserToken}
 
   ## 조회
 
@@ -302,7 +302,7 @@ defmodule InvoiceFlow.Accounts do
   def monthly_invoice_count(%User{id: user_id}) do
     start_of_month = Date.beginning_of_month(Date.utc_today())
 
-    from(i in InvoiceFlow.Invoices.Invoice,
+    from(i in AutoMyInvoice.Invoices.Invoice,
       where: i.user_id == ^user_id,
       where: fragment("?::date >= ?", i.inserted_at, ^start_of_month),
       select: count(i.id)
@@ -340,10 +340,10 @@ config :ueberauth, Ueberauth.Strategy.Google.OAuth,
 ### 4.2 Controller
 
 ```elixir
-defmodule InvoiceFlowWeb.OAuthController do
-  use InvoiceFlowWeb, :controller
+defmodule AutoMyInvoiceWeb.OAuthController do
+  use AutoMyInvoiceWeb, :controller
 
-  alias InvoiceFlow.Accounts
+  alias AutoMyInvoice.Accounts
 
   plug Ueberauth
 
@@ -358,7 +358,7 @@ defmodule InvoiceFlowWeb.OAuthController do
     case Accounts.find_or_create_oauth_user(user_attrs) do
       {:ok, user} ->
         conn
-        |> InvoiceFlowWeb.UserAuth.log_in_user(user)
+        |> AutoMyInvoiceWeb.UserAuth.log_in_user(user)
 
       {:error, _changeset} ->
         conn

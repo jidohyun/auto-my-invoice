@@ -1,4 +1,4 @@
-# InvoiceFlow MVP 구현 계획
+# AutoMyInvoice MVP 구현 계획
 
 ## 현재 상태 (2026-03-06)
 
@@ -35,12 +35,12 @@
 **목표:** 마감일 기준 D+1, D+7, D+14에 자동 리마인더 이메일 발송
 
 **구현 범위:**
-- [ ] `lib/invoice_flow/workers/reminder_worker.ex` 생성
+- [ ] `lib/auto_my_invoice/workers/reminder_worker.ex` 생성
   - Oban Worker 모듈 (`use Oban.Worker, queue: :mailers`)
   - reminder 레코드 조회 -> 이메일 생성 -> Swoosh 발송
   - 발송 성공 시 reminder.status = "sent", sent_at 업데이트
   - 발송 실패 시 Oban 재시도 정책 활용
-- [ ] 리마인더 이메일 템플릿 3종 생성 (`lib/invoice_flow/emails/reminder_email.ex`)
+- [ ] 리마인더 이메일 템플릿 3종 생성 (`lib/auto_my_invoice/emails/reminder_email.ex`)
   - Step 1 (D+1): 친근한 확인 요청 톤
   - Step 2 (D+7): 부드러운 독촉 톤
   - Step 3 (D+14): 최종 경고 톤 (사용자 설정 가능)
@@ -52,10 +52,10 @@
   - `Reminders.cancel_pending_reminders/1` -> Oban.cancel_job/1
 
 **관련 파일:**
-- `lib/invoice_flow/workers/reminder_worker.ex` (신규)
-- `lib/invoice_flow/emails/reminder_email.ex` (신규)
-- `lib/invoice_flow/reminders.ex`
-- `lib/invoice_flow/invoices.ex`
+- `lib/auto_my_invoice/workers/reminder_worker.ex` (신규)
+- `lib/auto_my_invoice/emails/reminder_email.ex` (신규)
+- `lib/auto_my_invoice/reminders.ex`
+- `lib/auto_my_invoice/invoices.ex`
 - `config/config.exs` (Oban crontab)
 
 **참고:** 현재 `Reminders.schedule_reminders/1`은 DB 레코드만 생성함. Oban Job enqueue 로직 추가 필요.
@@ -67,30 +67,30 @@
 **목표:** 업로드된 PDF/이미지에서 AI가 송장 정보(금액, 마감일, 클라이언트)를 자동 추출
 
 **구현 범위:**
-- [ ] `lib/invoice_flow/workers/ocr_extraction_worker.ex` 생성
+- [ ] `lib/auto_my_invoice/workers/ocr_extraction_worker.ex` 생성
   - Oban Worker (`use Oban.Worker, queue: :ai`)
   - OpenAI Vision API (GPT-4o) 호출
   - 추출 결과를 ExtractionJob 레코드에 저장
   - PubSub broadcast로 LiveView 실시간 업데이트
-- [ ] `lib/invoice_flow/extraction.ex` 확장
+- [ ] `lib/auto_my_invoice/extraction.ex` 확장
   - `create_extraction_job/2` - 업로드 파일로부터 job 생성
   - `complete_extraction/2` - AI 결과 저장
   - `create_invoice_from_extraction/2` - 추출 결과로 송장 자동 생성
-- [ ] `lib/invoice_flow_web/live/upload_live.ex` 업데이트
+- [ ] `lib/auto_my_invoice_web/live/upload_live.ex` 업데이트
   - LiveView Upload 핸들러 연결 (allow_upload, handle_progress)
   - 업로드 완료 -> OcrExtractionWorker enqueue
   - PubSub subscribe -> 추출 결과 실시간 표시
   - 추출 결과 확인/수정 UI -> 송장 생성
 - [ ] OpenAI API 클라이언트 모듈
-  - `lib/invoice_flow/ai/vision_client.ex` (Req HTTP 클라이언트)
+  - `lib/auto_my_invoice/ai/vision_client.ex` (Req HTTP 클라이언트)
   - 프롬프트 엔지니어링: 금액, 마감일, 클라이언트명, 항목 추출
 
 **관련 파일:**
-- `lib/invoice_flow/workers/ocr_extraction_worker.ex` (신규)
-- `lib/invoice_flow/ai/vision_client.ex` (신규)
-- `lib/invoice_flow/extraction.ex`
-- `lib/invoice_flow/extraction/extraction_job.ex`
-- `lib/invoice_flow_web/live/upload_live.ex`
+- `lib/auto_my_invoice/workers/ocr_extraction_worker.ex` (신규)
+- `lib/auto_my_invoice/ai/vision_client.ex` (신규)
+- `lib/auto_my_invoice/extraction.ex`
+- `lib/auto_my_invoice/extraction/extraction_job.ex`
+- `lib/auto_my_invoice_web/live/upload_live.ex`
 
 **환경 변수:** `OPENAI_API_KEY`
 
@@ -101,7 +101,7 @@
 **목표:** 클라이언트 결제 완료 시 송장 상태 자동 업데이트
 
 **구현 범위:**
-- [ ] `lib/invoice_flow_web/controllers/paddle_webhook_controller.ex` 생성
+- [ ] `lib/auto_my_invoice_web/controllers/paddle_webhook_controller.ex` 생성
   - POST `/api/webhooks/paddle` 엔드포인트
   - Paddle 서명 검증 (hmac-sha256)
   - `transaction.completed` 이벤트 처리
@@ -117,11 +117,11 @@
   - API pipeline (CSRF 보호 제외)
 
 **관련 파일:**
-- `lib/invoice_flow_web/controllers/paddle_webhook_controller.ex` (신규)
-- `lib/invoice_flow/payments.ex`
-- `lib/invoice_flow/invoices.ex`
-- `lib/invoice_flow/reminders.ex`
-- `lib/invoice_flow_web/router.ex`
+- `lib/auto_my_invoice_web/controllers/paddle_webhook_controller.ex` (신규)
+- `lib/auto_my_invoice/payments.ex`
+- `lib/auto_my_invoice/invoices.ex`
+- `lib/auto_my_invoice/reminders.ex`
+- `lib/auto_my_invoice_web/router.ex`
 
 **환경 변수:** `PADDLE_WEBHOOK_SECRET`, `PADDLE_API_KEY`
 
@@ -142,9 +142,9 @@
   - 카운트 뱃지 실시간 반영
 
 **관련 파일:**
-- `lib/invoice_flow_web/live/dashboard_live.ex`
-- `lib/invoice_flow_web/live/invoice_live/index.ex`
-- `lib/invoice_flow/pub_sub_topics.ex`
+- `lib/auto_my_invoice_web/live/dashboard_live.ex`
+- `lib/auto_my_invoice_web/live/invoice_live/index.ex`
+- `lib/auto_my_invoice/pub_sub_topics.ex`
 
 ---
 
@@ -156,7 +156,7 @@
 
 **구현 범위:**
 - [ ] Paddle Billing API 클라이언트 모듈
-  - `lib/invoice_flow/billing/paddle_client.ex`
+  - `lib/auto_my_invoice/billing/paddle_client.ex`
   - 구독 생성, 업그레이드, 취소 API
 - [ ] 구독 관리 LiveView
   - `/settings/billing` 페이지
@@ -167,9 +167,9 @@
   - User 레코드에 plan 필드 업데이트
 
 **관련 파일:**
-- `lib/invoice_flow/billing/paddle_client.ex` (신규)
-- `lib/invoice_flow/billing.ex`
-- `lib/invoice_flow_web/live/billing_live.ex` (신규)
+- `lib/auto_my_invoice/billing/paddle_client.ex` (신규)
+- `lib/auto_my_invoice/billing.ex`
+- `lib/auto_my_invoice_web/live/billing_live.ex` (신규)
 
 **환경 변수:** `PADDLE_API_KEY`, `PADDLE_PRICE_ID_STARTER`, `PADDLE_PRICE_ID_PRO`
 
@@ -180,7 +180,7 @@
 **목표:** Free 플랜 월 3건 송장 제한, Starter 무제한
 
 **구현 범위:**
-- [ ] `lib/invoice_flow/billing/plan_gate.ex`
+- [ ] `lib/auto_my_invoice/billing/plan_gate.ex`
   - `can_create_invoice?/1` - 현재 월 송장 수 체크
   - `plan_limits/1` - 플랜별 제한 반환
 - [ ] 송장 생성 시 게이팅 적용
@@ -189,10 +189,10 @@
   - "3/3 invoices used this month" 프로그레스 바
 
 **관련 파일:**
-- `lib/invoice_flow/billing/plan_gate.ex` (신규)
-- `lib/invoice_flow/accounts.ex` (plan_limits 함수 추가)
-- `lib/invoice_flow_web/live/invoice_live/new.ex`
-- `lib/invoice_flow_web/live/dashboard_live.ex`
+- `lib/auto_my_invoice/billing/plan_gate.ex` (신규)
+- `lib/auto_my_invoice/accounts.ex` (plan_limits 함수 추가)
+- `lib/auto_my_invoice_web/live/invoice_live/new.ex`
+- `lib/auto_my_invoice_web/live/dashboard_live.ex`
 
 ---
 
@@ -209,10 +209,10 @@
 - [ ] 송장 상세 페이지에 결제 링크 표시
 
 **관련 파일:**
-- `lib/invoice_flow/billing/paddle_client.ex`
-- `lib/invoice_flow/invoices.ex`
-- `lib/invoice_flow/emails/reminder_email.ex`
-- `lib/invoice_flow_web/live/invoice_live/show.ex`
+- `lib/auto_my_invoice/billing/paddle_client.ex`
+- `lib/auto_my_invoice/invoices.ex`
+- `lib/auto_my_invoice/emails/reminder_email.ex`
+- `lib/auto_my_invoice_web/live/invoice_live/show.ex`
 
 ---
 
@@ -238,7 +238,7 @@
 
 **구현 범위:**
 - [ ] ChromicPDF 또는 Typst 기반 PDF 렌더링
-  - `lib/invoice_flow/pdf/invoice_pdf.ex`
+  - `lib/auto_my_invoice/pdf/invoice_pdf.ex`
   - 송장 HTML 템플릿 -> PDF 변환
 - [ ] 송장 상세 페이지에 "Download PDF" 버튼
 - [ ] 이메일 발송 시 PDF 첨부 옵션
@@ -288,8 +288,8 @@ Week 7-8: C2 (플랜 게이팅) -> D3 (Fly.io 배포) -> D4 (CI/CD)
 
 ## 기술 참고
 
-- **Oban Workers**: `lib/invoice_flow/workers/` 디렉토리에 생성, `queue` 별 분리 (`:mailers`, `:ai`, `:default`)
-- **PubSub Topics**: `lib/invoice_flow/pub_sub_topics.ex`에 토픽 헬퍼 정의됨
+- **Oban Workers**: `lib/auto_my_invoice/workers/` 디렉토리에 생성, `queue` 별 분리 (`:mailers`, `:ai`, `:default`)
+- **PubSub Topics**: `lib/auto_my_invoice/pub_sub_topics.ex`에 토픽 헬퍼 정의됨
 - **이메일**: Swoosh + Resend adapter (prod), Local adapter (dev)
 - **AI**: OpenAI GPT-4o Vision API, Req HTTP 클라이언트
 - **결제**: Paddle Billing API v2

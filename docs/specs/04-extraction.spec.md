@@ -11,7 +11,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | AI OCR로 송장 파일에서 금액, 마감일, 클라이언트 정보 자동 추출 |
-| **Context** | `InvoiceFlow.Extraction` |
+| **Context** | `AutoMyInvoice.Extraction` |
 | **의존성** | 03-invoices (Invoice), 02-clients (Client) |
 | **예상 기간** | Week 4~5 (Invoices와 병렬 가능) |
 
@@ -22,7 +22,7 @@
 ### 1.1 ExtractionJob
 
 ```elixir
-defmodule InvoiceFlow.Extraction.ExtractionJob do
+defmodule AutoMyInvoice.Extraction.ExtractionJob do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -47,8 +47,8 @@ defmodule InvoiceFlow.Extraction.ExtractionJob do
     field :processing_completed_at, :utc_datetime
     field :oban_job_id, :integer
 
-    belongs_to :user, InvoiceFlow.Accounts.User
-    belongs_to :invoice, InvoiceFlow.Invoices.Invoice  # 결과 적용된 송장 (nullable)
+    belongs_to :user, AutoMyInvoice.Accounts.User
+    belongs_to :invoice, AutoMyInvoice.Invoices.Invoice  # 결과 적용된 송장 (nullable)
 
     timestamps(type: :utc_datetime)
   end
@@ -100,7 +100,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreateExtractionJobs do
+defmodule AutoMyInvoice.Repo.Migrations.CreateExtractionJobs do
   use Ecto.Migration
 
   def change do
@@ -136,13 +136,13 @@ end
 ## 3. Context Functions
 
 ```elixir
-defmodule InvoiceFlow.Extraction do
+defmodule AutoMyInvoice.Extraction do
   @moduledoc "AI OCR 송장 데이터 추출 Context"
 
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Extraction.ExtractionJob
-  alias InvoiceFlow.Workers.OcrExtractionWorker
-  alias InvoiceFlow.PubSubTopics
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Extraction.ExtractionJob
+  alias AutoMyInvoice.Workers.OcrExtractionWorker
+  alias AutoMyInvoice.PubSubTopics
 
   ## 작업 생성 & 시작
 
@@ -200,7 +200,7 @@ defmodule InvoiceFlow.Extraction do
 
     # PubSub로 LiveView에 결과 전달
     Phoenix.PubSub.broadcast(
-      InvoiceFlow.PubSub,
+      AutoMyInvoice.PubSub,
       PubSubTopics.extraction_completed(job.id),
       {:extraction_completed, extracted_data}
     )
@@ -248,8 +248,8 @@ defmodule InvoiceFlow.Extraction do
   def find_or_suggest_client(user_id, extracted_data) do
     email = extracted_data["client_email"]
 
-    case email && InvoiceFlow.Clients.get_client_by_email(user_id, email) do
-      %InvoiceFlow.Clients.Client{} = client ->
+    case email && AutoMyInvoice.Clients.get_client_by_email(user_id, email) do
+      %AutoMyInvoice.Clients.Client{} = client ->
         {:existing, client}
 
       nil ->
@@ -286,14 +286,14 @@ end
 ## 4. Oban Worker
 
 ```elixir
-defmodule InvoiceFlow.Workers.OcrExtractionWorker do
+defmodule AutoMyInvoice.Workers.OcrExtractionWorker do
   use Oban.Worker,
     queue: :extraction,
     max_attempts: 3,
     priority: 1
 
-  alias InvoiceFlow.Extraction
-  alias InvoiceFlow.Extraction.AiClient
+  alias AutoMyInvoice.Extraction
+  alias AutoMyInvoice.Extraction.AiClient
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"extraction_job_id" => job_id}}) do
@@ -334,7 +334,7 @@ end
 ## 5. AI Client (OpenAI GPT-4o Vision)
 
 ```elixir
-defmodule InvoiceFlow.Extraction.AiClient do
+defmodule AutoMyInvoice.Extraction.AiClient do
   @moduledoc "OpenAI GPT-4o Vision API를 통한 송장 데이터 추출"
 
   @extraction_prompt """
@@ -414,7 +414,7 @@ defmodule InvoiceFlow.Extraction.AiClient do
   defp media_type_for(type) when type in ~w(jpg jpeg), do: "image/jpeg"
   defp media_type_for("png"), do: "image/png"
 
-  defp api_key, do: Application.fetch_env!(:invoice_flow, :openai_api_key)
+  defp api_key, do: Application.fetch_env!(:auto_my_invoice, :openai_api_key)
 end
 ```
 

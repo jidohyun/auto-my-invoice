@@ -11,7 +11,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | 3단계 AI 이메일 리마인더 스케줄링, 발송, 추적 |
-| **Context** | `InvoiceFlow.Reminders` |
+| **Context** | `AutoMyInvoice.Reminders` |
 | **의존성** | 03-invoices (Invoice), 02-clients (Client), 01-accounts (User) |
 | **예상 기간** | Week 5~7 |
 
@@ -22,7 +22,7 @@
 ### 1.1 Reminder
 
 ```elixir
-defmodule InvoiceFlow.Reminders.Reminder do
+defmodule AutoMyInvoice.Reminders.Reminder do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -51,7 +51,7 @@ defmodule InvoiceFlow.Reminders.Reminder do
     # Oban 연결
     field :oban_job_id, :integer
 
-    belongs_to :invoice, InvoiceFlow.Invoices.Invoice
+    belongs_to :invoice, AutoMyInvoice.Invoices.Invoice
 
     timestamps(type: :utc_datetime)
   end
@@ -77,7 +77,7 @@ end
 ### 1.2 ReminderTemplate
 
 ```elixir
-defmodule InvoiceFlow.Reminders.ReminderTemplate do
+defmodule AutoMyInvoice.Reminders.ReminderTemplate do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -91,7 +91,7 @@ defmodule InvoiceFlow.Reminders.ReminderTemplate do
     field :body_template, :string          # EEx 템플릿 (HTML)
     field :is_default, :boolean, default: false
 
-    belongs_to :user, InvoiceFlow.Accounts.User  # nil이면 시스템 기본
+    belongs_to :user, AutoMyInvoice.Accounts.User  # nil이면 시스템 기본
 
     timestamps(type: :utc_datetime)
   end
@@ -111,7 +111,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreateReminders do
+defmodule AutoMyInvoice.Repo.Migrations.CreateReminders do
   use Ecto.Migration
 
   def change do
@@ -187,13 +187,13 @@ end
 ## 4. Context Functions
 
 ```elixir
-defmodule InvoiceFlow.Reminders do
+defmodule AutoMyInvoice.Reminders do
   @moduledoc "리마인더 스케줄링, 발송, 추적 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Reminders.{Reminder, ReminderTemplate}
-  alias InvoiceFlow.Workers.ReminderWorker
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Reminders.{Reminder, ReminderTemplate}
+  alias AutoMyInvoice.Workers.ReminderWorker
 
   @step_offsets %{1 => 1, 2 => 7, 3 => 14}
 
@@ -404,18 +404,18 @@ defmodule InvoiceFlow.Reminders do
   defp deliver_email(reminder, subject, body) do
     import Swoosh.Email
 
-    tracking_pixel_url = InvoiceFlowWeb.Endpoint.url() <> "/track/open/#{reminder.id}"
+    tracking_pixel_url = AutoMyInvoiceWeb.Endpoint.url() <> "/track/open/#{reminder.id}"
     body_with_tracking = body <> ~s(<img src="#{tracking_pixel_url}" width="1" height="1" />)
 
     new()
     |> to({reminder.invoice.client.name, reminder.invoice.client.email})
-    |> from({reminder.invoice.user.company_name || "InvoiceFlow", from_email()})
+    |> from({reminder.invoice.user.company_name || "AutoMyInvoice", from_email()})
     |> subject(subject)
     |> html_body(body_with_tracking)
-    |> InvoiceFlow.Mailer.deliver()
+    |> AutoMyInvoice.Mailer.deliver()
   end
 
-  defp from_email, do: Application.fetch_env!(:invoice_flow, :from_email)
+  defp from_email, do: Application.fetch_env!(:auto_my_invoice, :from_email)
 end
 ```
 
@@ -426,13 +426,13 @@ end
 ### 5.1 ReminderWorker
 
 ```elixir
-defmodule InvoiceFlow.Workers.ReminderWorker do
+defmodule AutoMyInvoice.Workers.ReminderWorker do
   use Oban.Worker,
     queue: :reminders,
     max_attempts: 5,
     priority: 2
 
-  alias InvoiceFlow.Reminders
+  alias AutoMyInvoice.Reminders
 
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"reminder_id" => reminder_id}}) do
@@ -458,14 +458,14 @@ end
 ### 5.2 DueDateCheckerWorker (Cron)
 
 ```elixir
-defmodule InvoiceFlow.Workers.DueDateCheckerWorker do
+defmodule AutoMyInvoice.Workers.DueDateCheckerWorker do
   use Oban.Worker,
     queue: :default,
     max_attempts: 1
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Invoices.Invoice
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Invoices.Invoice
 
   @impl Oban.Worker
   def perform(%Oban.Job{}) do
@@ -478,7 +478,7 @@ defmodule InvoiceFlow.Workers.DueDateCheckerWorker do
     )
     |> Repo.all()
     |> Enum.each(fn invoice ->
-      InvoiceFlow.Invoices.mark_as_overdue(invoice)
+      AutoMyInvoice.Invoices.mark_as_overdue(invoice)
     end)
 
     :ok
@@ -492,7 +492,7 @@ end
 
 ```elixir
 # 라우터에 추가
-scope "/track", InvoiceFlowWeb do
+scope "/track", AutoMyInvoiceWeb do
   pipe_through :api
 
   get "/open/:reminder_id", TrackingController, :open
@@ -501,10 +501,10 @@ end
 ```
 
 ```elixir
-defmodule InvoiceFlowWeb.TrackingController do
-  use InvoiceFlowWeb, :controller
+defmodule AutoMyInvoiceWeb.TrackingController do
+  use AutoMyInvoiceWeb, :controller
 
-  alias InvoiceFlow.Reminders
+  alias AutoMyInvoice.Reminders
 
   # 1x1 투명 픽셀 (오픈 추적)
   @transparent_pixel Base.decode64!("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")

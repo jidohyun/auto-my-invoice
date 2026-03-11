@@ -1,4 +1,4 @@
-# InvoiceFlow — 자동 송장 리마인더 SaaS
+# AutoMyInvoice — 자동 송장 리마인더 SaaS
 
 ### Product Requirements Document (PRD)
 
@@ -28,7 +28,7 @@
 
 ### 1.1 제품 비전
 
-InvoiceFlow는 프리랜서, 소규모 사업자, 에이전시가 **송장 발송 후 대금 회수까지 걸리는 시간을 단축**하고, 미수금 추적에 소모되는 반복 업무를 자동화하는 SaaS 서비스입니다.
+AutoMyInvoice는 프리랜서, 소규모 사업자, 에이전시가 **송장 발송 후 대금 회수까지 걸리는 시간을 단축**하고, 미수금 추적에 소모되는 반복 업무를 자동화하는 SaaS 서비스입니다.
 
 Net 30 결제 조건 기준으로 **3단계 AI 리마인더 이메일을 자동 발송**하고, Paddle 결제 연동을 통해 클라이언트가 결제하는 즉시 상태를 업데이트합니다.
 
@@ -243,10 +243,10 @@ Net 30 결제 조건 기준, 3단계 이메일을 자동 발송합니다:
 ### 3.2 모노레포 구조
 
 ```
-InvoiceFlow/
+AutoMyInvoice/
 ├── lib/                        # Elixir 백엔드 + 웹 (단일 앱)
-│   ├── invoice_flow/           # 도메인 Context (Accounts, Invoices, Clients, ...)
-│   └── invoice_flow_web/       # Phoenix 웹 계층
+│   ├── auto_my_invoice/           # 도메인 Context (Accounts, Invoices, Clients, ...)
+│   └── auto_my_invoice_web/       # Phoenix 웹 계층
 │       ├── controllers/api/    # REST API 컨트롤러 (6개) ✅
 │       ├── plugs/              # ApiAuth Bearer 인증 ✅
 │       ├── live/               # LiveView 페이지들
@@ -269,18 +269,18 @@ InvoiceFlow/
 ### 3.3 애플리케이션 Supervision Tree
 
 ```
-InvoiceFlow.Application
-├── InvoiceFlow.Repo (Ecto PostgreSQL)
-├── InvoiceFlowWeb.Endpoint (Phoenix HTTP/WebSocket)
-├── InvoiceFlow.PubSub (Phoenix.PubSub)
-├── InvoiceFlow.Mailer (Swoosh)
+AutoMyInvoice.Application
+├── AutoMyInvoice.Repo (Ecto PostgreSQL)
+├── AutoMyInvoiceWeb.Endpoint (Phoenix HTTP/WebSocket)
+├── AutoMyInvoice.PubSub (Phoenix.PubSub)
+├── AutoMyInvoice.Mailer (Swoosh)
 ├── Oban (백그라운드 작업 큐)
-│   ├── InvoiceFlow.Workers.ReminderWorker
-│   ├── InvoiceFlow.Workers.OcrExtractionWorker
-│   ├── InvoiceFlow.Workers.PdfGenerationWorker
-│   └── InvoiceFlow.Workers.EmailTrackingWorker
-├── InvoiceFlow.Cache (Cachex)
-└── InvoiceFlow.Telemetry (메트릭 수집)
+│   ├── AutoMyInvoice.Workers.ReminderWorker
+│   ├── AutoMyInvoice.Workers.OcrExtractionWorker
+│   ├── AutoMyInvoice.Workers.PdfGenerationWorker
+│   └── AutoMyInvoice.Workers.EmailTrackingWorker
+├── AutoMyInvoice.Cache (Cachex)
+└── AutoMyInvoice.Telemetry (메트릭 수집)
 ```
 
 ### 3.4 시스템 아키텍처 흐름
@@ -328,14 +328,14 @@ InvoiceFlow.Application
 
 | Context                  | 책임                                      | 주요 Schema                            |
 | ------------------------ | ----------------------------------------- | -------------------------------------- |
-| `InvoiceFlow.Accounts`   | 사용자 인증, 프로필, OAuth, 플랜 관리     | User, UserToken                        |
-| `InvoiceFlow.Invoices`   | 송장 CRUD, 상태 전환, 집계 쿼리           | Invoice, InvoiceItem                   |
-| `InvoiceFlow.Clients`    | 클라이언트 정보 관리                      | Client                                 |
-| `InvoiceFlow.Reminders`  | 리마인더 스케줄링, 이메일 발송            | Reminder, ReminderTemplate             |
-| `InvoiceFlow.Payments`   | Paddle 연동, 결제 상태                    | Payment, PaddleWebhookEvent            |
-| `InvoiceFlow.Billing`    | 구독 플랜, 사용량 추적                    | Subscription                           |
-| `InvoiceFlow.Extraction` | AI OCR, 송장 데이터 추출                  | ExtractionJob                          |
-| `InvoiceFlow.Emails`     | 송장 이메일 생성 (HTML/Text)              | InvoiceEmail                           |
+| `AutoMyInvoice.Accounts`   | 사용자 인증, 프로필, OAuth, 플랜 관리     | User, UserToken                        |
+| `AutoMyInvoice.Invoices`   | 송장 CRUD, 상태 전환, 집계 쿼리           | Invoice, InvoiceItem                   |
+| `AutoMyInvoice.Clients`    | 클라이언트 정보 관리                      | Client                                 |
+| `AutoMyInvoice.Reminders`  | 리마인더 스케줄링, 이메일 발송            | Reminder, ReminderTemplate             |
+| `AutoMyInvoice.Payments`   | Paddle 연동, 결제 상태                    | Payment, PaddleWebhookEvent            |
+| `AutoMyInvoice.Billing`    | 구독 플랜, 사용량 추적                    | Subscription                           |
+| `AutoMyInvoice.Extraction` | AI OCR, 송장 데이터 추출                  | ExtractionJob                          |
+| `AutoMyInvoice.Emails`     | 송장 이메일 생성 (HTML/Text)              | InvoiceEmail                           |
 
 ### 3.6 데이터베이스 스키마 (7 테이블 + Oban)
 
@@ -421,7 +421,7 @@ oban_jobs       - Oban 백그라운드 잡 (자동 관리)
 
 | 서비스          | 가격      | 특징                                          |
 | --------------- | --------- | --------------------------------------------- |
-| **InvoiceFlow** | **$9/월** | AI 리마인더 + Paddle 연동 + 네이티브 모바일앱 |
+| **AutoMyInvoice** | **$9/월** | AI 리마인더 + Paddle 연동 + 네이티브 모바일앱 |
 | FreshBooks      | $17/월~   | 회계 중심, 리마인더 수동                      |
 | Invoice Ninja   | $10/월    | 오픈소스 기반, 자동화 제한적                  |
 | Harvest         | $12/월    | 시간 추적 중심, 송장 보조적                   |
@@ -571,4 +571,4 @@ Phase 5 (2주)   : 통합 + 확장 ┘
 
 ---
 
-_InvoiceFlow PRD v3.0 — Confidential & Internal Use Only_
+_AutoMyInvoice PRD v3.0 — Confidential & Internal Use Only_

@@ -21,8 +21,8 @@
 ### 1.1 Phoenix 프로젝트 생성
 
 ```bash
-mix phx.new invoice_flow --database postgres --live
-cd invoice_flow
+mix phx.new auto_my_invoice --database postgres --live
+cd auto_my_invoice
 ```
 
 ### 1.2 핵심 의존성 (mix.exs)
@@ -82,8 +82,8 @@ end
 ### 1.3 Oban 설정 (config/config.exs)
 
 ```elixir
-config :invoice_flow, Oban,
-  repo: InvoiceFlow.Repo,
+config :auto_my_invoice, Oban,
+  repo: AutoMyInvoice.Repo,
   queues: [
     default: 10,
     reminders: 5,
@@ -96,7 +96,7 @@ config :invoice_flow, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        # 매일 오전 8시(UTC) 마감일 체크 → 리마인더 스케줄링
-       {"0 8 * * *", InvoiceFlow.Workers.DueDateCheckerWorker}
+       {"0 8 * * *", AutoMyInvoice.Workers.DueDateCheckerWorker}
      ]}
   ]
 ```
@@ -105,13 +105,13 @@ config :invoice_flow, Oban,
 
 ```elixir
 # config/config.exs
-config :invoice_flow, InvoiceFlow.Mailer,
+config :auto_my_invoice, AutoMyInvoice.Mailer,
   adapter: Swoosh.Adapters.Req,
   api_key: {:system, "RESEND_API_KEY"},
   base_url: "https://api.resend.com"
 
 # config/dev.exs
-config :invoice_flow, InvoiceFlow.Mailer,
+config :auto_my_invoice, AutoMyInvoice.Mailer,
   adapter: Swoosh.Adapters.Local
 ```
 
@@ -120,29 +120,29 @@ config :invoice_flow, InvoiceFlow.Mailer,
 ## 2. Supervision Tree
 
 ```elixir
-# lib/invoice_flow/application.ex
-defmodule InvoiceFlow.Application do
+# lib/auto_my_invoice/application.ex
+defmodule AutoMyInvoice.Application do
   use Application
 
   @impl true
   def start(_type, _args) do
     children = [
-      InvoiceFlowWeb.Telemetry,
-      InvoiceFlow.Repo,
-      {DNSCluster, query: Application.get_env(:invoice_flow, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: InvoiceFlow.PubSub},
-      {Cachex, name: :invoice_flow_cache},
-      {Oban, Application.fetch_env!(:invoice_flow, Oban)},
-      InvoiceFlowWeb.Endpoint
+      AutoMyInvoiceWeb.Telemetry,
+      AutoMyInvoice.Repo,
+      {DNSCluster, query: Application.get_env(:auto_my_invoice, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: AutoMyInvoice.PubSub},
+      {Cachex, name: :auto_my_invoice_cache},
+      {Oban, Application.fetch_env!(:auto_my_invoice, Oban)},
+      AutoMyInvoiceWeb.Endpoint
     ]
 
-    opts = [strategy: :one_for_one, name: InvoiceFlow.Supervisor]
+    opts = [strategy: :one_for_one, name: AutoMyInvoice.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
   @impl true
   def config_change(changed, _new, removed) do
-    InvoiceFlowWeb.Endpoint.config_change(changed, removed)
+    AutoMyInvoiceWeb.Endpoint.config_change(changed, removed)
     :ok
   end
 end
@@ -155,17 +155,17 @@ end
 ### 3.1 Mailer
 
 ```elixir
-# lib/invoice_flow/mailer.ex
-defmodule InvoiceFlow.Mailer do
-  use Swoosh.Mailer, otp_app: :invoice_flow
+# lib/auto_my_invoice/mailer.ex
+defmodule AutoMyInvoice.Mailer do
+  use Swoosh.Mailer, otp_app: :auto_my_invoice
 end
 ```
 
 ### 3.2 PubSub 토픽 규약
 
 ```elixir
-# lib/invoice_flow/pub_sub_topics.ex
-defmodule InvoiceFlow.PubSubTopics do
+# lib/auto_my_invoice/pub_sub_topics.ex
+defmodule AutoMyInvoice.PubSubTopics do
   @moduledoc "PubSub 토픽 이름 중앙 관리"
 
   def invoice_updated(invoice_id), do: "invoice:#{invoice_id}"
@@ -178,8 +178,8 @@ end
 ### 3.3 에러 타입
 
 ```elixir
-# lib/invoice_flow/errors.ex
-defmodule InvoiceFlow.Errors do
+# lib/auto_my_invoice/errors.ex
+defmodule AutoMyInvoice.Errors do
   defmodule NotFound do
     defexception [:message, :resource, :id]
 
@@ -204,15 +204,15 @@ end
 ## 4. 라우터 골격
 
 ```elixir
-# lib/invoice_flow_web/router.ex
-defmodule InvoiceFlowWeb.Router do
-  use InvoiceFlowWeb, :router
+# lib/auto_my_invoice_web/router.ex
+defmodule AutoMyInvoiceWeb.Router do
+  use AutoMyInvoiceWeb, :router
 
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, html: {InvoiceFlowWeb.Layouts, :root}
+    plug :put_root_layout, html: {AutoMyInvoiceWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_user
@@ -223,7 +223,7 @@ defmodule InvoiceFlowWeb.Router do
   end
 
   # 인증 불필요
-  scope "/", InvoiceFlowWeb do
+  scope "/", AutoMyInvoiceWeb do
     pipe_through :browser
 
     get "/", PageController, :home
@@ -231,8 +231,8 @@ defmodule InvoiceFlowWeb.Router do
 
   # 인증 필요 (LiveView)
   live_session :authenticated,
-    on_mount: [{InvoiceFlowWeb.UserAuth, :ensure_authenticated}] do
-    scope "/", InvoiceFlowWeb do
+    on_mount: [{AutoMyInvoiceWeb.UserAuth, :ensure_authenticated}] do
+    scope "/", AutoMyInvoiceWeb do
       pipe_through [:browser, :require_authenticated_user]
 
       live "/dashboard", DashboardLive.Index, :index
@@ -248,19 +248,19 @@ defmodule InvoiceFlowWeb.Router do
   end
 
   # Paddle Webhook (인증 불필요, 서명 검증)
-  scope "/webhooks", InvoiceFlowWeb do
+  scope "/webhooks", AutoMyInvoiceWeb do
     pipe_through :api
 
     post "/paddle", WebhookController, :paddle
   end
 
   # LiveDashboard (dev/admin)
-  if Application.compile_env(:invoice_flow, :dev_routes) do
+  if Application.compile_env(:auto_my_invoice, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
       pipe_through :browser
-      live_dashboard "/dashboard", metrics: InvoiceFlowWeb.Telemetry
+      live_dashboard "/dashboard", metrics: AutoMyInvoiceWeb.Telemetry
     end
   end
 end
@@ -272,7 +272,7 @@ end
 
 ```bash
 # .env.example
-DATABASE_URL=postgres://localhost/invoice_flow_dev
+DATABASE_URL=postgres://localhost/auto_my_invoice_dev
 SECRET_KEY_BASE=
 
 # 인증
@@ -281,7 +281,7 @@ GOOGLE_CLIENT_SECRET=
 
 # 이메일
 RESEND_API_KEY=
-FROM_EMAIL=noreply@invoiceflow.io
+FROM_EMAIL=noreply@automyinvoice.io
 
 # AI
 OPENAI_API_KEY=
@@ -293,7 +293,7 @@ PADDLE_WEBHOOK_SECRET=
 # 파일 저장소
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
-S3_BUCKET=invoiceflow-uploads
+S3_BUCKET=automyinvoice-uploads
 S3_REGION=us-east-1
 
 # 모니터링
@@ -363,7 +363,7 @@ jobs:
       - run: mix dialyzer
       - run: mix test
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost/invoice_flow_test
+          DATABASE_URL: postgres://postgres:postgres@localhost/auto_my_invoice_test
 ```
 
 ---
@@ -381,7 +381,7 @@ primary_region = "nrt"  # Tokyo (한국 근접)
     OTP_VERSION = "26"
 
 [env]
-  PHX_HOST = "invoiceflow.io"
+  PHX_HOST = "automyinvoice.io"
   PORT = "8080"
   POOL_SIZE = "10"
 

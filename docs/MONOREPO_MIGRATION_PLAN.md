@@ -1,4 +1,4 @@
-# InvoiceFlow 모노레포 마이그레이션 계획
+# AutoMyInvoice 모노레포 마이그레이션 계획
 
 ## 1. 현재 프로젝트 구조 분석
 
@@ -21,9 +21,9 @@
 ### 1.2 현재 디렉토리 구조
 
 ```
-InvoiceFlow/
+AutoMyInvoice/
 ├── lib/
-│   ├── invoice_flow/            # 백엔드 도메인 (Context 패턴)
+│   ├── auto_my_invoice/            # 백엔드 도메인 (Context 패턴)
 │   │   ├── accounts/            # User, UserToken
 │   │   ├── clients/             # Client
 │   │   ├── invoices/            # Invoice, InvoiceItem
@@ -43,7 +43,7 @@ InvoiceFlow/
 │   │   ├── mailer.ex            # Swoosh Mailer
 │   │   ├── repo.ex              # Ecto Repo
 │   │   └── application.ex       # OTP Application
-│   └── invoice_flow_web/        # 웹 계층 (Phoenix)
+│   └── auto_my_invoice_web/        # 웹 계층 (Phoenix)
 │       ├── controllers/         # PageController, UserSession, OAuth, Error
 │       ├── live/                 # LiveView 페이지들
 │       │   ├── dashboard_live.ex
@@ -104,7 +104,7 @@ oban_jobs       - Oban 백그라운드 잡
 ## 2. 모노레포 목표 구조
 
 ```
-invoiceflow/
+automyinvoice/
 ├── apps/
 │   ├── server/                  # Elixir/Phoenix 백엔드 (기존 코드 이동)
 │   │   ├── lib/
@@ -114,14 +114,14 @@ invoiceflow/
 │   │   └── mix.exs
 │   │
 │   ├── web/                     # Phoenix LiveView 웹 프론트엔드 (기존 웹 분리)
-│   │   ├── lib/invoice_flow_web/
+│   │   ├── lib/auto_my_invoice_web/
 │   │   ├── assets/
 │   │   └── mix.exs
 │   │
 │   ├── android/                 # Android 앱
 │   │   ├── app/
 │   │   │   ├── src/main/
-│   │   │   │   ├── java/com/invoiceflow/
+│   │   │   │   ├── java/com/automyinvoice/
 │   │   │   │   │   ├── di/                  # Hilt DI 모듈
 │   │   │   │   │   ├── data/
 │   │   │   │   │   │   ├── remote/          # Retrofit API 클라이언트
@@ -147,9 +147,9 @@ invoiceflow/
 │   │   └── build.gradle.kts                 # 프로젝트 레벨
 │   │
 │   └── ios/                     # iOS 앱
-│       ├── InvoiceFlow/
+│       ├── AutoMyInvoice/
 │       │   ├── App/
-│       │   │   └── InvoiceFlowApp.swift
+│       │   │   └── AutoMyInvoiceApp.swift
 │       │   ├── Core/
 │       │   │   ├── Network/                 # URLSession API 클라이언트
 │       │   │   ├── Storage/                 # CoreData/SwiftData
@@ -173,9 +173,9 @@ invoiceflow/
 │       │   │       ├── Upload/              # OCR 업로드 (카메라/갤러리)
 │       │   │       └── Settings/            # 설정
 │       │   └── Resources/
-│       ├── InvoiceFlowTests/
-│       ├── InvoiceFlowUITests/
-│       └── InvoiceFlow.xcodeproj
+│       ├── AutoMyInvoiceTests/
+│       ├── AutoMyInvoiceUITests/
+│       └── AutoMyInvoice.xcodeproj
 │
 ├── packages/                    # 공유 리소스
 │   └── api-spec/                # OpenAPI 스펙 (코드 생성 소스)
@@ -248,8 +248,8 @@ POST   /api/v1/webhooks/paddle       # Paddle 결제 웹훅 (기존 계획)
 ### 3.2 API 인증 방식
 
 ```elixir
-# lib/invoice_flow_web/plugs/api_auth.ex
-defmodule InvoiceFlowWeb.Plugs.ApiAuth do
+# lib/auto_my_invoice_web/plugs/api_auth.ex
+defmodule AutoMyInvoiceWeb.Plugs.ApiAuth do
   # Phoenix.Token 기반 Bearer 인증
   # - 로그인 시 Phoenix.Token.sign() 으로 토큰 발급
   # - 요청 시 Authorization: Bearer <token> 헤더 검증
@@ -299,7 +299,7 @@ end
 ### Phase 1: REST API 레이어 (2주)
 
 - [ ] `api` pipeline에 JSON 인증 plug 추가
-- [ ] `InvoiceFlowWeb.Plugs.ApiAuth` 구현 (Phoenix.Token 기반)
+- [ ] `AutoMyInvoiceWeb.Plugs.ApiAuth` 구현 (Phoenix.Token 기반)
 - [ ] API 컨트롤러 생성:
   - [ ] `AuthController` - 회원가입, 로그인, 토큰 갱신, Google OAuth
   - [ ] `InvoiceController` - CRUD + send + mark_paid

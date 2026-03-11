@@ -11,7 +11,7 @@
 | 항목 | 내용 |
 |------|------|
 | **목적** | 송장 CRUD, 상태 관리, PDF 생성, LiveView Upload |
-| **Context** | `InvoiceFlow.Invoices` |
+| **Context** | `AutoMyInvoice.Invoices` |
 | **의존성** | 01-accounts (User), 02-clients (Client) |
 | **예상 기간** | Week 3~5 |
 
@@ -22,7 +22,7 @@
 ### 1.1 Invoice
 
 ```elixir
-defmodule InvoiceFlow.Invoices.Invoice do
+defmodule AutoMyInvoice.Invoices.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -52,12 +52,12 @@ defmodule InvoiceFlow.Invoices.Invoice do
     field :sent_at, :utc_datetime
     field :overdue_notified_at, :utc_datetime
 
-    belongs_to :user, InvoiceFlow.Accounts.User
-    belongs_to :client, InvoiceFlow.Clients.Client
+    belongs_to :user, AutoMyInvoice.Accounts.User
+    belongs_to :client, AutoMyInvoice.Clients.Client
 
-    has_many :items, InvoiceFlow.Invoices.InvoiceItem, on_replace: :delete
-    has_many :reminders, InvoiceFlow.Reminders.Reminder
-    has_many :payments, InvoiceFlow.Payments.Payment
+    has_many :items, AutoMyInvoice.Invoices.InvoiceItem, on_replace: :delete
+    has_many :reminders, AutoMyInvoice.Reminders.Reminder
+    has_many :payments, AutoMyInvoice.Payments.Payment
 
     timestamps(type: :utc_datetime)
   end
@@ -76,7 +76,7 @@ defmodule InvoiceFlow.Invoices.Invoice do
     |> validate_inclusion(:status, @statuses)
     |> validate_due_date_not_past()
     |> generate_invoice_number()
-    |> cast_assoc(:items, with: &InvoiceFlow.Invoices.InvoiceItem.changeset/2)
+    |> cast_assoc(:items, with: &AutoMyInvoice.Invoices.InvoiceItem.changeset/2)
     |> foreign_key_constraint(:client_id)
   end
 
@@ -87,7 +87,7 @@ defmodule InvoiceFlow.Invoices.Invoice do
     |> validate_inclusion(:currency, ~w(USD EUR KRW GBP JPY))
     |> validate_inclusion(:status, @statuses)
     |> validate_status_transition()
-    |> cast_assoc(:items, with: &InvoiceFlow.Invoices.InvoiceItem.changeset/2)
+    |> cast_assoc(:items, with: &AutoMyInvoice.Invoices.InvoiceItem.changeset/2)
   end
 
   def status_changeset(invoice, status) do
@@ -155,7 +155,7 @@ end
 ### 1.2 InvoiceItem
 
 ```elixir
-defmodule InvoiceFlow.Invoices.InvoiceItem do
+defmodule AutoMyInvoice.Invoices.InvoiceItem do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -169,7 +169,7 @@ defmodule InvoiceFlow.Invoices.InvoiceItem do
     field :total, :decimal
     field :position, :integer
 
-    belongs_to :invoice, InvoiceFlow.Invoices.Invoice
+    belongs_to :invoice, AutoMyInvoice.Invoices.Invoice
 
     timestamps(type: :utc_datetime)
   end
@@ -196,7 +196,7 @@ end
 ## 2. 마이그레이션
 
 ```elixir
-defmodule InvoiceFlow.Repo.Migrations.CreateInvoices do
+defmodule AutoMyInvoice.Repo.Migrations.CreateInvoices do
   use Ecto.Migration
 
   def change do
@@ -255,14 +255,14 @@ end
 ## 3. Context Functions
 
 ```elixir
-defmodule InvoiceFlow.Invoices do
+defmodule AutoMyInvoice.Invoices do
   @moduledoc "송장 관리 Context"
 
   import Ecto.Query
-  alias InvoiceFlow.Repo
-  alias InvoiceFlow.Invoices.{Invoice, InvoiceItem}
-  alias InvoiceFlow.Accounts
-  alias InvoiceFlow.PubSubTopics
+  alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Invoices.{Invoice, InvoiceItem}
+  alias AutoMyInvoice.Accounts
+  alias AutoMyInvoice.PubSubTopics
 
   ## 조회
 
@@ -382,7 +382,7 @@ defmodule InvoiceFlow.Invoices do
   @spec generate_pdf(Invoice.t()) :: {:ok, binary()} | {:error, term()}
   def generate_pdf(%Invoice{} = invoice) do
     invoice = Repo.preload(invoice, [:client, :items, :user])
-    html = InvoiceFlowWeb.InvoicePdfView.render_to_string(invoice)
+    html = AutoMyInvoiceWeb.InvoicePdfView.render_to_string(invoice)
 
     case ChromicPDF.print_to_pdf({:html, html}) do
       {:ok, pdf_binary} -> {:ok, pdf_binary}
@@ -409,28 +409,28 @@ defmodule InvoiceFlow.Invoices do
 
   defp broadcast_invoice_change(%Invoice{} = invoice) do
     Phoenix.PubSub.broadcast(
-      InvoiceFlow.PubSub,
+      AutoMyInvoice.PubSub,
       PubSubTopics.user_invoices(invoice.user_id),
       {:invoice_updated, invoice}
     )
   end
 
   defp schedule_reminders(%Invoice{} = invoice) do
-    InvoiceFlow.Reminders.schedule_reminders(invoice)
+    AutoMyInvoice.Reminders.schedule_reminders(invoice)
   end
 
   defp cancel_pending_reminders(%Invoice{} = invoice) do
-    InvoiceFlow.Reminders.cancel_pending_reminders(invoice.id)
+    AutoMyInvoice.Reminders.cancel_pending_reminders(invoice.id)
   end
 
   defp update_client_stats(%Invoice{client_id: client_id}) do
-    client = InvoiceFlow.Clients.get_client_by_id(client_id)
-    InvoiceFlow.Clients.recalculate_stats(client)
+    client = AutoMyInvoice.Clients.get_client_by_id(client_id)
+    AutoMyInvoice.Clients.recalculate_stats(client)
   end
 
   defp upload_to_s3(%Invoice{invoice_number: number}, pdf_binary) do
     key = "invoices/#{number}.pdf"
-    InvoiceFlow.Storage.upload(key, pdf_binary, content_type: "application/pdf")
+    AutoMyInvoice.Storage.upload(key, pdf_binary, content_type: "application/pdf")
   end
 
   defp tap_ok({:ok, result} = ok, func) do
@@ -493,10 +493,10 @@ end
 ### 4.3 LiveView Upload 구현
 
 ```elixir
-defmodule InvoiceFlowWeb.InvoiceLive.New do
-  use InvoiceFlowWeb, :live_view
+defmodule AutoMyInvoiceWeb.InvoiceLive.New do
+  use AutoMyInvoiceWeb, :live_view
 
-  alias InvoiceFlow.{Invoices, Clients}
+  alias AutoMyInvoice.{Invoices, Clients}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -560,18 +560,18 @@ defmodule InvoiceFlowWeb.InvoiceLive.New do
   def handle_progress(:invoice_file, entry, socket) when entry.done? do
     uploaded_file =
       consume_uploaded_entry(socket, entry, fn %{path: path} ->
-        dest = InvoiceFlow.Storage.upload_temp(path, entry.client_name)
+        dest = AutoMyInvoice.Storage.upload_temp(path, entry.client_name)
         {:ok, dest}
       end)
 
     # Oban OCR 작업 시작
     %{file_url: uploaded_file, user_id: socket.assigns.current_user.id}
-    |> InvoiceFlow.Workers.OcrExtractionWorker.new()
+    |> AutoMyInvoice.Workers.OcrExtractionWorker.new()
     |> Oban.insert()
     |> case do
       {:ok, job} ->
         # OCR 결과 PubSub 구독
-        Phoenix.PubSub.subscribe(InvoiceFlow.PubSub, PubSubTopics.extraction_completed(job.id))
+        Phoenix.PubSub.subscribe(AutoMyInvoice.PubSub, PubSubTopics.extraction_completed(job.id))
         {:noreply, assign(socket, :extraction_job_id, job.id)}
     end
   end
@@ -595,13 +595,13 @@ end
 ### 5.1 PDF 템플릿 구조
 
 ```elixir
-defmodule InvoiceFlowWeb.InvoicePdfView do
+defmodule AutoMyInvoiceWeb.InvoicePdfView do
   @moduledoc "송장 PDF HTML 렌더링"
 
   def render_to_string(%Invoice{} = invoice) do
     # HEEx 템플릿으로 렌더링
     Phoenix.Template.render_to_string(
-      InvoiceFlowWeb.InvoicePdfHTML,
+      AutoMyInvoiceWeb.InvoicePdfHTML,
       "invoice",
       %{invoice: invoice}
     )
