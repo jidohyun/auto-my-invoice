@@ -41,8 +41,8 @@ class InvoiceViewModel @Inject constructor(
         viewModelScope.launch {
             _listState.update { it.copy(isLoading = true, error = null) }
             try {
-                val invoices = invoiceRepository.getInvoices()
-                _listState.update { it.copy(invoices = invoices, isLoading = false) }
+                val response = invoiceRepository.getInvoices()
+                _listState.update { it.copy(invoices = response.data, isLoading = false) }
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     _listState.update { it.copy(invoices = MockData.invoices, isLoading = false) }
