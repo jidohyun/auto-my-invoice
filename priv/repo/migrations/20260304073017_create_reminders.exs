@@ -1,4 +1,4 @@
-defmodule InvoiceFlow.Repo.Migrations.CreateReminders do
+defmodule AutoMyInvoice.Repo.Migrations.CreateReminders do
   use Ecto.Migration
 
   def change do

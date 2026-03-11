@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== InvoiceFlow Development Setup ==="
+echo "=== AutoMyInvoice Development Setup ==="
 
 # Check prerequisites
 command -v elixir >/dev/null 2>&1 || { echo "Elixir is required but not installed."; exit 1; }

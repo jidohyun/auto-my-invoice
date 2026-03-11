@@ -1,5 +1,5 @@
 title: User
-description: Authenticated InvoiceFlow user account.
+description: Authenticated AutoMyInvoice user account.
 type: object
 properties:
   id:

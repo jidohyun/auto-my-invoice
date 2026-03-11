@@ -1,8 +1,8 @@
-# InvoiceFlow - Project Instructions
+# AutoMyInvoice - Project Instructions
 
 ## Project Overview
 
-InvoiceFlow는 Elixir/Phoenix LiveView 기반 자동 송장 리마인더 SaaS입니다.
+AutoMyInvoice는 Elixir/Phoenix LiveView 기반 자동 송장 리마인더 SaaS입니다.
 모노레포 구조로 웹(Phoenix), Android(Kotlin), iOS(Swift) 앱을 포함합니다.
 
 ## Tech Stack
@@ -17,8 +17,8 @@ InvoiceFlow는 Elixir/Phoenix LiveView 기반 자동 송장 리마인더 SaaS입
 ## Project Structure
 
 ```
-lib/invoice_flow/          # Domain contexts (Accounts, Invoices, Clients, ...)
-lib/invoice_flow_web/      # Phoenix web layer
+lib/auto_my_invoice/          # Domain contexts (Accounts, Invoices, Clients, ...)
+lib/auto_my_invoice_web/      # Phoenix web layer
   controllers/api/         # REST API controllers (6)
   plugs/                   # ApiAuth Bearer authentication
   live/                    # LiveView pages
@@ -111,14 +111,14 @@ make format.check   # mix format --check-formatted
 ### API Changes Checklist
 
 API 컨트롤러 변경 시 반드시:
-1. `test/invoice_flow_web/controllers/api/` 에 테스트 추가/수정
+1. `test/auto_my_invoice_web/controllers/api/` 에 테스트 추가/수정
 2. `packages/api-spec/openapi.yaml` 스펙 업데이트
-3. `lib/invoice_flow_web/controllers/api/json_helpers.ex` 직렬화 확인
-4. `lib/invoice_flow_web/controllers/api/fallback_controller.ex` 에러 핸들링 확인
+3. `lib/auto_my_invoice_web/controllers/api/json_helpers.ex` 직렬화 확인
+4. `lib/auto_my_invoice_web/controllers/api/fallback_controller.ex` 에러 핸들링 확인
 
 ## Elixir Conventions
 
-- Phoenix Context 패턴 준수 (비즈니스 로직은 `lib/invoice_flow/` 컨텍스트에)
+- Phoenix Context 패턴 준수 (비즈니스 로직은 `lib/auto_my_invoice/` 컨텍스트에)
 - API 컨트롤러는 Context 함수만 호출, 새로운 비즈니스 로직 추가 금지
 - `Ecto.Changeset` 으로 입력 검증, 컨트롤러에서 직접 검증하지 않음
 - Immutable 패턴 사용 (파이프 연산자 `|>` 활용)

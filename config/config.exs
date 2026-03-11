@@ -9,27 +9,27 @@ import Config
 
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
-config :invoice_flow,
-  ecto_repos: [InvoiceFlow.Repo],
+config :auto_my_invoice,
+  ecto_repos: [AutoMyInvoice.Repo],
   generators: [timestamp_type: :utc_datetime]
 
 # Configure the endpoint
-config :invoice_flow, InvoiceFlowWeb.Endpoint,
+config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: InvoiceFlowWeb.ErrorHTML, json: InvoiceFlowWeb.ErrorJSON],
+    formats: [html: AutoMyInvoiceWeb.ErrorHTML, json: AutoMyInvoiceWeb.ErrorJSON],
     layout: false
   ],
-  pubsub_server: InvoiceFlow.PubSub,
+  pubsub_server: AutoMyInvoice.PubSub,
   live_view: [signing_salt: "SLKLpXoW"]
 
 # Configure the mailer
-config :invoice_flow, InvoiceFlow.Mailer, adapter: Swoosh.Adapters.Local
+config :auto_my_invoice, AutoMyInvoice.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configure Oban
-config :invoice_flow, Oban,
-  repo: InvoiceFlow.Repo,
+config :auto_my_invoice, Oban,
+  repo: AutoMyInvoice.Repo,
   queues: [
     default: 10,
     reminders: 5,
@@ -38,13 +38,17 @@ config :invoice_flow, Oban,
     email_tracking: 5
   ],
   plugins: [
-    Oban.Plugins.Pruner
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 * * * *", AutoMyInvoice.Workers.ReminderScheduler}
+     ]}
   ]
 
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",
-  invoice_flow: [
+  auto_my_invoice: [
     args:
       ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
     cd: Path.expand("../assets", __DIR__),
@@ -54,7 +58,7 @@ config :esbuild,
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "4.1.12",
-  invoice_flow: [
+  auto_my_invoice: [
     args: ~w(
       --input=assets/css/app.css
       --output=priv/static/assets/css/app.css
@@ -77,6 +81,15 @@ config :logger, :default_formatter,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Paddle Billing (for payments)
+config :auto_my_invoice, :paddle_webhook_secret, System.get_env("PADDLE_WEBHOOK_SECRET")
+config :auto_my_invoice, :paddle_api_key, System.get_env("PADDLE_API_KEY")
+config :auto_my_invoice, :paddle_price_id_starter, System.get_env("PADDLE_PRICE_ID_STARTER")
+config :auto_my_invoice, :paddle_price_id_pro, System.get_env("PADDLE_PRICE_ID_PRO")
+
+# OpenAI API (for OCR extraction)
+config :auto_my_invoice, :openai_api_key, System.get_env("OPENAI_API_KEY")
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

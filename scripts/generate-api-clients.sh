@@ -16,14 +16,14 @@ if command -v openapi-generator-cli >/dev/null 2>&1; then
   openapi-generator-cli generate \
     -i "$SPEC_FILE" \
     -g kotlin \
-    -o apps/android/app/src/main/java/com/invoiceflow/data/remote/generated \
+    -o apps/android/app/src/main/java/com/automyinvoice/data/remote/generated \
     --additional-properties=library=jvm-retrofit2,serializationLibrary=kotlinx_serialization
 
   echo "Generating Swift client..."
   openapi-generator-cli generate \
     -i "$SPEC_FILE" \
     -g swift5 \
-    -o apps/ios/InvoiceFlow/Core/Network/Generated \
+    -o apps/ios/AutoMyInvoice/Core/Network/Generated \
     --additional-properties=responseAs=AsyncAwait
 else
   echo "openapi-generator-cli not found. Install with: brew install openapi-generator"

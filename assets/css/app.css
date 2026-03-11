@@ -2,7 +2,7 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss";
-@source "../../lib/invoice_flow_web";
+@source "../../lib/auto_my_invoice_web";
 
 /* A Tailwind plugin that makes "hero-#{ICON}" classes available.
    The heroicons installation itself is managed by your mix.exs */
@@ -100,7 +100,7 @@
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
-/* InvoiceFlow custom design tokens */
+/* AutoMyInvoice custom design tokens */
 @theme {
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;

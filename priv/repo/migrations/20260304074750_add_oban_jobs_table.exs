@@ -1,4 +1,4 @@
-defmodule InvoiceFlow.Repo.Migrations.AddObanJobsTable do
+defmodule AutoMyInvoice.Repo.Migrations.AddObanJobsTable do
   use Ecto.Migration
 
   def up do

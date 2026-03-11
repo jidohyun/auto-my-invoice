@@ -28,7 +28,7 @@ test.watch: ## Run tests in watch mode
 	mix test --stale
 
 api-test: ## Run API controller tests only
-	mix test test/invoice_flow_web/controllers/api/
+	mix test test/auto_my_invoice_web/controllers/api/
 
 # Code Quality
 format: ## Format code

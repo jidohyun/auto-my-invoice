@@ -19,8 +19,8 @@ jobs:
         working-directory: apps/ios
         run: |
           xcodebuild test \
-            -project InvoiceFlow.xcodeproj \
-            -scheme InvoiceFlow \
+            -project AutoMyInvoice.xcodeproj \
+            -scheme AutoMyInvoice \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             -resultBundlePath TestResults \
             CODE_SIGNING_ALLOWED=NO

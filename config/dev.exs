@@ -1,11 +1,11 @@
 import Config
 
 # Configure your database
-config :invoice_flow, InvoiceFlow.Repo,
+config :auto_my_invoice, AutoMyInvoice.Repo,
   username: "jidohyun",
   password: "",
   hostname: "localhost",
-  database: "invoice_flow_dev",
+  database: "auto_my_invoice_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -16,7 +16,7 @@ config :invoice_flow, InvoiceFlow.Repo,
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
-config :invoice_flow, InvoiceFlowWeb.Endpoint,
+config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
@@ -25,8 +25,8 @@ config :invoice_flow, InvoiceFlowWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "MXSbaxkhjhGqMLh8dpz5UYPxfuvduR9WcSppqONM/7wKPXab7FKx5juz4QOXGNew",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:invoice_flow, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:invoice_flow, ~w(--watch)]}
+    esbuild: {Esbuild, :install_and_run, [:auto_my_invoice, ~w(--sourcemap=inline --watch)]},
+    tailwind: {Tailwind, :install_and_run, [:auto_my_invoice, ~w(--watch)]}
   ]
 
 # ## SSL Support
@@ -53,7 +53,7 @@ config :invoice_flow, InvoiceFlowWeb.Endpoint,
 # different ports.
 
 # Reload browser tabs when matching files change.
-config :invoice_flow, InvoiceFlowWeb.Endpoint,
+config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
@@ -62,13 +62,13 @@ config :invoice_flow, InvoiceFlowWeb.Endpoint,
       # Gettext translations
       ~r"priv/gettext/.*\.po$"E,
       # Router, Controllers, LiveViews and LiveComponents
-      ~r"lib/invoice_flow_web/router\.ex$"E,
-      ~r"lib/invoice_flow_web/(controllers|live|components)/.*\.(ex|heex)$"E
+      ~r"lib/auto_my_invoice_web/router\.ex$"E,
+      ~r"lib/auto_my_invoice_web/(controllers|live|components)/.*\.(ex|heex)$"E
     ]
   ]
 
 # Enable dev routes for dashboard and mailbox
-config :invoice_flow, dev_routes: true
+config :auto_my_invoice, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

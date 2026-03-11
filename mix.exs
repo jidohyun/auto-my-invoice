@@ -1,9 +1,9 @@
-defmodule InvoiceFlow.MixProject do
+defmodule AutoMyInvoice.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :invoice_flow,
+      app: :auto_my_invoice,
       version: "0.1.0",
       elixir: "~> 1.15",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -20,7 +20,7 @@ defmodule InvoiceFlow.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {InvoiceFlow.Application, []},
+      mod: {AutoMyInvoice.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -117,10 +117,10 @@ defmodule InvoiceFlow.MixProject do
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind invoice_flow", "esbuild invoice_flow"],
+      "assets.build": ["compile", "tailwind auto_my_invoice", "esbuild auto_my_invoice"],
       "assets.deploy": [
-        "tailwind invoice_flow --minify",
-        "esbuild invoice_flow --minify",
+        "tailwind auto_my_invoice --minify",
+        "esbuild auto_my_invoice --minify",
         "phx.digest"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]

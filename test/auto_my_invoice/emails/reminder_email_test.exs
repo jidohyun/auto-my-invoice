@@ -1,0 +1,78 @@
+defmodule AutoMyInvoice.Emails.ReminderEmailTest do
+  use AutoMyInvoice.DataCase
+
+  alias AutoMyInvoice.Emails.ReminderEmail
+
+  defp build_assigns(step) do
+    %{
+      reminder: %{step: step},
+      invoice: %{
+        invoice_number: "INV-001",
+        amount: Decimal.new("1500.00"),
+        currency: "USD",
+        due_date: Date.add(Date.utc_today(), -7),
+        paddle_payment_link: nil
+      },
+      client: %{name: "Alice Corp", email: "alice@corp.com"},
+      from_email: "noreply@automyinvoice.app"
+    }
+  end
+
+  describe "build/1" do
+    test "step 1 builds friendly reminder email" do
+      email = ReminderEmail.build(build_assigns(1))
+
+      assert email.subject =~ "Friendly reminder"
+      assert email.subject =~ "INV-001"
+      assert email.subject =~ "$1500.00"
+      assert email.html_body =~ "quick reminder"
+      assert email.text_body =~ "quick reminder"
+      assert [{"Alice Corp", "alice@corp.com"}] = email.to
+    end
+
+    test "step 2 builds follow-up email with days overdue" do
+      email = ReminderEmail.build(build_assigns(2))
+
+      assert email.subject =~ "Follow-up"
+      assert email.subject =~ "past due"
+      assert email.html_body =~ "Days Overdue"
+    end
+
+    test "step 3 builds final notice email" do
+      email = ReminderEmail.build(build_assigns(3))
+
+      assert email.subject =~ "Final notice"
+      assert email.html_body =~ "Final Payment Notice"
+      assert email.text_body =~ "FINAL NOTICE"
+    end
+
+    test "supports KRW currency" do
+      assigns = build_assigns(1)
+      assigns = put_in(assigns, [:invoice, :currency], "KRW")
+      assigns = put_in(assigns, [:invoice, :amount], Decimal.new("150000"))
+
+      email = ReminderEmail.build(assigns)
+      assert email.subject =~ "₩150000"
+    end
+
+    test "sets correct from address" do
+      email = ReminderEmail.build(build_assigns(1))
+      assert {"AutoMyInvoice", "noreply@automyinvoice.app"} = email.from
+    end
+
+    test "includes Pay Now button when payment link is present" do
+      assigns = build_assigns(1)
+      assigns = put_in(assigns, [:invoice, :paddle_payment_link], "https://checkout.paddle.com/test")
+
+      email = ReminderEmail.build(assigns)
+      assert email.html_body =~ "Pay Now"
+      assert email.html_body =~ "https://checkout.paddle.com/test"
+      assert email.text_body =~ "https://checkout.paddle.com/test"
+    end
+
+    test "omits Pay Now button when no payment link" do
+      email = ReminderEmail.build(build_assigns(1))
+      refute email.html_body =~ "Pay Now"
+    end
+  end
+end

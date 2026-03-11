@@ -1,4 +1,4 @@
-# InvoiceFlow
+# AutoMyInvoice
 
 To start your Phoenix server:
 

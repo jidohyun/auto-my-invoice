@@ -1,4 +1,4 @@
-defmodule InvoiceFlow.Repo.Migrations.CreateExtractionJobs do
+defmodule AutoMyInvoice.Repo.Migrations.CreateExtractionJobs do
   use Ecto.Migration
 
   def change do

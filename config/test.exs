@@ -5,29 +5,29 @@ import Config
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :invoice_flow, InvoiceFlow.Repo,
+config :auto_my_invoice, AutoMyInvoice.Repo,
   username: "jidohyun",
   password: "",
   hostname: "localhost",
-  database: "invoice_flow_test#{System.get_env("MIX_TEST_PARTITION")}",
+  database: "auto_my_invoice_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :invoice_flow, InvoiceFlowWeb.Endpoint,
+config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "DoCLguvcgiQKibG2aS+MWTrUm9KjKuUw0II6+MmUbfeuPhIOmQ7Wt/sx9UwbAK8r",
   server: false
 
 # In test we don't send emails
-config :invoice_flow, InvoiceFlow.Mailer, adapter: Swoosh.Adapters.Test
+config :auto_my_invoice, AutoMyInvoice.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
 # Configure Oban for test (inline execution, no queues)
-config :invoice_flow, Oban, testing: :inline
+config :auto_my_invoice, Oban, testing: :inline
 
 # Print only warnings and errors during test
 config :logger, level: :warning

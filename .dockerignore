@@ -1,0 +1,11 @@
+# .dockerignore
+.elixir_ls
+_build
+deps
+node_modules
+.git
+.omc
+.claude
+priv/static/uploads/*
+!priv/static/uploads/.gitkeep
+tmp

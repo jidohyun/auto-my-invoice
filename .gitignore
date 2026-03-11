@@ -23,7 +23,7 @@ erl_crash.dump
 /tmp/
 
 # Ignore package tarball (built via "mix hex.build").
-invoice_flow-*.tar
+auto_my_invoice-*.tar
 
 # Ignore assets that are produced by build tools.
 /priv/static/assets/
