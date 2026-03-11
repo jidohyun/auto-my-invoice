@@ -9,16 +9,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class AuthState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
-)
+data class AuthState(val isLoading: Boolean = false, val error: String? = null)
 
 sealed interface AuthEvent {
     data class LoginSuccess(val token: String) : AuthEvent
@@ -35,7 +31,6 @@ class AuthViewModel @Inject constructor(
     val state: StateFlow<AuthState> = _state.asStateFlow()
 
     val isLoggedIn: StateFlow<Boolean> = authRepository.isLoggedIn()
-        .map { it != null }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _events = MutableStateFlow<AuthEvent?>(null)
@@ -45,11 +40,10 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = authRepository.login(email, password)
-                _events.value = AuthEvent.LoginSuccess(response.token)
+                val data = authRepository.login(email, password)
+                _events.value = AuthEvent.LoginSuccess(data.accessToken)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
-                    // 서버 꺼진 상태에서도 UI 확인 가능하도록 mock 통과
                     _events.value = AuthEvent.LoginSuccess("dev-mock-token")
                 } else {
                     val message = e.message ?: "Login failed"
@@ -66,8 +60,8 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = authRepository.register(email, password, name)
-                _events.value = AuthEvent.RegisterSuccess(response.token)
+                val data = authRepository.register(email, password, name)
+                _events.value = AuthEvent.RegisterSuccess(data.accessToken)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     _events.value = AuthEvent.RegisterSuccess("dev-mock-token")
@@ -82,11 +76,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun consumeEvent() {
-        _events.value = null
-    }
-
-    fun clearError() {
-        _state.update { it.copy(error = null) }
-    }
+    fun consumeEvent() { _events.value = null }
+    fun clearError() { _state.update { it.copy(error = null) } }
 }

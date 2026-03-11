@@ -173,13 +173,13 @@ private fun InvoiceListItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text(text = "#${invoice.number}", style = MaterialTheme.typography.titleMedium)
-                Text(text = invoice.clientName, style = MaterialTheme.typography.bodyMedium)
-                Text(text = "Due: ${invoice.dueDate}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "#${invoice.invoiceNumber}", style = MaterialTheme.typography.titleMedium)
+                Text(text = invoice.client?.name ?: "", style = MaterialTheme.typography.bodyMedium)
+                Text(text = "Due: ${invoice.dueAt ?: ""}", style = MaterialTheme.typography.bodySmall)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${invoice.currency} ${invoice.amount}",
+                    text = "${invoice.currency} ${invoice.total / 100.0}",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Text(

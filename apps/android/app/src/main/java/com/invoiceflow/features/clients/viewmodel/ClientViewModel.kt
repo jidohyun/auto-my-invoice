@@ -30,8 +30,8 @@ class ClientViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val clients = clientRepository.getClients()
-                _state.update { it.copy(clients = clients, isLoading = false) }
+                val response = clientRepository.getClients()
+                _state.update { it.copy(clients = response.data, isLoading = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message ?: "Failed to load clients", isLoading = false) }
             }

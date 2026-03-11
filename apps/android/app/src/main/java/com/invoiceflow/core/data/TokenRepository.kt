@@ -19,17 +19,26 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class TokenRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    private val tokenKey = stringPreferencesKey("auth_token")
+    private val accessTokenKey = stringPreferencesKey("access_token")
+    private val refreshTokenKey = stringPreferencesKey("refresh_token")
 
-    val tokenFlow: Flow<String?> = context.dataStore.data.map { it[tokenKey] }
+    val accessTokenFlow: Flow<String?> = context.dataStore.data.map { it[accessTokenKey] }
+    val refreshTokenFlow: Flow<String?> = context.dataStore.data.map { it[refreshTokenKey] }
 
-    suspend fun getToken(): String? = tokenFlow.firstOrNull()
+    suspend fun getAccessToken(): String? = accessTokenFlow.firstOrNull()
+    suspend fun getRefreshToken(): String? = refreshTokenFlow.firstOrNull()
 
-    suspend fun saveToken(token: String) {
-        context.dataStore.edit { it[tokenKey] = token }
+    suspend fun saveTokens(accessToken: String, refreshToken: String) {
+        context.dataStore.edit {
+            it[accessTokenKey] = accessToken
+            it[refreshTokenKey] = refreshToken
+        }
     }
 
-    suspend fun clearToken() {
-        context.dataStore.edit { it.remove(tokenKey) }
+    suspend fun clearTokens() {
+        context.dataStore.edit {
+            it.remove(accessTokenKey)
+            it.remove(refreshTokenKey)
+        }
     }
 }
