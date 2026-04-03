@@ -117,6 +117,242 @@ defmodule AutoMyInvoice.ClientsTest do
     end
   end
 
+  describe "recalculate_stats/1" do
+    defp create_invoice!(user, client, attrs) do
+      defaults = %{
+        amount: Decimal.new("1000"),
+        currency: "USD",
+        due_date: Date.add(Date.utc_today(), 30),
+        client_id: client.id,
+        status: "draft",
+        paid_amount: Decimal.new("0")
+      }
+
+      merged = Map.merge(defaults, attrs)
+
+      %AutoMyInvoice.Invoices.Invoice{user_id: user.id}
+      |> Ecto.Changeset.change(
+        invoice_number: "INV-TEST-#{System.unique_integer([:positive])}",
+        amount: merged.amount,
+        currency: merged.currency,
+        due_date: merged.due_date,
+        status: merged.status,
+        client_id: merged.client_id,
+        sent_at: Map.get(merged, :sent_at),
+        paid_at: Map.get(merged, :paid_at),
+        paid_amount: merged.paid_amount
+      )
+      |> AutoMyInvoice.Repo.insert!()
+    end
+
+    test "calculates total_invoiced and total_paid" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "Stats Client", email: "stats@example.com"})
+
+      create_invoice!(user, client, %{
+        amount: Decimal.new("1000"),
+        status: "paid",
+        paid_amount: Decimal.new("1000"),
+        sent_at: ~U[2026-01-01 10:00:00Z],
+        paid_at: ~U[2026-01-05 10:00:00Z]
+      })
+
+      create_invoice!(user, client, %{
+        amount: Decimal.new("2000"),
+        status: "partially_paid",
+        paid_amount: Decimal.new("500"),
+        sent_at: ~U[2026-02-01 10:00:00Z]
+      })
+
+      create_invoice!(user, client, %{
+        amount: Decimal.new("3000"),
+        status: "sent",
+        paid_amount: Decimal.new("0"),
+        sent_at: ~U[2026-03-01 10:00:00Z]
+      })
+
+      {:ok, updated} = Clients.recalculate_stats(client.id)
+
+      assert Decimal.equal?(updated.total_invoiced, Decimal.new("6000"))
+      assert Decimal.equal?(updated.total_paid, Decimal.new("1500"))
+    end
+
+    test "calculates avg_payment_days for paid invoices" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "Avg Client", email: "avg@example.com"})
+
+      # Paid in 4 days
+      create_invoice!(user, client, %{
+        amount: Decimal.new("1000"),
+        status: "paid",
+        paid_amount: Decimal.new("1000"),
+        sent_at: ~U[2026-01-01 10:00:00Z],
+        paid_at: ~U[2026-01-05 10:00:00Z]
+      })
+
+      # Paid in 10 days
+      create_invoice!(user, client, %{
+        amount: Decimal.new("2000"),
+        status: "paid",
+        paid_amount: Decimal.new("2000"),
+        sent_at: ~U[2026-02-01 10:00:00Z],
+        paid_at: ~U[2026-02-11 10:00:00Z]
+      })
+
+      {:ok, updated} = Clients.recalculate_stats(client.id)
+
+      # Average of 4 and 10 = 7
+      assert updated.avg_payment_days == 7
+    end
+
+    test "handles client with no invoices" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "Empty Client", email: "empty@example.com"})
+
+      {:ok, updated} = Clients.recalculate_stats(client.id)
+
+      assert Decimal.equal?(updated.total_invoiced, Decimal.new("0"))
+      assert Decimal.equal?(updated.total_paid, Decimal.new("0"))
+      assert updated.avg_payment_days == nil
+    end
+  end
+
+  describe "on_time_rate/1" do
+    test "calculates percentage of on-time payments" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "OnTime Client", email: "ontime@example.com"})
+
+      # Paid on time (within due_date + 3 days)
+      create_invoice!(user, client, %{
+        amount: Decimal.new("1000"),
+        status: "paid",
+        paid_amount: Decimal.new("1000"),
+        due_date: ~D[2026-01-10],
+        sent_at: ~U[2026-01-01 10:00:00Z],
+        paid_at: ~U[2026-01-12 10:00:00Z]
+      })
+
+      # Paid on time (exactly on due_date)
+      create_invoice!(user, client, %{
+        amount: Decimal.new("2000"),
+        status: "paid",
+        paid_amount: Decimal.new("2000"),
+        due_date: ~D[2026-02-10],
+        sent_at: ~U[2026-02-01 10:00:00Z],
+        paid_at: ~U[2026-02-10 10:00:00Z]
+      })
+
+      # Paid late (after due_date + 3 days)
+      create_invoice!(user, client, %{
+        amount: Decimal.new("3000"),
+        status: "paid",
+        paid_amount: Decimal.new("3000"),
+        due_date: ~D[2026-03-10],
+        sent_at: ~U[2026-03-01 10:00:00Z],
+        paid_at: ~U[2026-03-20 10:00:00Z]
+      })
+
+      rate = Clients.on_time_rate(client.id)
+      # 2 out of 3 on time = 66.7%
+      assert rate == 66.7
+    end
+
+    test "returns 0 for client with no paid invoices" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "NoPaid Client", email: "nopaid@example.com"})
+
+      assert Clients.on_time_rate(client.id) == 0.0
+    end
+  end
+
+  describe "client_ranking/1" do
+    test "returns clients ordered by avg_payment_days" do
+      %{user: user} = create_user()
+      {:ok, fast_client} = Clients.create_client(user.id, %{name: "Fast Payer", email: "fast@example.com"})
+      {:ok, slow_client} = Clients.create_client(user.id, %{name: "Slow Payer", email: "slow@example.com"})
+
+      # Fast client: 2 paid invoices, ~2 days each
+      for _ <- 1..2 do
+        create_invoice!(user, fast_client, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-01-30],
+          sent_at: ~U[2026-01-01 10:00:00Z],
+          paid_at: ~U[2026-01-03 10:00:00Z]
+        })
+      end
+
+      # Slow client: 2 paid invoices, ~20 days each
+      for _ <- 1..2 do
+        create_invoice!(user, slow_client, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-02-28],
+          sent_at: ~U[2026-02-01 10:00:00Z],
+          paid_at: ~U[2026-02-21 10:00:00Z]
+        })
+      end
+
+      ranking = Clients.client_ranking(user.id)
+      assert length(ranking) == 2
+      assert hd(ranking).name == "Fast Payer"
+      assert List.last(ranking).name == "Slow Payer"
+    end
+
+    test "excludes clients with fewer than 2 paid invoices" do
+      %{user: user} = create_user()
+      {:ok, one_invoice_client} = Clients.create_client(user.id, %{name: "One Invoice", email: "one@example.com"})
+
+      create_invoice!(user, one_invoice_client, %{
+        amount: Decimal.new("1000"),
+        status: "paid",
+        paid_amount: Decimal.new("1000"),
+        sent_at: ~U[2026-01-01 10:00:00Z],
+        paid_at: ~U[2026-01-03 10:00:00Z]
+      })
+
+      ranking = Clients.client_ranking(user.id)
+      assert ranking == []
+    end
+  end
+
+  describe "client_analytics/1" do
+    test "returns complete analytics for a client" do
+      %{user: user} = create_user()
+      {:ok, client} = Clients.create_client(user.id, %{name: "Analytics Client", email: "analytics@example.com"})
+
+      # Paid invoice
+      create_invoice!(user, client, %{
+        amount: Decimal.new("1000"),
+        status: "paid",
+        paid_amount: Decimal.new("1000"),
+        due_date: ~D[2026-01-30],
+        sent_at: ~U[2026-01-01 10:00:00Z],
+        paid_at: ~U[2026-01-05 10:00:00Z]
+      })
+
+      # Unpaid invoice
+      create_invoice!(user, client, %{
+        amount: Decimal.new("2000"),
+        status: "sent",
+        paid_amount: Decimal.new("0"),
+        sent_at: ~U[2026-02-01 10:00:00Z]
+      })
+
+      analytics = Clients.client_analytics(client.id)
+
+      assert analytics.avg_payment_days == 4
+      assert Decimal.equal?(analytics.total_invoiced, Decimal.new("3000"))
+      assert Decimal.equal?(analytics.total_paid, Decimal.new("1000"))
+      assert Decimal.equal?(analytics.outstanding_amount, Decimal.new("2000"))
+      assert analytics.invoice_count == 2
+      assert analytics.paid_count == 1
+      assert analytics.on_time_rate == 100.0
+    end
+  end
+
   describe "get_client_by_email/2" do
     test "finds client by user_id and email" do
       %{user: user} = create_user()

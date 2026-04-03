@@ -180,6 +180,73 @@ defmodule AutoMyInvoice.Reminders do
     |> Repo.all()
   end
 
+  ## 분석
+
+  @doc "Average days from reminder sent to payment, grouped by step"
+  @spec avg_days_to_payment(binary()) :: [map()]
+  def avg_days_to_payment(user_id) do
+    alias AutoMyInvoice.Invoices.Invoice
+
+    from(r in Reminder,
+      join: i in Invoice, on: r.invoice_id == i.id,
+      where: i.user_id == ^user_id,
+      where: r.status == "sent",
+      where: i.status == "paid",
+      where: not is_nil(r.sent_at),
+      where: not is_nil(i.paid_at),
+      group_by: r.step,
+      select: %{
+        step: r.step,
+        avg_days:
+          fragment(
+            "ROUND(AVG(EXTRACT(EPOCH FROM (? - ?)) / 86400)::numeric, 1)",
+            i.paid_at,
+            r.sent_at
+          ),
+        sample_size: count(r.id)
+      }
+    )
+    |> Repo.all()
+    |> Enum.map(fn row ->
+      %{
+        step: row.step,
+        avg_days: Decimal.to_float(row.avg_days),
+        sample_size: row.sample_size
+      }
+    end)
+  end
+
+  @doc "Overall reminder effectiveness combining per-step stats and days to payment"
+  @spec reminder_effectiveness(binary()) :: map()
+  def reminder_effectiveness(user_id) do
+    by_step = reminder_stats(user_id)
+    days_to_pay = avg_days_to_payment(user_id)
+
+    total_sent = Enum.reduce(by_step, 0, fn s, acc -> acc + s.total_sent end)
+    total_opened = Enum.reduce(by_step, 0, fn s, acc -> acc + s.total_opened end)
+    total_clicked = Enum.reduce(by_step, 0, fn s, acc -> acc + s.total_clicked end)
+
+    overall_open_rate =
+      if total_sent > 0,
+        do: Float.round(total_opened * 100.0 / total_sent, 1),
+        else: 0.0
+
+    overall_click_rate =
+      if total_sent > 0,
+        do: Float.round(total_clicked * 100.0 / total_sent, 1),
+        else: 0.0
+
+    %{
+      total_sent: total_sent,
+      total_opened: total_opened,
+      total_clicked: total_clicked,
+      overall_open_rate: overall_open_rate,
+      overall_click_rate: overall_click_rate,
+      by_step: by_step,
+      avg_days_to_payment: days_to_pay
+    }
+  end
+
   ## Private
 
   defp calculate_send_time(due_date, offset_days, client_timezone) do

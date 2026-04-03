@@ -57,6 +57,8 @@ defmodule AutoMyInvoiceWeb.Router do
     # Dashboard
     get "/dashboard", DashboardController, :index
     get "/dashboard/recent", DashboardController, :recent
+    get "/dashboard/analytics", AnalyticsController, :dashboard
+    get "/dashboard/cashflow", AnalyticsController, :cashflow
 
     # Invoices
     resources "/invoices", InvoiceController, except: [:new, :edit]
@@ -65,8 +67,15 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/invoices/:id/record_payment", InvoiceController, :record_payment
     post "/invoices/:id/send_reminder", InvoiceController, :send_reminder
 
+    # Client Analytics (ranking must come before :id routes)
+    get "/clients/ranking", ClientAnalyticsController, :ranking
+    get "/clients/:id/analytics", ClientAnalyticsController, :show
+
     # Clients
     resources "/clients", ClientController, except: [:new, :edit]
+
+    # Analytics
+    get "/analytics/reminders", ReminderAnalyticsController, :index
 
     # Upload & Extraction
     post "/upload", UploadController, :create
@@ -116,6 +125,7 @@ defmodule AutoMyInvoiceWeb.Router do
       live "/clients/new", ClientLive.New
       live "/clients/:id", ClientLive.Show
       live "/clients/:id/edit", ClientLive.Edit
+      live "/analytics", AnalyticsLive
       live "/upload", UploadLive
       live "/settings", UserSettingsLive
       live "/settings/billing", BillingLive

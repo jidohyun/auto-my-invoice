@@ -141,8 +141,9 @@ defmodule AutoMyInvoice.Invoices do
       |> Repo.update()
       |> tap_ok(&broadcast_invoice_change/1)
 
-    with {:ok, _} <- result do
+    with {:ok, updated} <- result do
       Reminders.cancel_pending_reminders(invoice.id)
+      AutoMyInvoice.Clients.recalculate_stats(updated.client_id)
       result
     end
   end
@@ -202,6 +203,7 @@ defmodule AutoMyInvoice.Invoices do
             end
 
             broadcast_invoice_change(updated)
+            AutoMyInvoice.Clients.recalculate_stats(updated.client_id)
             {:ok, updated}
 
           {:error, _, reason, _} ->

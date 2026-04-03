@@ -309,6 +309,80 @@ defmodule AutoMyInvoice.RemindersTest do
     end
   end
 
+  describe "avg_days_to_payment/1" do
+    test "calculates average days from reminder to payment by step" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      # Mark invoice as paid
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      invoice
+      |> Ecto.Changeset.change(status: "paid", paid_at: now, paid_amount: invoice.amount)
+      |> Repo.update!()
+
+      # Create a sent reminder with sent_at 5 days before paid_at
+      five_days_ago = DateTime.add(now, -5 * 86_400, :second)
+
+      %Reminder{invoice_id: invoice.id}
+      |> Reminder.changeset(%{
+        step: 1,
+        scheduled_at: five_days_ago,
+        status: "sent"
+      })
+      |> Ecto.Changeset.put_change(:sent_at, five_days_ago)
+      |> Repo.insert!()
+
+      result = Reminders.avg_days_to_payment(user.id)
+      assert length(result) >= 1
+
+      step1 = Enum.find(result, &(&1.step == 1))
+      assert step1 != nil
+      assert step1.avg_days == 5.0
+      assert step1.sample_size == 1
+    end
+
+    test "returns empty list when no paid invoices with reminders" do
+      user = create_user()
+      _invoice = create_sent_invoice(user)
+
+      result = Reminders.avg_days_to_payment(user.id)
+      assert result == []
+    end
+  end
+
+  describe "reminder_effectiveness/1" do
+    test "returns overall and per-step stats" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      # Create sent reminders with tracking data
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      %Reminder{invoice_id: invoice.id}
+      |> Reminder.changeset(%{step: 1, scheduled_at: now, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, now)
+      |> Ecto.Changeset.put_change(:opened_at, now)
+      |> Ecto.Changeset.put_change(:open_count, 1)
+      |> Repo.insert!()
+
+      %Reminder{invoice_id: invoice.id}
+      |> Reminder.changeset(%{step: 2, scheduled_at: now, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, now)
+      |> Repo.insert!()
+
+      effectiveness = Reminders.reminder_effectiveness(user.id)
+
+      assert effectiveness.total_sent == 2
+      assert effectiveness.total_opened == 1
+      assert effectiveness.total_clicked == 0
+      assert effectiveness.overall_open_rate == 50.0
+      assert effectiveness.overall_click_rate == 0.0
+      assert is_list(effectiveness.by_step)
+      assert is_list(effectiveness.avg_days_to_payment)
+    end
+  end
+
   describe "list_reminders_for_invoice/1" do
     test "returns reminders ordered by step" do
       user = create_user()
