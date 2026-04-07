@@ -81,7 +81,7 @@ private fun ClientListItem(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = client.name, style = MaterialTheme.typography.titleMedium)
-            Text(text = client.email, style = MaterialTheme.typography.bodyMedium)
+            Text(text = client.email ?: "", style = MaterialTheme.typography.bodyMedium)
             client.company?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall)
             }
