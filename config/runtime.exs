@@ -34,6 +34,13 @@ config :auto_my_invoice,
   paddle_api_key: System.get_env("PADDLE_API_KEY"),
   paddle_price_id_starter: System.get_env("PADDLE_PRICE_ID_STARTER"),
   paddle_price_id_pro: System.get_env("PADDLE_PRICE_ID_PRO"),
+  # Paddle 환경: PADDLE_SANDBOX 가 "false"/"0" 이면 production API(api.paddle.com),
+  # 그 외(미설정 포함)는 sandbox. prod 결제는 PADDLE_SANDBOX=false 를 설정한다.
+  paddle_sandbox: System.get_env("PADDLE_SANDBOX") not in ~w(false 0),
+  # 결제 완료 후 돌아올 URL. 미설정 시 운영 호스트 기준.
+  paddle_checkout_return_url:
+    System.get_env("PADDLE_CHECKOUT_RETURN_URL") ||
+      "https://#{System.get_env("PHX_HOST") || "automyinvoice.fly.dev"}/payment/success",
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   # AMI-20: comma-separated origin allow-list. nil/empty → AutoMyInvoiceWeb.Cors
   # falls back to :self in prod, "*" in dev.
