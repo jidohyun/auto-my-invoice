@@ -22,6 +22,7 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
     forecast = Analytics.cashflow_forecast(user.id, 90)
     conversion = Reminders.conversion_rate(user.id)
     problem_clients = Clients.problem_clients(user.id)
+    currency = Analytics.currency_breakdown(user.id)
 
     socket
     |> assign(:monthly_collections, monthly)
@@ -30,6 +31,7 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
     |> assign(:cashflow_forecast, forecast)
     |> assign(:conversion, conversion)
     |> assign(:problem_clients, problem_clients)
+    |> assign(:currency_breakdown, currency)
     |> assign(:monthly_chart_data, build_monthly_chart_data(monthly))
     |> assign(:status_chart_data, build_status_chart_data(status_dist))
     |> assign(:aging_chart_data, build_aging_chart_data(aging))
@@ -73,6 +75,57 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
         </ul>
       </div>
     <% end %>
+
+    <%!-- AMI-51: multi-currency outstanding totals converted to KRW --%>
+    <div
+      :if={@currency_breakdown.rows != []}
+      class="bg-base-100 p-6 rounded-xl shadow-sm border border-base-300 mb-6"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+        <h3 class="text-lg font-semibold">통화별 미수금 (KRW 환산)</h3>
+        <div class="text-right">
+          <p class="text-xs text-base-content/60">KRW 환산 총액</p>
+          <p class="text-2xl font-bold">
+            <.money amount={@currency_breakdown.total_krw} currency="KRW" />
+          </p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-base-200 text-base-content/60 text-xs uppercase tracking-wider">
+              <th class="px-4 py-2 font-medium">통화</th>
+              <th class="px-4 py-2 font-medium text-right">미수금</th>
+              <th class="px-4 py-2 font-medium text-right">적용 환율</th>
+              <th class="px-4 py-2 font-medium text-right">KRW 환산</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-base-300">
+            <tr :for={row <- @currency_breakdown.rows}>
+              <td class="px-4 py-2 font-medium font-mono">{row.currency}</td>
+              <td class="px-4 py-2 text-right">
+                <.money amount={row.native_total} currency={row.currency} />
+              </td>
+              <td class="px-4 py-2 text-right text-base-content/60 text-sm">
+                {format_fx_rate(row)}
+              </td>
+              <td class="px-4 py-2 text-right font-medium">
+                <%= if row.converted? do %>
+                  <.money amount={row.krw_total} currency="KRW" />
+                <% else %>
+                  <span class="text-warning text-sm">환율 없음</span>
+                <% end %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p :if={@currency_breakdown.multi_currency?} class="text-xs text-base-content/40 mt-3">
+        환율은 최신 캐시된 KRW 기준 환율이며, 매일 자동 갱신됩니다.
+      </p>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <%!-- Monthly Collection Trends --%>
@@ -347,6 +400,14 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
   defp step_label(2), do: "2차"
   defp step_label(3), do: "3차"
   defp step_label(step), do: "#{step}차"
+
+  # AMI-51: render "1 USD = ₩1,350" style rate label, or a dash for KRW/missing.
+  defp format_fx_rate(%{currency: "KRW"}), do: "-"
+  defp format_fx_rate(%{rate: nil}), do: "-"
+
+  defp format_fx_rate(%{currency: currency, rate: rate}) do
+    "1 #{currency} = #{format_money(rate, "KRW")}"
+  end
 
   defp format_status("paid"), do: "결제완료"
   defp format_status("sent"), do: "발송"

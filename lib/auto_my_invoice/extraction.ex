@@ -58,6 +58,27 @@ defmodule AutoMyInvoice.Extraction do
     {:ok, updated_job}
   end
 
+  ## 피드백 (AMI-38)
+
+  @doc """
+  Record the user's corrections to the AI-extracted data. `corrections` is a
+  string-keyed map of the fields the user edited before creating the invoice.
+  We merge them over the original `extracted_data` so `corrected_data` always
+  holds the full, user-confirmed field set and stamp `feedback_submitted_at`.
+  """
+  @spec record_feedback(ExtractionJob.t(), map()) ::
+          {:ok, ExtractionJob.t()} | {:error, Ecto.Changeset.t()}
+  def record_feedback(%ExtractionJob{} = job, corrections) when is_map(corrections) do
+    merged = Map.merge(job.extracted_data || %{}, stringify_keys(corrections))
+
+    job
+    |> ExtractionJob.changeset(%{
+      corrected_data: merged,
+      feedback_submitted_at: DateTime.truncate(DateTime.utc_now(), :second)
+    })
+    |> Repo.update()
+  end
+
   @spec mark_failed(ExtractionJob.t(), String.t()) :: {:ok, ExtractionJob.t()}
   def mark_failed(%ExtractionJob{} = job, error_message) do
     job
@@ -113,6 +134,13 @@ defmodule AutoMyInvoice.Extraction do
   end
 
   ## Private
+
+  defp stringify_keys(map) do
+    Map.new(map, fn
+      {k, v} when is_atom(k) -> {Atom.to_string(k), v}
+      {k, v} -> {k, v}
+    end)
+  end
 
   defp parse_decimal(nil), do: nil
 

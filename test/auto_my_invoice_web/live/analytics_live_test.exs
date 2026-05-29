@@ -1,10 +1,15 @@
 defmodule AutoMyInvoiceWeb.AnalyticsLiveTest do
+  @moduledoc """
+  LiveView tests for the analytics page. Covers AMI-34 (reminder conversion),
+  AMI-35 (problem clients), and AMI-51 (multi-currency outstanding breakdown
+  converted to KRW with the FX rate used).
+  """
+
   use AutoMyInvoiceWeb.ConnCase
 
   import Phoenix.LiveViewTest
 
-  alias AutoMyInvoice.Accounts
-  alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.{Accounts, Clients, Invoices, FxRates}
   alias AutoMyInvoice.Repo
   alias AutoMyInvoice.Invoices.Invoice
   alias AutoMyInvoice.Reminders.Reminder
@@ -12,8 +17,8 @@ defmodule AutoMyInvoiceWeb.AnalyticsLiveTest do
   setup do
     {:ok, user} =
       Accounts.register_user(%{
-        email: "analytics_live_#{System.unique_integer([:positive])}@example.com",
-        password: "password123456"
+        email: "analytics-live-#{System.unique_integer([:positive])}@example.com",
+        password: "validpassword123"
       })
 
     token = Accounts.generate_user_session_token(user)
@@ -23,6 +28,16 @@ defmodule AutoMyInvoiceWeb.AnalyticsLiveTest do
       |> init_test_session(%{user_token: token})
 
     %{conn: conn, user: user}
+  end
+
+  defp create_client(user) do
+    {:ok, client} =
+      Clients.create_client(user.id, %{
+        name: "Client #{System.unique_integer([:positive])}",
+        email: "c-#{System.unique_integer([:positive])}@example.com"
+      })
+
+    client
   end
 
   defp create_invoice!(user, client, attrs) do
@@ -50,6 +65,19 @@ defmodule AutoMyInvoiceWeb.AnalyticsLiveTest do
       paid_amount: merged.paid_amount
     )
     |> Repo.insert!()
+  end
+
+  defp create_outstanding_invoice(user, client, amount, currency) do
+    {:ok, invoice} =
+      Invoices.create_invoice(user, %{
+        amount: Decimal.new(amount),
+        currency: currency,
+        due_date: Date.add(Date.utc_today(), 30),
+        client_id: client.id
+      })
+
+    {:ok, sent} = Invoices.mark_as_sent(invoice)
+    sent
   end
 
   describe "AnalyticsLive base render" do
@@ -115,6 +143,46 @@ defmodule AutoMyInvoiceWeb.AnalyticsLiveTest do
       {:ok, _view, html} = live(conn, ~p"/analytics")
 
       refute html =~ "주의 거래처"
+    end
+  end
+
+  describe "AMI-51 multi-currency KRW breakdown" do
+    test "renders per-currency totals, KRW conversion and the FX rate used",
+         %{conn: conn, user: user} do
+      FxRates.upsert_rate("USD", Decimal.new("1350"))
+      FxRates.upsert_rate("JPY", Decimal.new("9"))
+
+      client = create_client(user)
+      create_outstanding_invoice(user, client, "100.00", "USD")
+      create_outstanding_invoice(user, client, "10000", "JPY")
+
+      {:ok, _view, html} = live(conn, ~p"/analytics")
+
+      assert html =~ "통화별 미수금"
+      # native currency rows present
+      assert html =~ "USD"
+      assert html =~ "JPY"
+      # FX rate label "1 USD = ₩1,350"
+      assert html =~ "1 USD = ₩1,350"
+      # KRW-converted total: 135,000 (USD) + 90,000 (JPY) = 225,000
+      assert html =~ "225,000"
+    end
+
+    test "shows '환율 없음' when an FX rate is missing", %{conn: conn, user: user} do
+      # No USD rate cached.
+      client = create_client(user)
+      create_outstanding_invoice(user, client, "100.00", "USD")
+
+      {:ok, _view, html} = live(conn, ~p"/analytics")
+
+      assert html =~ "환율 없음"
+    end
+
+    test "hides the breakdown panel when there are no outstanding invoices",
+         %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/analytics")
+
+      refute html =~ "통화별 미수금"
     end
   end
 end

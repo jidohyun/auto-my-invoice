@@ -4,11 +4,15 @@ defmodule AutoMyInvoice.Analytics do
   import Ecto.Query
   alias AutoMyInvoice.Repo
   alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.FxRates
   alias AutoMyInvoice.Invoices.Invoice
   alias AutoMyInvoice.Clients.Client
 
   # AMI-33: collection probability applied when a client has no payment history yet.
   @default_collection_probability Decimal.new("0.7")
+
+  # AMI-51: invoice statuses considered outstanding for currency breakdown.
+  @outstanding_statuses ~w(sent overdue partially_paid)
 
   @doc """
   Monthly collection trends for the last N months.
@@ -177,6 +181,45 @@ defmodule AutoMyInvoice.Analytics do
     |> Enum.sort_by(& &1.date, Date)
   end
 
+  @doc """
+  AMI-51: per-currency breakdown of outstanding invoices for multi-currency
+  portfolios. For each currency in use it returns the native total, the
+  KRW-equivalent total, the FX rate used (1 unit → KRW), and whether the
+  conversion succeeded (false when no FX rate is cached yet).
+
+  Returns `%{rows: [...], total_krw: Decimal, multi_currency?: boolean}`.
+  The `rows` are sorted with the largest KRW total first.
+  """
+  @spec currency_breakdown(binary()) :: %{
+          rows: [map()],
+          total_krw: Decimal.t(),
+          multi_currency?: boolean()
+        }
+  def currency_breakdown(user_id) do
+    rows =
+      from(i in Invoice,
+        where: i.user_id == ^user_id,
+        where: i.status in ^@outstanding_statuses,
+        group_by: i.currency,
+        select: %{
+          currency: i.currency,
+          native_total: coalesce(sum(i.amount), 0),
+          count: count(i.id)
+        }
+      )
+      |> Repo.all()
+      |> Enum.map(&convert_row/1)
+      |> Enum.sort_by(& &1.krw_total, &(Decimal.compare(&1, &2) != :lt))
+
+    total_krw = Enum.reduce(rows, Decimal.new(0), &Decimal.add(&2, &1.krw_total))
+
+    %{
+      rows: rows,
+      total_krw: total_krw,
+      multi_currency?: length(rows) > 1
+    }
+  end
+
   ## Private
 
   # AMI-33: per-client collection probability derived from historical on-time rate.
@@ -202,6 +245,40 @@ defmodule AutoMyInvoice.Analytics do
     entries
     |> Enum.map(mapper)
     |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+  end
+
+  # AMI-51: convert one currency bucket's native total to KRW using latest FX rate.
+  defp convert_row(%{currency: currency, native_total: native, count: count}) do
+    case FxRates.to_krw(native, currency) do
+      {:ok, krw} ->
+        %{
+          currency: currency,
+          native_total: native,
+          krw_total: krw,
+          rate: fx_rate_for(currency),
+          count: count,
+          converted?: true
+        }
+
+      {:error, :missing_rate} ->
+        %{
+          currency: currency,
+          native_total: native,
+          krw_total: Decimal.new(0),
+          rate: nil,
+          count: count,
+          converted?: false
+        }
+    end
+  end
+
+  defp fx_rate_for("KRW"), do: Decimal.new(1)
+
+  defp fx_rate_for(currency) do
+    case FxRates.latest_rate(currency) do
+      %{rate: rate} -> rate
+      nil -> nil
+    end
   end
 
   defp aging_bucket(days) when days <= 30, do: "0-30"

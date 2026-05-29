@@ -6,12 +6,19 @@ defmodule AutoMyInvoiceWeb.UploadLive do
 
   @max_entries 10
 
+  # AMI-38: fields the user can correct before creating an invoice. The order
+  # here is the render order in the feedback form.
+  @editable_fields ~w(amount currency due_date client_name client_email notes invoice_number)
+  @currencies ~w(KRW USD EUR JPY GBP)
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
      |> assign(:page_title, "송장 업로드")
      |> assign(:extraction_jobs, [])
+     |> assign(:editing_job_id, nil)
+     |> assign(:currencies, @currencies)
      |> allow_upload(:invoice_file,
        accept: ~w(.pdf .jpg .jpeg .png),
        max_file_size: 10_000_000,
@@ -34,6 +41,41 @@ defmodule AutoMyInvoiceWeb.UploadLive do
   def handle_event("dismiss-job", %{"id" => job_id}, socket) do
     jobs = Enum.reject(socket.assigns.extraction_jobs, &(&1.id == job_id))
     {:noreply, assign(socket, :extraction_jobs, jobs)}
+  end
+
+  # AMI-38: open the inline feedback form so the user can correct the
+  # AI-extracted fields before creating an invoice.
+  def handle_event("edit-job", %{"id" => job_id}, socket) do
+    {:noreply, assign(socket, :editing_job_id, job_id)}
+  end
+
+  def handle_event("cancel-edit", _params, socket) do
+    {:noreply, assign(socket, :editing_job_id, nil)}
+  end
+
+  def handle_event("save-feedback", %{"job_id" => job_id} = params, socket) do
+    corrections = Map.get(params, "feedback", %{})
+
+    case Enum.find(socket.assigns.extraction_jobs, &(&1.id == job_id)) do
+      nil ->
+        {:noreply, socket}
+
+      job ->
+        {:ok, updated} = Extraction.record_feedback(job, corrections)
+
+        updated = Map.put(updated, :__file_name__, Map.get(job, :__file_name__))
+
+        jobs =
+          Enum.map(socket.assigns.extraction_jobs, fn j ->
+            if j.id == job_id, do: updated, else: j
+          end)
+
+        {:noreply,
+         socket
+         |> assign(:extraction_jobs, jobs)
+         |> assign(:editing_job_id, nil)
+         |> put_flash(:info, "수정 내용이 저장되었습니다.")}
+    end
   end
 
   def handle_event("upload", _params, socket) do
@@ -244,24 +286,45 @@ defmodule AutoMyInvoiceWeb.UploadLive do
                     />
                   </div>
 
-                  <div :if={job.extracted_data} class="space-y-1 text-sm">
-                    <div
-                      :for={{key, value} <- job.extracted_data}
-                      class="flex justify-between border-b border-base-200 pb-1"
-                    >
-                      <span class="text-base-content/60">{humanize_key(key)}</span>
-                      <span class="font-medium truncate ml-2 text-right">
-                        {format_value(value)}
-                      </span>
+                  <%= if @editing_job_id == job.id do %>
+                    <.feedback_form job={job} currencies={@currencies} />
+                  <% else %>
+                    <div :if={display_data(job)} class="space-y-1 text-sm">
+                      <div
+                        :for={{key, value} <- display_data(job)}
+                        class="flex justify-between border-b border-base-200 pb-1"
+                      >
+                        <span class="text-base-content/60">{humanize_key(key)}</span>
+                        <span class="font-medium truncate ml-2 text-right">
+                          {format_value(value)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <.link
-                    navigate={~p"/invoices/new?extraction_job_id=#{job.id}"}
-                    class="btn btn-primary btn-sm mt-3"
-                  >
-                    <.icon name="hero-document-plus" class="size-4" /> 송장 생성
-                  </.link>
+                    <p
+                      :if={job.feedback_submitted_at}
+                      class="text-xs text-success mt-2 flex items-center gap-1"
+                    >
+                      <.icon name="hero-check-circle" class="size-4" /> 수정 내용이 반영되었습니다
+                    </p>
+
+                    <div class="flex gap-2 mt-3">
+                      <button
+                        type="button"
+                        class="btn btn-ghost btn-sm"
+                        phx-click="edit-job"
+                        phx-value-id={job.id}
+                      >
+                        <.icon name="hero-pencil-square" class="size-4" /> 추출 결과 수정
+                      </button>
+                      <.link
+                        navigate={~p"/invoices/new?extraction_job_id=#{job.id}"}
+                        class="btn btn-primary btn-sm"
+                      >
+                        <.icon name="hero-document-plus" class="size-4" /> 송장 생성
+                      </.link>
+                    </div>
+                  <% end %>
                 <% "failed" -> %>
                   <div class="alert alert-error py-2">
                     <.icon name="hero-x-circle" class="size-5" />
@@ -277,6 +340,68 @@ defmodule AutoMyInvoiceWeb.UploadLive do
     </div>
     """
   end
+
+  # AMI-38: inline form to correct AI-extracted fields before invoice creation.
+  attr :job, :map, required: true
+  attr :currencies, :list, required: true
+
+  defp feedback_form(assigns) do
+    assigns = assign(assigns, :data, display_data(assigns.job))
+
+    ~H"""
+    <form phx-submit="save-feedback" class="space-y-3">
+      <input type="hidden" name="job_id" value={@job.id} />
+      <p class="text-sm text-base-content/60">
+        AI가 잘못 인식한 값을 직접 수정한 뒤 저장하세요. 저장한 값으로 송장이 생성됩니다.
+      </p>
+
+      <div :for={field <- editable_fields()} class="form-control">
+        <label class="label py-1" for={"fb-#{@job.id}-#{field}"}>
+          <span class="label-text text-sm">{humanize_key(field)}</span>
+        </label>
+        <%= if field == "currency" do %>
+          <select
+            id={"fb-#{@job.id}-#{field}"}
+            name={"feedback[#{field}]"}
+            class="select select-bordered select-sm"
+          >
+            <option :for={c <- @currencies} value={c} selected={field_value(@data, field) == c}>
+              {c}
+            </option>
+          </select>
+        <% else %>
+          <input
+            id={"fb-#{@job.id}-#{field}"}
+            type={if field == "due_date", do: "date", else: "text"}
+            name={"feedback[#{field}]"}
+            value={field_value(@data, field)}
+            class="input input-bordered input-sm"
+          />
+        <% end %>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <.icon name="hero-check" class="size-4" /> 수정 저장
+        </button>
+        <button type="button" class="btn btn-ghost btn-sm" phx-click="cancel-edit">
+          취소
+        </button>
+      </div>
+    </form>
+    """
+  end
+
+  defp editable_fields, do: @editable_fields
+
+  # Prefer the user-corrected data when it exists so re-editing starts from the
+  # last saved values; otherwise fall back to the raw extraction.
+  defp display_data(job) do
+    Map.get(job, :corrected_data) || Map.get(job, :extracted_data)
+  end
+
+  defp field_value(nil, _field), do: ""
+  defp field_value(data, field) when is_map(data), do: to_string(Map.get(data, field) || "")
 
   defp error_to_string(:too_large), do: "파일이 너무 큽니다 (최대 10MB)"
   defp error_to_string(:not_accepted), do: "지원되지 않는 파일 형식입니다. PDF, JPG, PNG만 가능"

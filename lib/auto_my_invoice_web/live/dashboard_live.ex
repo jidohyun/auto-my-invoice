@@ -1,7 +1,7 @@
 defmodule AutoMyInvoiceWeb.DashboardLive do
   use AutoMyInvoiceWeb, :live_view
 
-  alias AutoMyInvoice.{Invoices, Reminders, Billing, PubSubTopics}
+  alias AutoMyInvoice.{Invoices, Reminders, Billing, Analytics, PubSubTopics}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -30,6 +30,7 @@ defmodule AutoMyInvoiceWeb.DashboardLive do
     rate = Invoices.collection_rate(user)
     recent_invoices = Invoices.recent_invoices(user)
     active_reminders = Reminders.count_active_reminders(user.id)
+    currency_breakdown = Analytics.currency_breakdown(user.id)
 
     socket
     |> assign(:outstanding_amount, outstanding_amount)
@@ -38,6 +39,7 @@ defmodule AutoMyInvoiceWeb.DashboardLive do
     |> assign(:collection_rate, rate)
     |> assign(:recent_invoices, recent_invoices)
     |> assign(:active_reminders, active_reminders)
+    |> assign(:currency_breakdown, currency_breakdown)
   end
 
   @impl true
@@ -69,6 +71,17 @@ defmodule AutoMyInvoiceWeb.DashboardLive do
         <p class="text-3xl font-bold">
           <.money amount={@outstanding_amount} currency={@outstanding_currency} />
         </p>
+        <%!-- AMI-51: surface the multi-currency breakdown converted to KRW --%>
+        <div :if={@currency_breakdown.multi_currency?} class="mt-2 space-y-0.5">
+          <p
+            :for={row <- @currency_breakdown.rows}
+            class="text-xs text-base-content/60 flex items-center justify-between gap-2"
+          >
+            <span class="font-mono">{row.currency}</span>
+            <span><.money amount={row.native_total} currency={row.currency} /></span>
+          </p>
+          <p class="text-[11px] text-base-content/40 pt-0.5">최신 환율로 KRW 환산됨</p>
+        </div>
         <p class="text-sm text-error mt-2 flex items-center">
           <span class="material-icons text-sm mr-1">trending_up</span> 연체 {to_string(@overdue_count)}건
         </p>

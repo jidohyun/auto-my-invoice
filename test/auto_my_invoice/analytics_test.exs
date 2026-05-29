@@ -365,4 +365,75 @@ defmodule AutoMyInvoice.AnalyticsTest do
       assert Decimal.compare(forecast.weighted_amount, forecast.expected_amount) != :gt
     end
   end
+
+  describe "currency_breakdown/1" do
+    # AMI-51: multi-currency outstanding totals converted to KRW for display.
+    test "returns native + KRW totals and the FX rate per currency" do
+      # Cache the FX rates the breakdown will use.
+      AutoMyInvoice.FxRates.upsert_rate("USD", Decimal.new("1350"))
+      AutoMyInvoice.FxRates.upsert_rate("JPY", Decimal.new("9"))
+
+      user = create_user()
+      client = create_client(user)
+
+      usd = create_invoice(user, client, %{amount: Decimal.new("100.00"), currency: "USD"})
+      jpy = create_invoice(user, client, %{amount: Decimal.new("10000"), currency: "JPY"})
+      {:ok, _} = Invoices.mark_as_sent(usd)
+      {:ok, _} = Invoices.mark_as_sent(jpy)
+
+      result = Analytics.currency_breakdown(user.id)
+
+      assert result.multi_currency?
+      assert length(result.rows) == 2
+
+      usd_row = Enum.find(result.rows, &(&1.currency == "USD"))
+      assert usd_row.converted?
+      assert Decimal.eq?(usd_row.native_total, Decimal.new("100.00"))
+      assert Decimal.eq?(usd_row.krw_total, Decimal.new("135000.00"))
+      assert Decimal.eq?(usd_row.rate, Decimal.new("1350"))
+
+      # JPY: 10000 * 9 = 90000 KRW
+      jpy_row = Enum.find(result.rows, &(&1.currency == "JPY"))
+      assert Decimal.eq?(jpy_row.krw_total, Decimal.new("90000.00"))
+
+      # total_krw sums every converted row (135000 + 90000)
+      assert Decimal.eq?(result.total_krw, Decimal.new("225000.00"))
+    end
+
+    test "flags currencies with no cached FX rate as not converted" do
+      user = create_user()
+      client = create_client(user)
+      # No USD rate cached -> conversion fails for this currency.
+      inv = create_invoice(user, client, %{amount: Decimal.new("50.00"), currency: "USD"})
+      {:ok, _} = Invoices.mark_as_sent(inv)
+
+      result = Analytics.currency_breakdown(user.id)
+      usd_row = Enum.find(result.rows, &(&1.currency == "USD"))
+
+      refute usd_row.converted?
+      assert usd_row.rate == nil
+      assert Decimal.eq?(usd_row.krw_total, Decimal.new(0))
+    end
+
+    test "single currency portfolio is not flagged multi_currency" do
+      AutoMyInvoice.FxRates.upsert_rate("USD", Decimal.new("1350"))
+      user = create_user()
+      client = create_client(user)
+      inv = create_invoice(user, client, %{amount: Decimal.new("100.00"), currency: "USD"})
+      {:ok, _} = Invoices.mark_as_sent(inv)
+
+      result = Analytics.currency_breakdown(user.id)
+      refute result.multi_currency?
+      assert length(result.rows) == 1
+    end
+
+    test "returns empty rows when there are no outstanding invoices" do
+      user = create_user()
+      result = Analytics.currency_breakdown(user.id)
+
+      assert result.rows == []
+      assert Decimal.eq?(result.total_krw, Decimal.new(0))
+      refute result.multi_currency?
+    end
+  end
 end

@@ -41,6 +41,12 @@ defmodule AutoMyInvoiceWeb.UploadLiveTest do
     job
   end
 
+  defp create_completed_job(user, extracted) do
+    job = create_pending_job(user)
+    {:ok, completed} = Extraction.save_result(job, %{"raw" => "x"}, extracted, 0.7)
+    completed
+  end
+
   describe "GET /upload (T1)" do
     test "renders the upload form when no extraction is in progress", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/upload")
@@ -93,6 +99,84 @@ defmodule AutoMyInvoiceWeb.UploadLiveTest do
                UploadLive.handle_event("dismiss-job", %{"id" => job_a.id}, socket)
 
       assert Enum.map(new_socket.assigns.extraction_jobs, & &1.id) == [job_b.id]
+    end
+  end
+
+  describe "AMI-38 extraction feedback edit form" do
+    test "uploading a file then completing it renders the editable feedback form",
+         %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/upload")
+
+      # Simulate a real upload so the LV holds an in-flight ExtractionJob and
+      # has subscribed to its completion topic.
+      file =
+        file_input(view, "#upload-form", :invoice_file, [
+          %{name: "invoice.png", content: "fake-bytes", type: "image/png"}
+        ])
+
+      render_upload(file, "invoice.png")
+      render_submit(element(view, "#upload-form"))
+
+      # The job is now pending in the DB; grab it and complete it, then drive
+      # the same PubSub message the OCR worker would broadcast.
+      [job] = AutoMyInvoice.Repo.all(Extraction.ExtractionJob)
+
+      extracted = %{"amount" => "1500.00", "currency" => "USD", "notes" => "Net 30"}
+      {:ok, _} = Extraction.save_result(job, %{"raw" => "x"}, extracted, 0.6)
+
+      send(view.pid, {:extraction_completed, extracted})
+
+      # Now the completed job shows the read-only view with an edit button.
+      assert render(view) =~ "추출 결과 수정"
+
+      # Clicking edit reveals the editable feedback form fields.
+      html = render_click(view, "edit-job", %{"id" => job.id})
+      assert html =~ "feedback[amount]"
+      assert html =~ "feedback[currency]"
+      assert html =~ "수정 저장"
+    end
+
+    test "handle_event/3 'save-feedback' records corrections via the context",
+         %{user: user} do
+      job = create_completed_job(user, %{"amount" => "1000", "currency" => "USD"})
+
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          extraction_jobs: [job],
+          editing_job_id: job.id,
+          flash: %{},
+          __changed__: %{}
+        }
+      }
+
+      params = %{"job_id" => job.id, "feedback" => %{"amount" => "1200", "currency" => "KRW"}}
+      assert {:noreply, new_socket} = UploadLive.handle_event("save-feedback", params, socket)
+
+      assert new_socket.assigns.editing_job_id == nil
+      [updated] = new_socket.assigns.extraction_jobs
+      assert updated.corrected_data["amount"] == "1200"
+      assert updated.corrected_data["currency"] == "KRW"
+      assert updated.feedback_submitted_at != nil
+
+      # persisted in the DB
+      reloaded = Extraction.get_job!(job.id)
+      assert reloaded.corrected_data["amount"] == "1200"
+    end
+
+    test "handle_event/3 'edit-job' and 'cancel-edit' toggle editing_job_id" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{editing_job_id: nil, __changed__: %{}}
+      }
+
+      assert {:noreply, editing} =
+               UploadLive.handle_event("edit-job", %{"id" => "abc"}, socket)
+
+      assert editing.assigns.editing_job_id == "abc"
+
+      assert {:noreply, cancelled} =
+               UploadLive.handle_event("cancel-edit", %{}, editing)
+
+      assert cancelled.assigns.editing_job_id == nil
     end
   end
 

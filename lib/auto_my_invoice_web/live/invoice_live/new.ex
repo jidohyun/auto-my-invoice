@@ -14,7 +14,11 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.New do
             # ExtractionJob struct itself. Passing the struct here would
             # cause Access.get/3 to raise on Elixir 1.19+ because Ecto
             # schemas do not implement the Access behaviour.
-            AutoMyInvoice.Extraction.to_invoice_attrs(job.extracted_data || %{})
+            #
+            # AMI-38: prefer the user-corrected data when feedback was
+            # submitted so the invoice form starts from the confirmed values.
+            source = job.corrected_data || job.extracted_data || %{}
+            AutoMyInvoice.Extraction.to_invoice_attrs(source)
           else
             %{}
           end
