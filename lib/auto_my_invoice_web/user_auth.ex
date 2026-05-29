@@ -78,6 +78,20 @@ defmodule AutoMyInvoiceWeb.UserAuth do
     {:cont, mount_current_user(socket, session)}
   end
 
+  # AMI-49: restore the Gettext locale inside the LiveView process. The
+  # browser plug runs in a different process, so put_locale there does not
+  # carry into the socket; we re-apply it from the session (prefer the
+  # logged-in user's stored preference when available).
+  def on_mount(:restore_locale, _params, session, socket) do
+    socket = mount_current_user(socket, session)
+    locale = socket.assigns[:current_user] |> user_locale() || session["locale"]
+    if locale, do: Gettext.put_locale(AutoMyInvoiceWeb.Gettext, locale)
+    {:cont, socket}
+  end
+
+  defp user_locale(%{locale: locale}) when locale in ~w(ko en ja), do: locale
+  defp user_locale(_), do: nil
+
   defp mount_current_user(socket, session) do
     Phoenix.Component.assign_new(socket, :current_user, fn ->
       if user_token = session["user_token"] do

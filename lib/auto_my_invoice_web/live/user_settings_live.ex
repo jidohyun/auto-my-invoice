@@ -21,11 +21,23 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
     "Australia/Sydney"
   ]
 
-  @brand_tones [
-    {"프로페셔널", "professional"},
-    {"친근함", "friendly"},
-    {"격식 있음", "formal"}
-  ]
+  # AMI-49: locale options. msgids stay Korean so the source locale renders
+  # the native language name verbatim.
+  defp brand_tones do
+    [
+      {gettext("프로페셔널"), "professional"},
+      {gettext("친근함"), "friendly"},
+      {gettext("격식 있음"), "formal"}
+    ]
+  end
+
+  defp locales do
+    [
+      {"한국어", "ko"},
+      {"English", "en"},
+      {"日本語", "ja"}
+    ]
+  end
 
   # AMI-25: 지원 통화 (KRW 최상단)
   @currencies [
@@ -47,11 +59,11 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
   def render(assigns) do
     ~H"""
     <div class="max-w-2xl mx-auto p-6">
-      <h1 class="text-3xl font-bold mb-8">설정</h1>
+      <h1 class="text-3xl font-bold mb-8">{gettext("설정")}</h1>
 
       <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
-          <h2 class="card-title text-lg mb-4">계정</h2>
+          <h2 class="card-title text-lg mb-4">{gettext("계정")}</h2>
 
           <div class="flex items-center gap-4 mb-4">
             <div class="avatar placeholder">
@@ -61,15 +73,45 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
             </div>
             <div>
               <p class="font-medium">{@current_user.email}</p>
-              <div class="badge badge-outline badge-sm mt-1">{plan_label(@current_user.plan)} 플랜</div>
+              <div class="badge badge-outline badge-sm mt-1">
+                {gettext("%{plan} 플랜", plan: plan_label(@current_user.plan))}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+      <div class="card bg-base-100 shadow-xl mb-6">
+        <div class="card-body">
+          <h2 class="card-title text-lg mb-4">{gettext("언어")}</h2>
+
+          <form phx-change="change_locale">
+            <div class="form-control">
+              <label class="label" for="locale">
+                <span class="label-text">{gettext("표시 언어")}</span>
+              </label>
+              <select id="locale" name="locale" class="select select-bordered w-full">
+                <option
+                  :for={{label, value} <- locales()}
+                  value={value}
+                  selected={@current_user.locale == value}
+                >
+                  {label}
+                </option>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/50">
+                  {gettext("선택한 언어가 화면 전체에 적용됩니다")}
+                </span>
+              </label>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title text-lg mb-4">프로필</h2>
+          <h2 class="card-title text-lg mb-4">{gettext("프로필")}</h2>
 
           <.form
             for={@form}
@@ -80,7 +122,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
           >
             <div class="form-control">
               <label class="label" for="profile_company_name">
-                <span class="label-text">회사명</span>
+                <span class="label-text">{gettext("회사명")}</span>
               </label>
               <input
                 type="text"
@@ -88,13 +130,13 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
                 id="profile_company_name"
                 value={@form[:company_name].value}
                 class="input input-bordered w-full"
-                placeholder="회사명을 입력하세요"
+                placeholder={gettext("회사명을 입력하세요")}
               />
             </div>
 
             <div class="form-control">
               <label class="label" for="profile_timezone">
-                <span class="label-text">시간대</span>
+                <span class="label-text">{gettext("시간대")}</span>
               </label>
               <select
                 name="profile[timezone]"
@@ -113,7 +155,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
 
             <div class="form-control">
               <label class="label" for="profile_brand_tone">
-                <span class="label-text">브랜드 톤</span>
+                <span class="label-text">{gettext("브랜드 톤")}</span>
               </label>
               <select
                 name="profile[brand_tone]"
@@ -130,7 +172,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
               </select>
               <label class="label">
                 <span class="label-text-alt text-base-content/50">
-                  AI가 생성하는 리마인더 이메일 톤에 반영됩니다
+                  {gettext("AI가 생성하는 리마인더 이메일 톤에 반영됩니다")}
                 </span>
               </label>
             </div>
@@ -255,8 +297,8 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
             </div>
 
             <div class="form-control mt-6">
-              <button type="submit" phx-disable-with="저장 중..." class="btn btn-primary">
-                변경사항 저장
+              <button type="submit" phx-disable-with={gettext("저장 중...")} class="btn btn-primary">
+                {gettext("변경사항 저장")}
               </button>
             </div>
           </.form>
@@ -490,8 +532,8 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
 
     socket =
       socket
-      |> assign(:page_title, "설정")
-      |> assign(timezones: @timezones, brand_tones: @brand_tones)
+      |> assign(:page_title, gettext("설정"))
+      |> assign(timezones: @timezones, brand_tones: brand_tones())
       |> assign(currencies: @currencies, payment_terms_options: @payment_terms)
       |> assign(:pro?, Accounts.plan_allows?(user, :team))
       |> assign(:new_api_key, nil)
@@ -503,6 +545,18 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
       |> assign(:api_key_form, to_form(%{}, as: "api_key"))
 
     {:ok, socket}
+  end
+
+  def handle_event("change_locale", %{"locale" => locale}, socket) do
+    case Accounts.update_locale(socket.assigns.current_user, locale) do
+      {:ok, _user} ->
+        # Full navigation so the new locale flows through the browser plug,
+        # re-rendering the layout/nav in the chosen language.
+        {:noreply, push_navigate(socket, to: ~p"/settings")}
+
+      {:error, %Ecto.Changeset{}} ->
+        {:noreply, put_flash(socket, :error, gettext("언어를 변경하지 못했습니다."))}
+    end
   end
 
   def handle_event("validate", %{"profile" => profile_params}, socket) do
@@ -523,7 +577,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
          socket
          |> assign(current_user: user)
          |> assign_form(changeset)
-         |> put_flash(:info, "설정이 저장되었습니다.")}
+         |> put_flash(:info, gettext("설정이 저장되었습니다."))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign_form(socket, changeset)}
@@ -656,9 +710,9 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
     assign(socket, api_keys: keys)
   end
 
-  defp plan_label("free"), do: "무료"
-  defp plan_label("starter"), do: "스타터"
-  defp plan_label("pro"), do: "프로"
+  defp plan_label("free"), do: gettext("무료")
+  defp plan_label("starter"), do: gettext("스타터")
+  defp plan_label("pro"), do: gettext("프로")
   defp plan_label(other), do: other
 
   defp role_label("owner"), do: "소유자"

@@ -3,13 +3,16 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
 
   alias AutoMyInvoice.{Invoices, PubSubTopics}
 
-  @statuses [
-    {"전체", nil},
-    {"임시저장", "draft"},
-    {"발송", "sent"},
-    {"연체", "overdue"},
-    {"결제완료", "paid"}
-  ]
+  # AMI-49: built at runtime so gettext picks up the active locale.
+  defp statuses do
+    [
+      {gettext("전체"), nil},
+      {gettext("임시저장"), "draft"},
+      {gettext("발송"), "sent"},
+      {gettext("연체"), "overdue"},
+      {gettext("결제완료"), "paid"}
+    ]
+  end
 
   @impl true
   def mount(_params, _session, socket) do
@@ -21,8 +24,8 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
 
     {:ok,
      socket
-     |> assign(:page_title, "송장")
-     |> assign(:statuses, @statuses)
+     |> assign(:page_title, gettext("송장"))
+     |> assign(:statuses, statuses())
      |> assign(:sort_by, :due_date)
      |> assign(:sort_order, :desc)
      |> load_counts()}
@@ -124,24 +127,28 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
   defp tab_count(counts, nil), do: Map.get(counts, "all", 0)
   defp tab_count(counts, status), do: Map.get(counts, status, 0)
 
-  defp empty_state_description(nil, ""), do: "첫 송장을 발행해 시작해 보세요."
-  defp empty_state_description(nil, _q), do: "검색 조건에 맞는 송장이 없습니다."
-  defp empty_state_description(status, ""), do: "#{status_label(status)} 송장이 없습니다."
-  defp empty_state_description(status, _q), do: "검색 조건에 맞는 #{status_label(status)} 송장이 없습니다."
+  defp empty_state_description(nil, ""), do: gettext("첫 송장을 발행해 시작해 보세요.")
+  defp empty_state_description(nil, _q), do: gettext("검색 조건에 맞는 송장이 없습니다.")
 
-  defp status_label("draft"), do: "임시저장"
-  defp status_label("sent"), do: "발송"
-  defp status_label("overdue"), do: "연체"
-  defp status_label("paid"), do: "결제완료"
+  defp empty_state_description(status, ""),
+    do: gettext("%{status} 송장이 없습니다.", status: status_label(status))
+
+  defp empty_state_description(status, _q),
+    do: gettext("검색 조건에 맞는 %{status} 송장이 없습니다.", status: status_label(status))
+
+  defp status_label("draft"), do: gettext("임시저장")
+  defp status_label("sent"), do: gettext("발송")
+  defp status_label("overdue"), do: gettext("연체")
+  defp status_label("paid"), do: gettext("결제완료")
   defp status_label(other), do: other
 
   @impl true
   def render(assigns) do
     ~H"""
-    <.page_header title="송장">
+    <.page_header title={gettext("송장")}>
       <:actions>
         <.link navigate={~p"/invoices/new"} class="btn btn-primary btn-sm">
-          <.icon name="hero-plus" class="size-4" /> 새 송장
+          <.icon name="hero-plus" class="size-4" /> {gettext("새 송장")}
         </.link>
       </:actions>
     </.page_header>
@@ -164,7 +171,7 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
           type="text"
           name="q"
           value={@search}
-          placeholder="송장 번호, 거래처, 메모로 검색..."
+          placeholder={gettext("송장 번호, 거래처, 메모로 검색...")}
           class="input input-bordered input-sm w-full max-w-xs"
           phx-debounce="300"
         />
@@ -173,13 +180,13 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
 
     <%= if @invoices == [] do %>
       <.empty_state
-        title="송장이 없습니다"
+        title={gettext("송장이 없습니다")}
         description={empty_state_description(@current_status, @search)}
         icon="hero-document-text"
       >
         <:action>
           <.link navigate={~p"/invoices/new"} class="btn btn-primary btn-sm">
-            송장 만들기
+            {gettext("송장 만들기")}
           </.link>
         </:action>
       </.empty_state>
@@ -188,17 +195,17 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Index do
         <table class="table">
           <thead>
             <tr>
-              <th>송장 번호</th>
-              <th>거래처</th>
+              <th>{gettext("송장 번호")}</th>
+              <th>{gettext("거래처")}</th>
               <th class="cursor-pointer" phx-click="sort" phx-value-field="amount">
-                금액{sort_indicator(assigns, :amount)}
+                {gettext("금액")}{sort_indicator(assigns, :amount)}
               </th>
-              <th>상태</th>
+              <th>{gettext("상태")}</th>
               <th class="cursor-pointer" phx-click="sort" phx-value-field="due_date">
-                지급 기한{sort_indicator(assigns, :due_date)}
+                {gettext("지급 기한")}{sort_indicator(assigns, :due_date)}
               </th>
               <th class="cursor-pointer" phx-click="sort" phx-value-field="inserted_at">
-                작성일{sort_indicator(assigns, :inserted_at)}
+                {gettext("작성일")}{sort_indicator(assigns, :inserted_at)}
               </th>
             </tr>
           </thead>

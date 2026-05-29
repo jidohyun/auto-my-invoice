@@ -66,6 +66,13 @@ defmodule AutoMyInvoice.Accounts do
     |> Repo.update()
   end
 
+  @spec update_locale(User.t(), String.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_locale(%User{} = user, locale) do
+    user
+    |> User.profile_changeset(%{"locale" => locale})
+    |> Repo.update()
+  end
+
   ## 세션
 
   @spec generate_user_session_token(User.t()) :: binary()

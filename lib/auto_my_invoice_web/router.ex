@@ -11,6 +11,9 @@ defmodule AutoMyInvoiceWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_scope_for_user
+    # AMI-49: resolve Gettext locale from the user preference / session.
+    # Must run after fetch_current_scope_for_user so current_user is set.
+    plug AutoMyInvoiceWeb.Plugs.Locale
   end
 
   pipeline :api do
@@ -136,7 +139,10 @@ defmodule AutoMyInvoiceWeb.Router do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
     live_session :redirect_if_user_is_authenticated,
-      on_mount: [{AutoMyInvoiceWeb.UserAuth, :redirect_if_user_is_authenticated}] do
+      on_mount: [
+        {AutoMyInvoiceWeb.UserAuth, :redirect_if_user_is_authenticated},
+        {AutoMyInvoiceWeb.UserAuth, :restore_locale}
+      ] do
       live "/users/register", UserRegistrationLive
       live "/users/log_in", UserLoginLive
       live "/users/reset_password", UserForgotPasswordLive
@@ -154,7 +160,10 @@ defmodule AutoMyInvoiceWeb.Router do
 
     live_session :require_authenticated_user,
       layout: {AutoMyInvoiceWeb.Layouts, :app},
-      on_mount: [{AutoMyInvoiceWeb.UserAuth, :ensure_authenticated}] do
+      on_mount: [
+        {AutoMyInvoiceWeb.UserAuth, :ensure_authenticated},
+        {AutoMyInvoiceWeb.UserAuth, :restore_locale}
+      ] do
       live "/", DashboardLive
       live "/invoices", InvoiceLive.Index
       live "/invoices/new", InvoiceLive.New

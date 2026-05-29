@@ -16,6 +16,7 @@ defmodule AutoMyInvoice.Accounts.User do
     field :timezone, :string, default: "Asia/Seoul"
     field :brand_tone, :string, default: "professional"
     field :brand_color, :string
+    field :locale, :string, default: "ko"
 
     # 비즈니스 설정 (AMI-25/26/27/28)
     field :default_currency, :string, default: "KRW"
@@ -47,6 +48,7 @@ defmodule AutoMyInvoice.Accounts.User do
     :business_registration_number,
     :logo_url,
     :invoice_prefix,
+    :locale,
     :google_uid,
     :avatar_url,
     :plan,
@@ -82,6 +84,7 @@ defmodule AutoMyInvoice.Accounts.User do
     |> validate_format(:invoice_prefix, ~r/^[A-Za-z0-9-]{1,10}$/,
       message: "영문/숫자/하이픈 1~10자만 가능합니다"
     )
+    |> validate_inclusion(:locale, ~w(ko en ja))
     |> validate_format(:brand_color, ~r/^#[0-9A-Fa-f]{6}$/,
       message: "must be a hex color like #RRGGBB"
     )

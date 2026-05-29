@@ -1,11 +1,12 @@
 defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
   @moduledoc """
   LiveView tests for the settings page — covers the business settings bundle
-  (AMI-25 통화 / AMI-26 결제조건 / AMI-27 비즈니스 정보 / AMI-28 접두사) and the
-  Pro plan sections (AMI-45 teams / AMI-46 API keys / AMI-47 branding).
+  (AMI-25 통화 / AMI-26 결제조건 / AMI-27 비즈니스 정보 / AMI-28 접두사), the
+  Pro plan sections (AMI-45 teams / AMI-46 API keys / AMI-47 branding), and the
+  i18n language selector / locale persistence (AMI-49).
   """
 
-  use AutoMyInvoiceWeb.ConnCase
+  use AutoMyInvoiceWeb.ConnCase, async: false
 
   import Phoenix.LiveViewTest
   import Swoosh.TestAssertions
@@ -25,6 +26,8 @@ defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
     conn =
       build_conn()
       |> init_test_session(%{user_token: token})
+
+    on_exit(fn -> Gettext.put_locale(AutoMyInvoiceWeb.Gettext, "ko") end)
 
     %{conn: conn, user: user}
   end
@@ -202,6 +205,74 @@ defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
       |> render_click()
 
       refute render(view) =~ "to revoke"
+    end
+  end
+
+  describe "settings page (default locale — AMI-49)" do
+    test "renders settings in Korean by default", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/settings")
+
+      assert html =~ "설정"
+      assert html =~ "프로필"
+      assert html =~ "언어"
+      assert html =~ "표시 언어"
+    end
+
+    test "shows the language selector with all three locales", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/settings")
+
+      assert html =~ "한국어"
+      assert html =~ "English"
+      assert html =~ "日本語"
+    end
+  end
+
+  describe "locale persistence (AMI-49)" do
+    test "changing the language persists the user's locale", %{conn: conn, user: user} do
+      assert user.locale == "ko"
+
+      {:ok, view, _html} = live(conn, ~p"/settings")
+
+      view
+      |> element("form[phx-change=change_locale]")
+      |> render_change(%{"locale" => "en"})
+
+      updated = Accounts.get_user!(user.id)
+      assert updated.locale == "en"
+    end
+
+    test "rejects an unsupported locale", %{user: user} do
+      assert {:error, changeset} = Accounts.update_locale(user, "zz")
+      refute changeset.valid?
+      assert Keyword.has_key?(changeset.errors, :locale)
+    end
+  end
+
+  describe "rendered language follows the user's locale (AMI-49)" do
+    test "an English user sees the settings page in English", %{conn: conn, user: user} do
+      {:ok, _user} = Accounts.update_locale(user, "en")
+
+      {:ok, _view, html} = live(conn, ~p"/settings")
+
+      assert html =~ "Settings"
+      assert html =~ "Profile"
+      assert html =~ "Language"
+    end
+
+    test "a Japanese user sees the dashboard in Japanese", %{conn: conn, user: user} do
+      {:ok, _user} = Accounts.update_locale(user, "ja")
+
+      {:ok, _view, html} = live(conn, ~p"/")
+
+      assert html =~ "ダッシュボード"
+      refute html =~ "한눈에 보기"
+    end
+
+    test "a Korean (default) user still sees the dashboard in Korean", %{conn: conn} do
+      {:ok, _view, html} = live(conn, ~p"/")
+
+      assert html =~ "한눈에 보기"
+      assert html =~ "미수금 총액"
     end
   end
 end
