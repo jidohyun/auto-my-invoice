@@ -257,11 +257,45 @@ defmodule AutoMyInvoice.Reminders do
     end)
   end
 
+  @doc """
+  Conversion rate (AMI-34): share of reminded invoices that were paid after a
+  reminder was sent. An invoice counts as "converted" only when it is paid and its
+  `paid_at` is on/after the reminder's `sent_at`. Each invoice is counted once per
+  step (deduplicated) and once overall.
+  """
+  @spec conversion_rate(binary()) :: map()
+  def conversion_rate(user_id) do
+    rows = sent_reminder_rows(user_id)
+
+    by_step =
+      rows
+      |> Enum.group_by(& &1.step)
+      |> Enum.map(fn {step, step_rows} -> conversion_entry(step, step_rows) end)
+      |> Enum.sort_by(& &1.step)
+
+    overall_reminded = rows |> Enum.map(& &1.invoice_id) |> Enum.uniq() |> length()
+
+    overall_converted =
+      rows
+      |> Enum.filter(& &1.converted)
+      |> Enum.map(& &1.invoice_id)
+      |> Enum.uniq()
+      |> length()
+
+    %{
+      overall_reminded: overall_reminded,
+      overall_converted: overall_converted,
+      overall_conversion_rate: percentage(overall_converted, overall_reminded),
+      by_step: by_step
+    }
+  end
+
   @doc "Overall reminder effectiveness combining per-step stats and days to payment"
   @spec reminder_effectiveness(binary()) :: map()
   def reminder_effectiveness(user_id) do
     by_step = reminder_stats(user_id)
     days_to_pay = avg_days_to_payment(user_id)
+    conversion = conversion_rate(user_id)
 
     total_sent = Enum.reduce(by_step, 0, fn s, acc -> acc + s.total_sent end)
     total_opened = Enum.reduce(by_step, 0, fn s, acc -> acc + s.total_opened end)
@@ -284,7 +318,9 @@ defmodule AutoMyInvoice.Reminders do
       overall_open_rate: overall_open_rate,
       overall_click_rate: overall_click_rate,
       by_step: by_step,
-      avg_days_to_payment: days_to_pay
+      avg_days_to_payment: days_to_pay,
+      overall_conversion_rate: conversion.overall_conversion_rate,
+      conversion_by_step: conversion.by_step
     }
   end
 
@@ -350,6 +386,46 @@ defmodule AutoMyInvoice.Reminders do
   end
 
   ## Private
+
+  # AMI-34: one row per sent reminder with conversion flag (paid after sent).
+  defp sent_reminder_rows(user_id) do
+    alias AutoMyInvoice.Invoices.Invoice
+
+    from(r in Reminder,
+      join: i in Invoice,
+      on: r.invoice_id == i.id,
+      where: i.user_id == ^user_id,
+      where: r.status == "sent",
+      where: not is_nil(r.sent_at),
+      select: %{
+        step: r.step,
+        invoice_id: r.invoice_id,
+        converted: i.status == "paid" and not is_nil(i.paid_at) and i.paid_at >= r.sent_at
+      }
+    )
+    |> Repo.all()
+  end
+
+  defp conversion_entry(step, step_rows) do
+    reminded = step_rows |> Enum.map(& &1.invoice_id) |> Enum.uniq() |> length()
+
+    converted =
+      step_rows
+      |> Enum.filter(& &1.converted)
+      |> Enum.map(& &1.invoice_id)
+      |> Enum.uniq()
+      |> length()
+
+    %{
+      step: step,
+      reminded: reminded,
+      converted: converted,
+      conversion_rate: percentage(converted, reminded)
+    }
+  end
+
+  defp percentage(_count, 0), do: 0.0
+  defp percentage(count, total), do: Float.round(count * 100.0 / total, 1)
 
   defp calculate_send_time(due_date, offset_days, client_timezone) do
     target_date = Date.add(due_date, offset_days)

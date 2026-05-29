@@ -568,4 +568,123 @@ defmodule AutoMyInvoice.RemindersTest do
       assert length(Reminders.list_templates(user.id)) == 1
     end
   end
+
+  describe "conversion_rate/1 (AMI-34)" do
+    defp mark_invoice_paid(invoice, paid_at) do
+      invoice
+      |> Ecto.Changeset.change(
+        status: "paid",
+        paid_at: paid_at,
+        paid_amount: invoice.amount
+      )
+      |> Repo.update!()
+    end
+
+    defp insert_sent_reminder(invoice, step, sent_at) do
+      %Reminder{invoice_id: invoice.id}
+      |> Reminder.changeset(%{step: step, scheduled_at: sent_at, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, sent_at)
+      |> Repo.insert!()
+    end
+
+    test "computes overall and per-step conversion rate" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -5 * 86_400, :second)
+
+      # Invoice 1: reminded (step 1) and then paid -> converted
+      inv1 = create_sent_invoice(user)
+      insert_sent_reminder(inv1, 1, sent_at)
+      mark_invoice_paid(inv1, now)
+
+      # Invoice 2: reminded (step 1) but not paid -> not converted
+      inv2 = create_sent_invoice(user)
+      insert_sent_reminder(inv2, 1, sent_at)
+
+      result = Reminders.conversion_rate(user.id)
+
+      # overall: 1 of 2 reminded invoices paid = 50%
+      assert result.overall_reminded == 2
+      assert result.overall_converted == 1
+      assert result.overall_conversion_rate == 50.0
+
+      step1 = Enum.find(result.by_step, &(&1.step == 1))
+      assert step1.reminded == 2
+      assert step1.converted == 1
+      assert step1.conversion_rate == 50.0
+    end
+
+    test "only counts payment that occurred after the reminder was sent" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Paid BEFORE the reminder was sent -> not a conversion
+      inv = create_sent_invoice(user)
+      paid_at = DateTime.add(now, -10 * 86_400, :second)
+      reminder_sent_at = DateTime.add(now, -5 * 86_400, :second)
+      mark_invoice_paid(inv, paid_at)
+      insert_sent_reminder(inv, 1, reminder_sent_at)
+
+      result = Reminders.conversion_rate(user.id)
+
+      assert result.overall_reminded == 1
+      assert result.overall_converted == 0
+      assert result.overall_conversion_rate == 0.0
+    end
+
+    test "deduplicates invoices reminded multiple times at the same step" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -5 * 86_400, :second)
+
+      inv = create_sent_invoice(user)
+      insert_sent_reminder(inv, 1, sent_at)
+      insert_sent_reminder(inv, 2, sent_at)
+      mark_invoice_paid(inv, now)
+
+      result = Reminders.conversion_rate(user.id)
+
+      # One unique invoice reminded, one converted
+      assert result.overall_reminded == 1
+      assert result.overall_converted == 1
+      assert result.overall_conversion_rate == 100.0
+    end
+
+    test "returns zeros when no reminders sent" do
+      user = create_user()
+      _invoice = create_sent_invoice(user)
+
+      result = Reminders.conversion_rate(user.id)
+
+      assert result.overall_reminded == 0
+      assert result.overall_converted == 0
+      assert result.overall_conversion_rate == 0.0
+      assert result.by_step == []
+    end
+  end
+
+  describe "reminder_effectiveness/1 includes conversion (AMI-34)" do
+    test "surfaces conversion_rate inside effectiveness map" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -3 * 86_400, :second)
+
+      inv = create_sent_invoice(user)
+
+      %Reminder{invoice_id: inv.id}
+      |> Reminder.changeset(%{step: 1, scheduled_at: sent_at, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, sent_at)
+      |> Repo.insert!()
+
+      inv
+      |> Ecto.Changeset.change(status: "paid", paid_at: now, paid_amount: inv.amount)
+      |> Repo.update!()
+
+      effectiveness = Reminders.reminder_effectiveness(user.id)
+
+      assert Map.has_key?(effectiveness, :overall_conversion_rate)
+      assert effectiveness.overall_conversion_rate == 100.0
+      assert is_list(effectiveness.conversion_by_step)
+    end
+  end
 end

@@ -391,6 +391,113 @@ defmodule AutoMyInvoice.ClientsTest do
     end
   end
 
+  describe "problem_clients/1 (AMI-35)" do
+    test "flags clients with low on-time rate" do
+      %{user: user} = create_user()
+
+      {:ok, bad} =
+        Clients.create_client(user.id, %{name: "Bad Payer", email: "bad@example.com"})
+
+      {:ok, good} =
+        Clients.create_client(user.id, %{name: "Good Payer", email: "good@example.com"})
+
+      # Bad payer: 2 paid invoices, both very late -> on_time_rate 0%
+      for _ <- 1..2 do
+        create_invoice!(user, bad, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-01-10],
+          sent_at: ~U[2026-01-01 10:00:00Z],
+          paid_at: ~U[2026-02-10 10:00:00Z]
+        })
+      end
+
+      # Good payer: 2 paid invoices, on time -> on_time_rate 100%
+      for _ <- 1..2 do
+        create_invoice!(user, good, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-03-10],
+          sent_at: ~U[2026-03-01 10:00:00Z],
+          paid_at: ~U[2026-03-09 10:00:00Z]
+        })
+      end
+
+      problems = Clients.problem_clients(user.id)
+      problem_ids = Enum.map(problems, & &1.id)
+
+      assert bad.id in problem_ids
+      refute good.id in problem_ids
+
+      flagged = Enum.find(problems, &(&1.id == bad.id))
+      assert flagged.on_time_rate == 0.0
+      assert is_list(flagged.reasons)
+      assert flagged.reasons != []
+    end
+
+    test "flags clients whose avg_payment_days exceeds portfolio average plus margin" do
+      %{user: user} = create_user()
+
+      {:ok, slow} =
+        Clients.create_client(user.id, %{name: "Slow Co", email: "slow@example.com"})
+
+      {:ok, fast} =
+        Clients.create_client(user.id, %{name: "Fast Co", email: "fast@example.com"})
+
+      # Slow: avg ~40 days but always within grace? No - make late so it's flagged.
+      for _ <- 1..2 do
+        create_invoice!(user, slow, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-01-10],
+          sent_at: ~U[2026-01-01 10:00:00Z],
+          paid_at: ~U[2026-02-10 10:00:00Z]
+        })
+      end
+
+      # Fast: avg ~2 days
+      for _ <- 1..2 do
+        create_invoice!(user, fast, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-03-30],
+          sent_at: ~U[2026-03-01 10:00:00Z],
+          paid_at: ~U[2026-03-03 10:00:00Z]
+        })
+      end
+
+      problems = Clients.problem_clients(user.id)
+      problem_ids = Enum.map(problems, & &1.id)
+
+      assert slow.id in problem_ids
+      refute fast.id in problem_ids
+    end
+
+    test "returns empty list when no clients qualify" do
+      %{user: user} = create_user()
+
+      {:ok, good} =
+        Clients.create_client(user.id, %{name: "Reliable", email: "reliable@example.com"})
+
+      for _ <- 1..2 do
+        create_invoice!(user, good, %{
+          amount: Decimal.new("1000"),
+          status: "paid",
+          paid_amount: Decimal.new("1000"),
+          due_date: ~D[2026-01-30],
+          sent_at: ~U[2026-01-01 10:00:00Z],
+          paid_at: ~U[2026-01-03 10:00:00Z]
+        })
+      end
+
+      assert Clients.problem_clients(user.id) == []
+    end
+  end
+
   describe "get_client_by_email/2" do
     test "finds client by user_id and email" do
       %{user: user} = create_user()
