@@ -22,14 +22,16 @@ if System.get_env("PHX_SERVER") do
   # ChromicPDF: 릴리스(컨테이너)에서 nobody 유저로 Chromium 을 띄우므로
   # Chrome sandbox 를 끈다. CHROME_BIN(Dockerfile 에서 /usr/bin/chromium)
   # 이 있으면 명시 경로를 사용한다. 미설정 시 ChromicPDF 기본 탐색.
-  config :auto_my_invoice,
-         ChromicPDF,
-         [no_sandbox: true] ++
-           case System.get_env("CHROME_BIN") do
-             nil -> []
-             "" -> []
-             path -> [chrome_executable: path]
-           end
+  chromic_executable_opt =
+    case System.get_env("CHROME_BIN") do
+      nil -> []
+      "" -> []
+      path -> [chrome_executable: path]
+    end
+
+  chromic_opts = [{:no_sandbox, true} | chromic_executable_opt]
+
+  config :auto_my_invoice, ChromicPDF, chromic_opts
 end
 
 config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
