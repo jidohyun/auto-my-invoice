@@ -11,6 +11,7 @@ defmodule AutoMyInvoice.Invoices do
   alias AutoMyInvoice.Mailer
   alias AutoMyInvoice.Billing.PaddleClient
   alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.Notifications.PushNotifier
 
   ## 조회
 
@@ -311,6 +312,8 @@ defmodule AutoMyInvoice.Invoices do
 
             broadcast_invoice_change(updated)
             AutoMyInvoice.Clients.recalculate_stats(updated.client_id)
+            # AMI-41/72: additive push fan-out on payment receipt.
+            PushNotifier.payment_received(updated)
             {:ok, updated}
 
           {:error, _, reason, _} ->

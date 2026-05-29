@@ -108,6 +108,11 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/upload", UploadController, :create
     get "/extraction/:id", UploadController, :show
 
+    # Push notification devices (AMI-41/72)
+    get "/devices", DeviceController, :index
+    post "/devices", DeviceController, :create
+    delete "/devices/:token", DeviceController, :delete
+
     # Settings
     get "/settings", SettingsController, :show
     put "/settings", SettingsController, :update

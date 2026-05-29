@@ -28,6 +28,8 @@ tags:
     description: Document upload and OCR extraction
   - name: settings
     description: User and account settings
+  - name: devices
+    description: Push notification device token registration (FCM/APNs)
 
 paths:
   # ---------------------------------------------------------------------------
@@ -584,6 +586,90 @@ paths:
   # ---------------------------------------------------------------------------
   # Settings
   # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # Push notification devices
+  # ---------------------------------------------------------------------------
+  /devices:
+    get:
+      tags: [devices]
+      summary: List the current user's registered devices
+      operationId: device_index
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of devices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [devices]
+      summary: Register or update a push device token (upsert by token)
+      description: >
+        Mobile clients POST a push token and platform to register for push
+        notifications. If the token already exists it is upserted — its owner,
+        platform, and last_seen_at are updated. The body may be the device
+        fields at the top level or wrapped under a "device" key.
+      operationId: device_create
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRequest'
+      responses:
+        '201':
+          description: Device registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Device'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /devices/{token}:
+    delete:
+      tags: [devices]
+      summary: Unregister a push device token
+      operationId: device_delete
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: The push token to unregister
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Device unregistered
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /settings:
     get:
       tags: [settings]
@@ -1174,6 +1260,42 @@ components:
           type: integer
         currency:
           type: string
+
+    # -------------------------------------------------------------------------
+    # Devices (push notifications)
+    # -------------------------------------------------------------------------
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        platform:
+          type: string
+          enum: [android, ios]
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        inserted_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DeviceRequest:
+      type: object
+      required: [token, platform]
+      properties:
+        token:
+          type: string
+          description: FCM (Android) or APNs (iOS) push token
+        platform:
+          type: string
+          enum: [android, ios]
 
     # -------------------------------------------------------------------------
     # Shared
