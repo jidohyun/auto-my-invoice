@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.invoiceflow.BuildConfig
 import com.invoiceflow.features.auth.data.AuthRepository
+import com.invoiceflow.features.notifications.PushTokenRegistrar
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,7 @@ sealed interface AuthEvent {
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val pushTokenRegistrar: PushTokenRegistrar,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -41,6 +43,8 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val data = authRepository.login(email, password)
+                // AMI-41/72: hand the FCM token to the backend for this session.
+                pushTokenRegistrar.pullAndRegister()
                 _events.value = AuthEvent.LoginSuccess(data.accessToken)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
@@ -61,6 +65,8 @@ class AuthViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true, error = null) }
             try {
                 val data = authRepository.register(email, password, name)
+                // AMI-41/72: hand the FCM token to the backend for this session.
+                pushTokenRegistrar.pullAndRegister()
                 _events.value = AuthEvent.RegisterSuccess(data.accessToken)
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {

@@ -17,4 +17,10 @@ sealed class NavRoutes(val route: String) {
     data object ClientDetail : NavRoutes("clients/{clientId}") {
         fun createRoute(clientId: String) = "clients/$clientId"
     }
+
+    // AMI-43: settings screen.
+    data object Settings : NavRoutes("settings")
+
+    // AMI-42/72: invoice pay QR scanner.
+    data object QrScanner : NavRoutes("qr-scanner")
 }

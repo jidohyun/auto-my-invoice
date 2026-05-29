@@ -12,6 +12,8 @@ import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import com.invoiceflow.features.invoices.data.model.InvoiceUpdateRequest
 import com.invoiceflow.features.invoices.data.model.MarkPaidRequest
 import com.invoiceflow.features.invoices.data.model.SendInvoiceRequest
+import com.invoiceflow.features.notifications.data.model.DeviceDto
+import com.invoiceflow.features.notifications.data.model.DeviceRegistrationRequest
 import com.invoiceflow.features.settings.data.model.UserSettingsDto
 import com.invoiceflow.features.settings.data.model.UserSettingsRequest
 import com.invoiceflow.features.upload.data.model.ExtractionJobDto
@@ -103,6 +105,10 @@ interface ApiService {
 
     @GET("upload/{jobId}")
     suspend fun getExtractionJob(@Path("jobId") jobId: String): ApiResponse<ExtractionJobDto>
+
+    // Devices — AMI-41/72: register the FCM push token for this device.
+    @POST("devices")
+    suspend fun registerDevice(@Body request: DeviceRegistrationRequest): ApiResponse<DeviceDto>
 
     // Settings
     @GET("settings")

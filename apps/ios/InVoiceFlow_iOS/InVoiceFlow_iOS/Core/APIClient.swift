@@ -69,7 +69,99 @@ final class APIClient {
         return try await send(req, as: APIResponse<[InvoiceDTO]>.self).data
     }
 
+    // MARK: - Invoices (AMI-44)
+
+    func invoices(status: String? = nil, clientId: String? = nil) async throws -> [InvoiceDTO] {
+        var items: [URLQueryItem] = []
+        if let status, !status.isEmpty { items.append(.init(name: "status", value: status)) }
+        if let clientId, !clientId.isEmpty { items.append(.init(name: "client_id", value: clientId)) }
+        let req = try makeRequest(path: "/invoices", method: "GET", query: items)
+        return try await send(req, as: APIResponse<[InvoiceDTO]>.self).data
+    }
+
+    func invoice(id: String) async throws -> InvoiceDTO {
+        let req = try makeRequest(path: "/invoices/\(id)", method: "GET")
+        return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    func createInvoice(_ body: InvoiceCreateRequest) async throws -> InvoiceDTO {
+        let req = try makeRequest(path: "/invoices", method: "POST", body: Wrapped(invoice: body))
+        return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    func sendInvoice(id: String) async throws -> InvoiceDTO {
+        let req = try makeRequest(path: "/invoices/\(id)/send", method: "POST")
+        return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    func markInvoicePaid(id: String) async throws -> InvoiceDTO {
+        let req = try makeRequest(path: "/invoices/\(id)/mark_paid", method: "POST")
+        return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    // MARK: - Clients (AMI-44)
+
+    func clients(search: String? = nil) async throws -> [ClientDTO] {
+        var items: [URLQueryItem] = []
+        if let search, !search.isEmpty { items.append(.init(name: "q", value: search)) }
+        let req = try makeRequest(path: "/clients", method: "GET", query: items)
+        return try await send(req, as: APIResponse<[ClientDTO]>.self).data
+    }
+
+    func createClient(_ body: ClientRequest) async throws -> ClientDTO {
+        let req = try makeRequest(path: "/clients", method: "POST", body: Wrapped(client: body))
+        return try await send(req, as: APIResponse<ClientDTO>.self).data
+    }
+
+    // MARK: - Settings (AMI-44)
+
+    func settings() async throws -> UserSettingsDTO {
+        let req = try makeRequest(path: "/settings", method: "GET")
+        return try await send(req, as: APIResponse<UserSettingsDTO>.self).data
+    }
+
+    func updateSettings(_ body: UserSettingsUpdate) async throws -> UserSettingsDTO {
+        let req = try makeRequest(path: "/settings", method: "PUT", body: Wrapped(settings: body))
+        return try await send(req, as: APIResponse<UserSettingsDTO>.self).data
+    }
+
+    // MARK: - Push registration (AMI-41)
+
+    /// POSTs the APNs device token to `/api/v1/devices`. The server route is
+    /// pending (backend task), so a 404 here is expected until it ships; the
+    /// caller swallows that case so push registration never crashes the app.
+    func registerDevice(token: String) async throws {
+        let req = try makeRequest(
+            path: "/devices",
+            method: "POST",
+            body: DeviceRegistration(token: token, platform: "ios")
+        )
+        _ = try await sendNoContent(req)
+    }
+
     // MARK: - Private
+
+    /// Body envelope helper. The Phoenix controllers pattern-match on a
+    /// single wrapping key (`%{"invoice" => ...}` etc.), so each request body
+    /// is nested under exactly one of these.
+    private struct Wrapped<T: Encodable>: Encodable {
+        var invoice: T?
+        var client: T?
+        var settings: T?
+
+        init(invoice: T) { self.invoice = invoice }
+        init(client: T) { self.client = client }
+        init(settings: T) { self.settings = settings }
+
+        func encode(to encoder: Encoder) throws {
+            var c = encoder.container(keyedBy: CodingKeys.self)
+            if let invoice { try c.encode(invoice, forKey: .invoice) }
+            if let client { try c.encode(client, forKey: .client) }
+            if let settings { try c.encode(settings, forKey: .settings) }
+        }
+
+        enum CodingKeys: String, CodingKey { case invoice, client, settings }
+    }
 
     private func makeRequest<B: Encodable>(
         path: String,
@@ -77,7 +169,7 @@ final class APIClient {
         body: B,
         requiresAuth: Bool = true
     ) throws -> URLRequest {
-        var req = baseRequest(path: path, method: method, requiresAuth: requiresAuth)
+        var req = baseRequest(path: path, method: method, query: [], requiresAuth: requiresAuth)
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try encoder.encode(body)
         return req
@@ -86,13 +178,25 @@ final class APIClient {
     private func makeRequest(
         path: String,
         method: String,
+        query: [URLQueryItem] = [],
         requiresAuth: Bool = true
     ) throws -> URLRequest {
-        return baseRequest(path: path, method: method, requiresAuth: requiresAuth)
+        return baseRequest(path: path, method: method, query: query, requiresAuth: requiresAuth)
     }
 
-    private func baseRequest(path: String, method: String, requiresAuth: Bool) -> URLRequest {
-        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+    private func baseRequest(
+        path: String,
+        method: String,
+        query: [URLQueryItem],
+        requiresAuth: Bool
+    ) -> URLRequest {
+        var url = baseURL.appendingPathComponent(path)
+        if !query.isEmpty,
+           var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+            components.queryItems = query
+            url = components.url ?? url
+        }
+        var req = URLRequest(url: url)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         if requiresAuth, let token = KeychainStore.shared.token() {
@@ -119,6 +223,24 @@ final class APIClient {
             return try decoder.decode(T.self, from: data)
         } catch {
             throw APIError.decoding(error)
+        }
+    }
+
+    /// Sends a request whose success response carries no decodable body
+    /// (e.g. 204 No Content, or device registration). Status handling matches
+    /// `send` but skips JSON decoding.
+    private func sendNoContent(_ req: URLRequest) async throws {
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: req)
+        } catch {
+            throw APIError.transport(error)
+        }
+
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw APIError.unauthorized }
+        guard (200..<300).contains(status) else {
+            throw APIError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
     }
 }

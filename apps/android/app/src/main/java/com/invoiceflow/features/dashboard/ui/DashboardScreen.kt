@@ -6,8 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +28,7 @@ fun DashboardScreen(
     onNavigateToInvoice: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
     onNavigateToInvoices: () -> Unit,
+    onNavigateToSettings: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -40,6 +41,9 @@ fun DashboardScreen(
                 actions = {
                     IconButton(onClick = onNavigateToCreate) {
                         Icon(Icons.Default.Add, contentDescription = "새 송장")
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "설정")
                     }
                 }
             )

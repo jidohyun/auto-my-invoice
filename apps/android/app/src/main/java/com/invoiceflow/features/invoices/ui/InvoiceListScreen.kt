@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,6 +61,7 @@ import java.io.File
 fun InvoiceListScreen(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
+    onNavigateToScanner: () -> Unit = {},
     viewModel: InvoiceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.listState.collectAsStateWithLifecycle()
@@ -104,6 +106,13 @@ fun InvoiceListScreen(
             TopAppBar(
                 title = { Text("Invoices") },
                 actions = {
+                    IconButton(onClick = onNavigateToScanner) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = "QR 스캔",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                     IconButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,

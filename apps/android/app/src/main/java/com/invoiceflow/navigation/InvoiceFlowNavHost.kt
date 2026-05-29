@@ -18,6 +18,8 @@ import com.invoiceflow.features.dashboard.ui.DashboardScreen
 import com.invoiceflow.features.invoices.ui.InvoiceCreateScreen
 import com.invoiceflow.features.invoices.ui.InvoiceDetailScreen
 import com.invoiceflow.features.invoices.ui.InvoiceListScreen
+import com.invoiceflow.features.qr.ui.QrScannerScreen
+import com.invoiceflow.features.settings.ui.SettingsScreen
 
 @Composable
 fun InvoiceFlowNavHost(
@@ -67,6 +69,7 @@ fun InvoiceFlowNavHost(
                 },
                 onNavigateToCreate = { navController.navigate(NavRoutes.InvoiceCreate.route) },
                 onNavigateToInvoices = { navController.navigate(NavRoutes.InvoiceList.route) },
+                onNavigateToSettings = { navController.navigate(NavRoutes.Settings.route) },
             )
         }
 
@@ -78,7 +81,10 @@ fun InvoiceFlowNavHost(
                 },
                 onNavigateToCreate = {
                     navController.navigate(NavRoutes.InvoiceCreate.route)
-                }
+                },
+                onNavigateToScanner = {
+                    navController.navigate(NavRoutes.QrScanner.route)
+                },
             )
         }
 
@@ -109,6 +115,22 @@ fun InvoiceFlowNavHost(
                 onNavigateToDetail = { clientId ->
                     navController.navigate(NavRoutes.ClientDetail.createRoute(clientId))
                 }
+            )
+        }
+
+        // Settings — AMI-43
+        composable(NavRoutes.Settings.route) {
+            SettingsScreen()
+        }
+
+        // QR Scanner — AMI-42/72
+        composable(NavRoutes.QrScanner.route) {
+            QrScannerScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onInvoiceScanned = { invoiceId ->
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.InvoiceDetail.createRoute(invoiceId))
+                },
             )
         }
     }
