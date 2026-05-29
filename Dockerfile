@@ -68,7 +68,12 @@ FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
   apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  chromium fonts-noto-cjk fonts-liberation \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# ChromicPDF(송장 PDF 생성)가 부팅 시 찾는 Chrome 실행 경로.
+# Debian chromium 패키지는 /usr/bin/chromium 에 설치된다.
+ENV CHROME_BIN="/usr/bin/chromium"
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
