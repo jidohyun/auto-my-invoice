@@ -722,6 +722,11 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: |
+        Two token types are accepted in the `Authorization: Bearer <token>` header:
+        1. Session-derived Phoenix.Token (issued via the auth endpoints).
+        2. Pro plan API keys (AMI-46), prefixed with `ami_`. Keys are created in
+           Settings, shown once at creation, and may be revoked at any time.
 
   parameters:
     IdParam:

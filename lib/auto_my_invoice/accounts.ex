@@ -118,31 +118,35 @@ defmodule AutoMyInvoice.Accounts do
 
   ## 플랜 확인
 
+  @plan_features %{
+    "free" => [:invoice_crud, :basic_template],
+    "starter" => [
+      :invoice_crud,
+      :basic_template,
+      :ai_reminders,
+      :paddle_integration,
+      :analytics
+    ],
+    "pro" => [
+      :invoice_crud,
+      :basic_template,
+      :ai_reminders,
+      :paddle_integration,
+      :analytics,
+      :team,
+      :custom_branding,
+      :api_access
+    ]
+  }
+
   @spec plan_allows?(User.t(), atom()) :: boolean()
   def plan_allows?(%User{plan: plan}, feature) do
-    plan_features = %{
-      "free" => [:invoice_crud, :basic_template],
-      "starter" => [
-        :invoice_crud,
-        :basic_template,
-        :ai_reminders,
-        :paddle_integration,
-        :analytics
-      ],
-      "pro" => [
-        :invoice_crud,
-        :basic_template,
-        :ai_reminders,
-        :paddle_integration,
-        :analytics,
-        :team,
-        :custom_branding,
-        :api_access
-      ]
-    }
-
-    feature in Map.get(plan_features, plan, [])
+    feature in features_for_plan(plan)
   end
+
+  @doc "Returns the list of feature atoms enabled for the given plan string."
+  @spec features_for_plan(String.t()) :: [atom()]
+  def features_for_plan(plan), do: Map.get(@plan_features, plan, [])
 
   ## 비밀번호 재설정
 

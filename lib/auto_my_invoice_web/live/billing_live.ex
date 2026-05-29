@@ -15,7 +15,9 @@ defmodule AutoMyInvoiceWeb.BillingLive do
      |> assign(:usage, usage)
      |> assign(:subscription, subscription)
      |> assign(:plans, Billing.plans())
-     |> assign(:ordered_plans, Billing.plans_ordered())}
+     |> assign(:ordered_plans, Billing.plans_ordered())
+     |> assign(:downgrade_target, nil)
+     |> assign(:downgrade_lost, [])}
   end
 
   @impl true
@@ -95,20 +97,54 @@ defmodule AutoMyInvoiceWeb.BillingLive do
               <%= cond do %>
                 <% @usage.plan == plan_id -> %>
                   <button class="btn btn-outline btn-sm w-full" disabled>현재 플랜</button>
-                <% plan_id == "free" -> %>
-                  <button class="btn btn-ghost btn-sm w-full" disabled>무료</button>
+                <% plan.price < (@plans[@usage.plan] || %{price: 0}).price -> %>
+                  <button
+                    class="btn btn-outline btn-warning btn-sm w-full"
+                    phx-click="confirm_downgrade"
+                    phx-value-plan={plan_id}
+                  >
+                    {plan.name} 플랜으로 다운그레이드
+                  </button>
                 <% true -> %>
                   <button
                     class="btn btn-primary btn-sm w-full"
                     phx-click="upgrade"
                     phx-value-plan={plan_id}
                   >
-                    {plan.name} 플랜으로 {if plan.price > (@plans[@usage.plan] || %{price: 0}).price,
-                      do: "업그레이드",
-                      else: "변경"}
+                    {plan.name} 플랜으로 업그레이드
                   </button>
               <% end %>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Downgrade confirmation (AMI-48) --%>
+      <div :if={@downgrade_target} class="modal modal-open" id="downgrade-modal">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg text-warning">
+            {@plans[@downgrade_target].name} 플랜으로 다운그레이드
+          </h3>
+          <p class="py-2 text-sm">
+            다운그레이드해도 팀, API 키 등 기존 데이터는 삭제되지 않고 보존됩니다.
+            다만 아래 기능에 대한 접근이 제한됩니다:
+          </p>
+          <ul class="list-disc list-inside text-sm text-base-content/70 mb-2">
+            <li :for={feature <- @downgrade_lost}>{feature_label(feature)}</li>
+            <li :if={@downgrade_lost == []}>제한되는 기능이 없습니다.</li>
+          </ul>
+          <p class="text-xs text-base-content/50">
+            다시 업그레이드하면 보존된 데이터와 함께 기능이 복원됩니다.
+          </p>
+          <div class="modal-action">
+            <button class="btn btn-ghost btn-sm" phx-click="cancel_downgrade">취소</button>
+            <button
+              class="btn btn-warning btn-sm"
+              phx-click="downgrade"
+              phx-value-plan={@downgrade_target}
+            >
+              다운그레이드 확인
+            </button>
           </div>
         </div>
       </div>
@@ -146,6 +182,37 @@ defmodule AutoMyInvoiceWeb.BillingLive do
     {:noreply, put_flash(socket, :info, "Paddle 결제창이 열립니다. 프로덕션에서는 PADDLE_API_KEY를 설정하세요.")}
   end
 
+  def handle_event("confirm_downgrade", %{"plan" => target}, socket) do
+    lost = Billing.restricted_features(socket.assigns.usage.plan, target)
+
+    {:noreply,
+     socket
+     |> assign(:downgrade_target, target)
+     |> assign(:downgrade_lost, lost)}
+  end
+
+  def handle_event("cancel_downgrade", _params, socket) do
+    {:noreply, assign(socket, downgrade_target: nil, downgrade_lost: [])}
+  end
+
+  def handle_event("downgrade", %{"plan" => target}, socket) do
+    case Billing.downgrade_plan(socket.assigns.current_user, target) do
+      {:ok, user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, user)
+         |> assign(:usage, Billing.usage_summary(user.id))
+         |> assign(downgrade_target: nil, downgrade_lost: [])
+         |> put_flash(:info, "#{Billing.plan_info(target).name} 플랜으로 변경되었습니다. 데이터는 보존됩니다.")}
+
+      {:error, _reason} ->
+        {:noreply,
+         socket
+         |> assign(downgrade_target: nil, downgrade_lost: [])
+         |> put_flash(:error, "다운그레이드에 실패했습니다.")}
+    end
+  end
+
   defp plan_badge_class("free"), do: "badge-ghost"
   defp plan_badge_class("starter"), do: "badge-primary"
   defp plan_badge_class("pro"), do: "badge-secondary"
@@ -153,6 +220,14 @@ defmodule AutoMyInvoiceWeb.BillingLive do
 
   defp format_limit(:unlimited), do: "무제한"
   defp format_limit(n), do: to_string(n)
+
+  defp feature_label(:ai_reminders), do: "AI 리마인더"
+  defp feature_label(:analytics), do: "분석 대시보드"
+  defp feature_label(:paddle_integration), do: "결제 연동"
+  defp feature_label(:team), do: "팀 관리"
+  defp feature_label(:custom_branding), do: "맞춤 브랜딩"
+  defp feature_label(:api_access), do: "API 접근"
+  defp feature_label(other), do: to_string(other)
 
   defp subscription_status("active"), do: "활성"
   defp subscription_status("trialing"), do: "체험 중"

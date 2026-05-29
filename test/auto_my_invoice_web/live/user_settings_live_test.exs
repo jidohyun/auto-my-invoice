@@ -1,14 +1,17 @@
 defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
   @moduledoc """
   LiveView tests for the settings page — covers the business settings bundle
-  (AMI-25 통화 / AMI-26 결제조건 / AMI-27 비즈니스 정보 / AMI-28 접두사).
+  (AMI-25 통화 / AMI-26 결제조건 / AMI-27 비즈니스 정보 / AMI-28 접두사) and the
+  Pro plan sections (AMI-45 teams / AMI-46 API keys / AMI-47 branding).
   """
 
   use AutoMyInvoiceWeb.ConnCase
 
   import Phoenix.LiveViewTest
+  import Swoosh.TestAssertions
 
   alias AutoMyInvoice.Accounts
+  alias AutoMyInvoice.ApiKeys
 
   setup do
     {:ok, user} =
@@ -26,7 +29,27 @@ defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
     %{conn: conn, user: user}
   end
 
-  describe "GET /settings" do
+  defp register_and_log_in(plan) do
+    {:ok, user} =
+      Accounts.register_user(%{
+        email: "settings#{System.unique_integer([:positive])}@example.com",
+        password: "password123456"
+      })
+
+    user =
+      if plan != "free" do
+        {:ok, user} = Accounts.update_profile(user, %{plan: plan})
+        user
+      else
+        user
+      end
+
+    token = Accounts.generate_user_session_token(user)
+    conn = build_conn() |> init_test_session(%{user_token: token})
+    %{conn: conn, user: user}
+  end
+
+  describe "GET /settings (business settings — AMI-25/26/27/28)" do
     test "renders business settings fields", %{conn: conn} do
       {:ok, _view, html} = live(conn, ~p"/settings")
 
@@ -81,6 +104,104 @@ defmodule AutoMyInvoiceWeb.UserSettingsLiveTest do
         |> render_submit()
 
       assert html =~ "1~10자"
+    end
+  end
+
+  describe "free plan user" do
+    test "sees Pro sections gated with upgrade copy", %{} do
+      %{conn: conn} = register_and_log_in("free")
+      {:ok, _view, html} = live(conn, ~p"/settings")
+
+      assert html =~ "팀 관리"
+      assert html =~ "API 키"
+      assert html =~ "맞춤 브랜딩"
+      assert html =~ "Pro 플랜에서 팀원을 초대"
+      refute html =~ "팀 생성"
+    end
+  end
+
+  describe "pro plan branding (AMI-47)" do
+    test "saves brand color", %{} do
+      %{conn: conn} = register_and_log_in("pro")
+      {:ok, view, _html} = live(conn, ~p"/settings")
+
+      html =
+        view
+        |> form("#branding_form", brand: %{brand_color: "#112233"})
+        |> render_submit()
+
+      assert html =~ "브랜딩이 저장되었습니다"
+    end
+  end
+
+  describe "pro plan teams (AMI-45)" do
+    test "creates a team, invites a member, and sends email", %{} do
+      %{conn: conn} = register_and_log_in("pro")
+      {:ok, view, html} = live(conn, ~p"/settings")
+
+      assert html =~ "팀 생성"
+
+      view
+      |> form("#create_team_form", team: %{name: "Acme"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "Acme"
+      assert html =~ "멤버 초대"
+
+      view
+      |> form("#invite_form", member: %{email: "newmember@example.com"})
+      |> render_submit()
+
+      assert render(view) =~ "newmember@example.com"
+      assert_email_sent(fn email -> assert email.subject =~ "팀" end)
+    end
+
+    test "removing a member updates the list", %{} do
+      %{conn: conn, user: user} = register_and_log_in("pro")
+      {:ok, team} = AutoMyInvoice.Teams.create_team(user, %{"name" => "Acme"})
+
+      {:ok, membership} =
+        AutoMyInvoice.Teams.invite_member(team, %{"email" => "gone@example.com"})
+
+      {:ok, view, _html} = live(conn, ~p"/settings")
+      assert render(view) =~ "gone@example.com"
+
+      view
+      |> element(~s|button[phx-click=remove_member][phx-value-id="#{membership.id}"]|)
+      |> render_click()
+
+      refute render(view) =~ "gone@example.com"
+    end
+  end
+
+  describe "pro plan api keys (AMI-46)" do
+    test "creates a key and shows it once", %{} do
+      %{conn: conn} = register_and_log_in("pro")
+      {:ok, view, _html} = live(conn, ~p"/settings")
+
+      html =
+        view
+        |> form("#api_key_form", api_key: %{name: "CI token"})
+        |> render_submit()
+
+      assert html =~ "API 키가 생성되었습니다"
+      assert html =~ "ami_"
+      assert html =~ "CI token"
+    end
+
+    test "revokes a key", %{} do
+      %{conn: conn, user: user} = register_and_log_in("pro")
+      {:ok, %{api_key: key}} = ApiKeys.generate_api_key(user, %{"name" => "to revoke"})
+
+      {:ok, view, _html} = live(conn, ~p"/settings")
+      assert render(view) =~ "to revoke"
+
+      view
+      |> element(~s|button[phx-click=revoke_api_key][phx-value-id="#{key.id}"]|)
+      |> render_click()
+
+      refute render(view) =~ "to revoke"
     end
   end
 end
