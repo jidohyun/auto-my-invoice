@@ -4,6 +4,7 @@ defmodule AutoMyInvoice.Reminders do
   import Ecto.Query
   alias AutoMyInvoice.Repo
   alias AutoMyInvoice.Reminders.Reminder
+  alias AutoMyInvoice.Reminders.ReminderTemplate
   alias AutoMyInvoice.Workers.ReminderWorker
 
   @step_offsets %{1 => 1, 2 => 7, 3 => 14}
@@ -43,14 +44,24 @@ defmodule AutoMyInvoice.Reminders do
 
   @manual_allowed_statuses ~w(sent overdue partially_paid)
 
-  @spec send_manual_reminder(map()) ::
+  @doc """
+  Sends an immediate manual reminder (step 0) for an invoice.
+
+  Accepts an optional custom message map `%{subject: ..., body: ...}`
+  (AMI-29). When provided, the subject/body are persisted on the
+  Reminder and used by `ReminderEmail` instead of the hard-coded
+  template. Blank values fall back to the default template.
+  """
+  @spec send_manual_reminder(map(), map()) ::
           {:ok, Reminder.t()} | {:error, :invalid_status | :rate_limited}
-  def send_manual_reminder(%{status: status} = _invoice)
+  def send_manual_reminder(invoice, custom_message \\ %{})
+
+  def send_manual_reminder(%{status: status} = _invoice, _custom_message)
       when status not in @manual_allowed_statuses do
     {:error, :invalid_status}
   end
 
-  def send_manual_reminder(%{id: invoice_id} = _invoice) do
+  def send_manual_reminder(%{id: invoice_id} = _invoice, custom_message) do
     today = Date.utc_today()
     today_start = DateTime.new!(today, ~T[00:00:00], "Etc/UTC")
     today_end = DateTime.new!(Date.add(today, 1), ~T[00:00:00], "Etc/UTC")
@@ -75,9 +86,13 @@ defmodule AutoMyInvoice.Reminders do
 
       now = DateTime.truncate(DateTime.utc_now(), :second)
 
+      attrs =
+        %{step: 0, scheduled_at: now, status: "scheduled"}
+        |> put_custom_message(custom_message)
+
       {:ok, reminder} =
         %Reminder{invoice_id: invoice_id}
-        |> Reminder.changeset(%{step: 0, scheduled_at: now, status: "scheduled"})
+        |> Reminder.changeset(attrs)
         |> Repo.insert()
 
       {:ok, _oban_job} =
@@ -88,6 +103,29 @@ defmodule AutoMyInvoice.Reminders do
       {:ok, reminder}
     end
   end
+
+  defp put_custom_message(attrs, custom_message) do
+    subject = custom_message |> get_message_field([:subject, "subject"]) |> blank_to_nil()
+    body = custom_message |> get_message_field([:body, "body"]) |> blank_to_nil()
+
+    attrs
+    |> maybe_put(:email_subject, subject)
+    |> maybe_put(:email_body, body)
+  end
+
+  defp get_message_field(map, keys) do
+    Enum.find_value(keys, fn key -> Map.get(map, key) end)
+  end
+
+  defp maybe_put(attrs, _key, nil), do: attrs
+  defp maybe_put(attrs, key, value), do: Map.put(attrs, key, value)
+
+  defp blank_to_nil(nil), do: nil
+
+  defp blank_to_nil(value) when is_binary(value),
+    do: if(String.trim(value) == "", do: nil, else: value)
+
+  defp blank_to_nil(value), do: value
 
   ## 취소
 
@@ -248,6 +286,67 @@ defmodule AutoMyInvoice.Reminders do
       by_step: by_step,
       avg_days_to_payment: days_to_pay
     }
+  end
+
+  ## 커스텀 템플릿 (AMI-39)
+
+  @doc "Lists all reminder templates owned by a user, ordered by step."
+  @spec list_templates(binary()) :: [ReminderTemplate.t()]
+  def list_templates(user_id) do
+    from(t in ReminderTemplate,
+      where: t.user_id == ^user_id,
+      order_by: [asc: t.step]
+    )
+    |> Repo.all()
+  end
+
+  @doc "Returns the user's template for a step, or nil when none exists."
+  @spec get_template(binary(), integer()) :: ReminderTemplate.t() | nil
+  def get_template(user_id, step) do
+    Repo.get_by(ReminderTemplate, user_id: user_id, step: step)
+  end
+
+  @doc "Builds a changeset for a template (used by forms)."
+  @spec change_template(ReminderTemplate.t(), map()) :: Ecto.Changeset.t()
+  def change_template(%ReminderTemplate{} = template, attrs \\ %{}) do
+    ReminderTemplate.changeset(template, attrs)
+  end
+
+  @doc "Creates a reminder template for a user."
+  @spec create_template(binary(), map()) ::
+          {:ok, ReminderTemplate.t()} | {:error, Ecto.Changeset.t()}
+  def create_template(user_id, attrs) do
+    %ReminderTemplate{}
+    |> ReminderTemplate.changeset(Map.put(stringify_keys(attrs), "user_id", user_id))
+    |> Repo.insert()
+  end
+
+  @doc "Updates an existing reminder template."
+  @spec update_template(ReminderTemplate.t(), map()) ::
+          {:ok, ReminderTemplate.t()} | {:error, Ecto.Changeset.t()}
+  def update_template(%ReminderTemplate{} = template, attrs) do
+    template
+    |> ReminderTemplate.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Creates or updates the user's template for a step (AMI-39).
+
+  Idempotent per (user, step): if a template already exists it is
+  updated, otherwise a new one is created.
+  """
+  @spec upsert_template(binary(), integer(), map()) ::
+          {:ok, ReminderTemplate.t()} | {:error, Ecto.Changeset.t()}
+  def upsert_template(user_id, step, attrs) do
+    case get_template(user_id, step) do
+      nil -> create_template(user_id, Map.put(stringify_keys(attrs), "step", step))
+      template -> update_template(template, attrs)
+    end
+  end
+
+  defp stringify_keys(map) do
+    Map.new(map, fn {k, v} -> {to_string(k), v} end)
   end
 
   ## Private

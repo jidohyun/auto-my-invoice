@@ -423,4 +423,149 @@ defmodule AutoMyInvoice.RemindersTest do
       assert steps == [1, 2, 3]
     end
   end
+
+  describe "send_manual_reminder/2 custom message (AMI-29)" do
+    test "persists custom subject and body on the reminder" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{
+                 subject: "긴급: 결제 부탁드립니다",
+                 body: "안녕하세요, {{client_name}}님. {{amount}} 결제 부탁드립니다."
+               })
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == "긴급: 결제 부탁드립니다"
+      assert stored.email_body == "안녕하세요, {{client_name}}님. {{amount}} 결제 부탁드립니다."
+    end
+
+    test "accepts string-keyed custom message map" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{
+                 "subject" => "안내",
+                 "body" => "본문"
+               })
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == "안내"
+      assert stored.email_body == "본문"
+    end
+
+    test "blank custom message leaves subject/body nil (fallback to default)" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{subject: "  ", body: ""})
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == nil
+      assert stored.email_body == nil
+    end
+
+    test "still works with single-arity call (no custom message)" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} = Reminders.send_manual_reminder(invoice)
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == nil
+    end
+  end
+
+  describe "reminder templates CRUD (AMI-39)" do
+    test "create_template/2 persists a per-step template for the user" do
+      user = create_user()
+
+      assert {:ok, template} =
+               Reminders.create_template(user.id, %{
+                 step: 1,
+                 tone: "friendly",
+                 subject_template: "{{amount}} 결제 안내",
+                 body_template: "{{client_name}}님께"
+               })
+
+      assert template.user_id == user.id
+      assert template.step == 1
+      assert template.subject_template == "{{amount}} 결제 안내"
+    end
+
+    test "create_template/2 rejects invalid step" do
+      user = create_user()
+
+      assert {:error, changeset} =
+               Reminders.create_template(user.id, %{
+                 step: 9,
+                 tone: "friendly",
+                 subject_template: "s",
+                 body_template: "b"
+               })
+
+      assert errors_on(changeset).step != []
+    end
+
+    test "get_template/2 returns the user's template for a step" do
+      user = create_user()
+
+      {:ok, _t} =
+        Reminders.create_template(user.id, %{
+          step: 2,
+          tone: "firm",
+          subject_template: "s",
+          body_template: "b"
+        })
+
+      assert %ReminderTemplate{step: 2} = Reminders.get_template(user.id, 2)
+      assert Reminders.get_template(user.id, 3) == nil
+    end
+
+    test "list_templates/1 returns the user's templates ordered by step" do
+      user = create_user()
+
+      {:ok, _} =
+        Reminders.create_template(user.id, %{
+          step: 3,
+          tone: "firm",
+          subject_template: "s3",
+          body_template: "b3"
+        })
+
+      {:ok, _} =
+        Reminders.create_template(user.id, %{
+          step: 1,
+          tone: "friendly",
+          subject_template: "s1",
+          body_template: "b1"
+        })
+
+      steps = user.id |> Reminders.list_templates() |> Enum.map(& &1.step)
+      assert steps == [1, 3]
+    end
+
+    test "upsert_template/3 creates then updates a single template" do
+      user = create_user()
+
+      assert {:ok, created} =
+               Reminders.upsert_template(user.id, 1, %{
+                 tone: "friendly",
+                 subject_template: "old",
+                 body_template: "old body"
+               })
+
+      assert {:ok, updated} =
+               Reminders.upsert_template(user.id, 1, %{
+                 tone: "firm",
+                 subject_template: "new",
+                 body_template: "new body"
+               })
+
+      assert created.id == updated.id
+      assert updated.subject_template == "new"
+      assert length(Reminders.list_templates(user.id)) == 1
+    end
+  end
 end

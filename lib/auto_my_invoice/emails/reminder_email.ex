@@ -3,6 +3,9 @@ defmodule AutoMyInvoice.Emails.ReminderEmail do
 
   import Swoosh.Email
 
+  alias AutoMyInvoice.Reminders
+  alias AutoMyInvoice.Reminders.TemplateRenderer
+
   @default_from_name "AutoMyInvoice"
   @default_brand_color "#0f172a"
 
@@ -25,16 +28,17 @@ defmodule AutoMyInvoice.Emails.ReminderEmail do
         payment_link
       end
 
-    {subject, html, text} =
-      content_for_step(reminder.step, %{
-        client_name: client.name,
-        invoice_number: invoice.invoice_number,
-        amount: amount,
-        due_date: due_date,
-        days_overdue: days_overdue,
-        payment_link: tracked_payment_link,
-        brand_color: brand_color(user)
-      })
+    assigns = %{
+      client_name: client.name,
+      invoice_number: invoice.invoice_number,
+      amount: amount,
+      due_date: due_date,
+      days_overdue: days_overdue,
+      payment_link: tracked_payment_link,
+      brand_color: brand_color(user)
+    }
+
+    {subject, html, text} = resolve_content(reminder, user, assigns)
 
     html = html <> tracking_pixel(base_url, reminder_id)
 
@@ -44,6 +48,98 @@ defmodule AutoMyInvoice.Emails.ReminderEmail do
     |> subject(subject)
     |> html_body(html)
     |> text_body(text)
+  end
+
+  # Content resolution priority (AMI-29 / AMI-39):
+  #   1. custom message persisted on the reminder (email_subject/email_body)
+  #   2. user's per-step ReminderTemplate with {{var}} interpolation
+  #   3. hard-coded default template for the step
+  defp resolve_content(reminder, user, assigns) do
+    cond do
+      custom_message?(reminder) ->
+        custom_content(reminder, assigns)
+
+      template = user_template(user, reminder.step) ->
+        template_content(template, assigns)
+
+      true ->
+        content_for_step(reminder.step, assigns)
+    end
+  end
+
+  defp custom_message?(%{email_subject: subject, email_body: body}) do
+    present?(subject) and present?(body)
+  end
+
+  defp custom_message?(_), do: false
+
+  defp present?(value) when is_binary(value), do: String.trim(value) != ""
+  defp present?(_), do: false
+
+  defp custom_content(reminder, assigns) do
+    vars = template_vars(assigns)
+    subject = TemplateRenderer.render(reminder.email_subject, vars)
+    body = TemplateRenderer.render(reminder.email_body, vars)
+
+    {subject, custom_html(body, assigns), custom_text(body, assigns)}
+  end
+
+  defp user_template(%{id: user_id}, step) when is_binary(user_id) do
+    Reminders.get_template(user_id, step)
+  end
+
+  defp user_template(_user, _step), do: nil
+
+  defp template_content(template, assigns) do
+    vars = template_vars(assigns)
+    subject = TemplateRenderer.render(template.subject_template, vars)
+    body = TemplateRenderer.render(template.body_template, vars)
+
+    {subject, custom_html(body, assigns), custom_text(body, assigns)}
+  end
+
+  defp template_vars(assigns) do
+    %{
+      client_name: assigns.client_name,
+      invoice_number: assigns.invoice_number,
+      amount: assigns.amount,
+      due_date: assigns.due_date,
+      days_overdue: assigns.days_overdue
+    }
+  end
+
+  defp custom_html(body, assigns) do
+    paragraphs =
+      body
+      |> String.split("\n")
+      |> Enum.map_join("\n", fn line -> "<p>#{escape_html(line)}</p>" end)
+
+    """
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head><meta charset="UTF-8" />#{styles()}</head>
+    <body>
+      <div class="header" style="background-color:#{assigns.brand_color}; color:#fff; padding:14px; border-radius:6px;">결제 안내</div>
+      #{paragraphs}
+      <div class="details">
+        <div class="row"><span class="label">송장</span><span>#{assigns.invoice_number}</span></div>
+        <div class="row"><span class="label">청구 금액</span><span class="amount">#{assigns.amount}</span></div>
+        <div class="row"><span class="label">지급 기한</span><span>#{assigns.due_date}</span></div>
+      </div>
+      #{pay_now_button(assigns.payment_link)}
+      #{footer()}
+    </body>
+    </html>
+    """
+  end
+
+  defp custom_text(body, assigns) do
+    """
+    #{body}
+    #{pay_now_text(assigns.payment_link)}
+    --
+    AutoMyInvoice
+    """
   end
 
   defp brand_from_name(%{company_name: name}) when is_binary(name) and name != "", do: name
@@ -267,6 +363,12 @@ defmodule AutoMyInvoice.Emails.ReminderEmail do
 
   defp footer do
     "<div class=\"footer\">본 안내는 AutoMyInvoice를 통해 발송되었습니다.</div>"
+  end
+
+  defp escape_html(text) do
+    text
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
   end
 
   defp tracking_pixel("", _reminder_id), do: ""

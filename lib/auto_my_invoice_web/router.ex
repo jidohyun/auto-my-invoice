@@ -169,6 +169,7 @@ defmodule AutoMyInvoiceWeb.Router do
       live "/upload", UploadLive
       live "/settings", UserSettingsLive
       live "/settings/billing", BillingLive
+      live "/settings/reminders", ReminderTemplateLive
     end
 
     get "/invoices/:id/pdf", InvoicePDFController, :download
