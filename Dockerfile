@@ -49,11 +49,12 @@ COPY priv priv
 COPY lib lib
 COPY assets assets
 
-# compile assets
-RUN mix assets.deploy
-
-# Compile the release
+# Compile the project FIRST so Phoenix 1.8 colocated hooks are generated
+# under _build/$MIX_ENV/phoenix-colocated (referenced by esbuild NODE_PATH).
 RUN mix compile
+
+# compile assets (needs phoenix-colocated/* from the compile step above)
+RUN mix assets.deploy
 
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
