@@ -152,6 +152,8 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/users/log_in", UserSessionController, :create
     get "/auth/google", UserOauthController, :request
     get "/auth/google/callback", UserOauthController, :callback
+    get "/auth/github", UserOauthController, :request
+    get "/auth/github/callback", UserOauthController, :callback
   end
 
   # Authenticated app routes

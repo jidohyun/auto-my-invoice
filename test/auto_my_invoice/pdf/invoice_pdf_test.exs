@@ -84,7 +84,9 @@ defmodule AutoMyInvoice.PDF.InvoicePDFTest do
     end
 
     # AMI-27: 공급자 비즈니스 정보를 포함해도 PDF 가 정상 생성된다.
-    test "renders with supplier business info" do
+    # logo_url 이 있어도 외부 이미지를 PDF 에 넣지 않으므로(page_load 타임아웃/SSRF
+    # 방지) 죽은 URL 이라도 PDF 생성이 안전하다.
+    test "renders with supplier business info and ignores external logo url" do
       user = %{
         company_name: "마이컴퍼니",
         business_address: "서울특별시 강남구 테헤란로 1",

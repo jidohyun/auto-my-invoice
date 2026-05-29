@@ -28,6 +28,7 @@ defmodule AutoMyInvoice.Accounts.User do
 
     # OAuth
     field :google_uid, :string
+    field :github_uid, :string
     field :avatar_url, :string
 
     # 구독
@@ -50,6 +51,7 @@ defmodule AutoMyInvoice.Accounts.User do
     :invoice_prefix,
     :locale,
     :google_uid,
+    :github_uid,
     :avatar_url,
     :plan,
     :paddle_customer_id
@@ -67,9 +69,16 @@ defmodule AutoMyInvoice.Accounts.User do
 
   def oauth_changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :google_uid, :avatar_url, :confirmed_at | @optional_fields])
+    |> cast(attrs, [
+      :email,
+      :google_uid,
+      :github_uid,
+      :avatar_url,
+      :confirmed_at | @optional_fields
+    ])
     |> validate_email([])
     |> unique_constraint(:google_uid)
+    |> unique_constraint(:github_uid)
   end
 
   def profile_changeset(user, attrs) do

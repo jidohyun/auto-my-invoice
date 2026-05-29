@@ -93,6 +93,7 @@ defmodule AutoMyInvoice.MixProject do
       # 인증
       {:ueberauth, "~> 0.10"},
       {:ueberauth_google, "~> 0.12"},
+      {:ueberauth_github, "~> 0.8"},
       {:bcrypt_elixir, "~> 3.0"},
 
       # 캐싱

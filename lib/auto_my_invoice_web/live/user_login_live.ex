@@ -45,7 +45,10 @@ defmodule AutoMyInvoiceWeb.UserLoginLive do
             {gettext("Google로 로그인")}
           </a>
 
-          <button class="btn w-full gap-3 font-medium normal-case bg-[#24292F] hover:bg-[#24292F]/90 text-white border-transparent">
+          <a
+            href={~p"/auth/github"}
+            class="btn w-full gap-3 font-medium normal-case bg-[#24292F] hover:bg-[#24292F]/90 text-white border-transparent"
+          >
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path
                 fill-rule="evenodd"
@@ -54,7 +57,7 @@ defmodule AutoMyInvoiceWeb.UserLoginLive do
               />
             </svg>
             {gettext("GitHub으로 로그인")}
-          </button>
+          </a>
         </div>
 
         <div class="flex items-center gap-4 py-2 mb-6">

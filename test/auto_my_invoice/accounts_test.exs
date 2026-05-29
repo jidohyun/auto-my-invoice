@@ -90,6 +90,54 @@ defmodule AutoMyInvoice.AccountsTest do
       assert updated.id == original.id
       assert updated.avatar_url == "https://example.com/new.png"
     end
+
+    # GitHub OAuth 최초 로그인
+    test "creates new user on first GitHub OAuth login" do
+      attrs = %{
+        email: "gh@example.com",
+        github_uid: "github-789",
+        avatar_url: "https://example.com/gh.png"
+      }
+
+      assert {:ok, %User{} = user} = Accounts.find_or_create_oauth_user(attrs)
+      assert user.email == "gh@example.com"
+      assert user.github_uid == "github-789"
+      assert user.confirmed_at != nil
+    end
+
+    # 이메일 기준 자동 계정 연결: 기존 Google 계정에 GitHub uid 가 붙는다
+    test "links GitHub uid to an existing account with the same email" do
+      {:ok, existing} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "same@example.com",
+          google_uid: "google-same"
+        })
+
+      {:ok, linked} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "same@example.com",
+          github_uid: "github-same"
+        })
+
+      assert linked.id == existing.id
+      assert linked.google_uid == "google-same"
+      assert linked.github_uid == "github-same"
+    end
+
+    # 이메일 기준 자동 연결: 비밀번호 가입 계정에 OAuth 가 붙는다
+    test "links OAuth to an existing password account by email" do
+      {:ok, pw_user} =
+        Accounts.register_user(%{email: "pw@example.com", password: "validpassword123"})
+
+      {:ok, linked} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "pw@example.com",
+          github_uid: "github-pw"
+        })
+
+      assert linked.id == pw_user.id
+      assert linked.github_uid == "github-pw"
+    end
   end
 
   describe "update_profile/2" do

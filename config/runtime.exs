@@ -60,6 +60,16 @@ config :auto_my_invoice,
   # falls back to :self in prod, "*" in dev.
   cors_origins: System.get_env("CORS_ALLOWED_ORIGINS")
 
+# OAuth client credentials (Ueberauth). nil 이면 해당 provider 로그인 시도 시
+# 실패 콜백으로 떨어지며(앱은 정상), email/password 로그인은 영향 없음.
+config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+
+config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+  client_id: System.get_env("GITHUB_CLIENT_ID"),
+  client_secret: System.get_env("GITHUB_CLIENT_SECRET")
+
 # Sentry DSN — same reasoning. Sentry library happily accepts a nil DSN
 # (it short-circuits send), so dev/test stay quiet without any DSN set.
 config :sentry, dsn: System.get_env("SENTRY_DSN")

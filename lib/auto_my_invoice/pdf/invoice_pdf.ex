@@ -224,10 +224,10 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
   defp business_name(%{company_name: name}) when is_binary(name) and name != "", do: name
   defp business_name(_), do: "AutoMyInvoice"
 
-  defp logo_html(%{logo_url: url}) when is_binary(url) and url != "" do
-    "<img src=\"#{escape_html(url)}\" alt=\"logo\" style=\"max-height:48px;margin-bottom:8px;display:block;\" />"
-  end
-
+  # 로고는 PDF 에 외부 URL <img> 로 넣지 않는다: 임의 외부 URL 은 Chrome 의
+  # page_load 를 무한 대기시켜(느리거나 죽은 URL → 타임아웃) PDF 생성 전체를
+  # 실패시키고, SSRF 위험도 있다. 이미지 로고는 추후 업로드 파일 base64 임베드로
+  # 안전하게 추가한다. 현재는 회사명/주소/사업자번호 텍스트로 브랜딩한다.
   defp logo_html(_), do: ""
 
   defp supplier_meta(user) when is_map(user) do
