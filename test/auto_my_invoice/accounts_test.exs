@@ -117,6 +117,95 @@ defmodule AutoMyInvoice.AccountsTest do
       assert {:error, changeset} = Accounts.update_profile(user, %{brand_tone: "invalid"})
       assert {"is invalid", _} = changeset.errors[:brand_tone]
     end
+
+    # AMI-25: 기본 통화 설정
+    test "defaults default_currency to KRW on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur-default@example.com", password: "validpassword123"})
+
+      assert user.default_currency == "KRW"
+    end
+
+    test "updates default_currency" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{default_currency: "USD"})
+      assert updated.default_currency == "USD"
+    end
+
+    test "rejects unsupported default_currency" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{default_currency: "BTC"})
+      assert changeset.errors[:default_currency]
+    end
+
+    # AMI-26: 기본 결제조건 설정
+    test "defaults payment_terms to 30 on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt-default@example.com", password: "validpassword123"})
+
+      assert user.payment_terms == 30
+    end
+
+    test "updates payment_terms to a valid Net value" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{payment_terms: 45})
+      assert updated.payment_terms == 45
+    end
+
+    test "rejects payment_terms outside Net 15/30/45/60" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{payment_terms: 90})
+      assert changeset.errors[:payment_terms]
+    end
+
+    # AMI-27: 비즈니스 정보 입력
+    test "updates business_address, registration number, and logo_url" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "biz@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} =
+               Accounts.update_profile(user, %{
+                 business_address: "서울특별시 강남구 테헤란로 1",
+                 business_registration_number: "123-45-67890",
+                 logo_url: "https://example.com/logo.png"
+               })
+
+      assert updated.business_address == "서울특별시 강남구 테헤란로 1"
+      assert updated.business_registration_number == "123-45-67890"
+      assert updated.logo_url == "https://example.com/logo.png"
+    end
+
+    # AMI-28: 송장 번호 접두사 설정
+    test "defaults invoice_prefix to INV on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx-default@example.com", password: "validpassword123"})
+
+      assert user.invoice_prefix == "INV"
+    end
+
+    test "updates invoice_prefix" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{invoice_prefix: "ACME"})
+      assert updated.invoice_prefix == "ACME"
+    end
+
+    test "rejects invoice_prefix with invalid characters" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{invoice_prefix: "송장!"})
+      assert changeset.errors[:invoice_prefix]
+    end
   end
 
   describe "plan_allows?/2" do

@@ -17,6 +17,14 @@ defmodule AutoMyInvoice.Accounts.User do
     field :brand_tone, :string, default: "professional"
     field :brand_color, :string
 
+    # 비즈니스 설정 (AMI-25/26/27/28)
+    field :default_currency, :string, default: "KRW"
+    field :payment_terms, :integer, default: 30
+    field :business_address, :string
+    field :business_registration_number, :string
+    field :logo_url, :string
+    field :invoice_prefix, :string, default: "INV"
+
     # OAuth
     field :google_uid, :string
     field :avatar_url, :string
@@ -33,11 +41,20 @@ defmodule AutoMyInvoice.Accounts.User do
     :timezone,
     :brand_tone,
     :brand_color,
+    :default_currency,
+    :payment_terms,
+    :business_address,
+    :business_registration_number,
+    :logo_url,
+    :invoice_prefix,
     :google_uid,
     :avatar_url,
     :plan,
     :paddle_customer_id
   ]
+
+  @currencies ~w(KRW USD EUR JPY GBP)
+  @payment_terms_options [15, 30, 45, 60]
 
   def registration_changeset(user, attrs, opts \\ []) do
     user
@@ -58,10 +75,21 @@ defmodule AutoMyInvoice.Accounts.User do
     |> cast(attrs, @optional_fields)
     |> validate_inclusion(:brand_tone, ~w(professional friendly formal))
     |> validate_inclusion(:plan, ~w(free starter pro))
+    |> validate_inclusion(:default_currency, @currencies, message: "지원하지 않는 통화입니다")
+    |> validate_inclusion(:payment_terms, @payment_terms_options,
+      message: "Net 15/30/45/60 중에서 선택하세요"
+    )
+    |> validate_format(:invoice_prefix, ~r/^[A-Za-z0-9-]{1,10}$/,
+      message: "영문/숫자/하이픈 1~10자만 가능합니다"
+    )
     |> validate_format(:brand_color, ~r/^#[0-9A-Fa-f]{6}$/,
       message: "must be a hex color like #RRGGBB"
     )
   end
+
+  @doc "AMI-25/26/28: 통화·결제조건·접두사 선택 옵션 노출용 헬퍼"
+  def currencies, do: @currencies
+  def payment_terms_options, do: @payment_terms_options
 
   def valid_password?(%__MODULE__{hashed_password: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do

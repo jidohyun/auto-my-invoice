@@ -33,7 +33,10 @@ defmodule AutoMyInvoiceWeb.PaddleWebhookController do
         conn |> put_status(403) |> json(%{error: "Invalid signature"})
 
       {:error, :timestamp_outside_window} ->
-        Logger.warning("Paddle webhook rejected — timestamp outside #{@max_timestamp_skew_seconds}s window")
+        Logger.warning(
+          "Paddle webhook rejected — timestamp outside #{@max_timestamp_skew_seconds}s window"
+        )
+
         conn |> put_status(403) |> json(%{error: "Timestamp outside window"})
 
       {:error, :secret_missing_in_prod} ->

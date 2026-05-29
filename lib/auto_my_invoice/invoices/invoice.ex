@@ -33,6 +33,11 @@ defmodule AutoMyInvoice.Invoices.Invoice do
     # when the invoice is sent. send_invoice/1 reads this flag.
     field :tax_invoice_requested, :boolean, default: false
 
+    # AMI-28: virtual carrier for the user's invoice number prefix. Injected
+    # by Invoices.create_invoice/2 from the user's settings. Defaults to "INV"
+    # so direct callers (and existing tests) without a user keep working.
+    field :invoice_prefix, :string, virtual: true
+
     belongs_to :user, AutoMyInvoice.Accounts.User
     belongs_to :client, AutoMyInvoice.Clients.Client
 
@@ -53,7 +58,8 @@ defmodule AutoMyInvoice.Invoices.Invoice do
     :sent_at,
     :overdue_notified_at,
     :amount_krw,
-    :tax_invoice_requested
+    :tax_invoice_requested,
+    :invoice_prefix
   ]
 
   def create_changeset(invoice, attrs) do
@@ -100,7 +106,7 @@ defmodule AutoMyInvoice.Invoices.Invoice do
   # for the target currency isn't cached yet — the daily refresh worker will
   # backfill on its next run.
   defp put_amount_krw(changeset) do
-    amount   = get_field(changeset, :amount)
+    amount = get_field(changeset, :amount)
     currency = get_field(changeset, :currency)
 
     cond do
@@ -128,7 +134,8 @@ defmodule AutoMyInvoice.Invoices.Invoice do
       changeset
     else
       now = Date.utc_today()
-      prefix = "INV-#{Calendar.strftime(now, "%Y%m")}-"
+      user_prefix = get_field(changeset, :invoice_prefix) || "INV"
+      prefix = "#{user_prefix}-#{Calendar.strftime(now, "%Y%m")}-"
       put_change(changeset, :invoice_number, prefix <> random_suffix())
     end
   end

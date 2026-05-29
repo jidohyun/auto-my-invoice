@@ -122,5 +122,4 @@ defmodule AutoMyInvoiceWeb.UserResetPasswordLive do
       |> assign(:form, to_form(%{}, as: "user"))
     end
   end
-
 end

@@ -63,8 +63,9 @@ config :auto_my_invoice,
 
 case System.get_env("MAILER_ADAPTER") do
   "smtp" ->
-    relay = System.get_env("MAILER_SMTP_RELAY") ||
-      raise "MAILER_ADAPTER=smtp requires MAILER_SMTP_RELAY"
+    relay =
+      System.get_env("MAILER_SMTP_RELAY") ||
+        raise "MAILER_ADAPTER=smtp requires MAILER_SMTP_RELAY"
 
     port = String.to_integer(System.get_env("MAILER_SMTP_PORT") || "587")
     ssl = System.get_env("MAILER_SMTP_SSL") in [nil, "true", "1"]

@@ -21,7 +21,11 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.FormComponent do
     changeset =
       case assigns.action do
         :new ->
-          attrs = Map.get(assigns, :prefill, %{})
+          attrs =
+            assigns
+            |> Map.get(:prefill, %{})
+            |> prefill_user_defaults(user)
+
           Invoice.create_changeset(%Invoice{user_id: user.id}, attrs)
 
         :edit ->
@@ -130,6 +134,25 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.FormComponent do
 
   defp assign_form(socket, changeset) do
     assign(socket, :form, to_form(changeset))
+  end
+
+  # AMI-25/26: prefill the new-invoice form with the user's default currency
+  # and a due_date computed from issue date (today) + payment_terms days.
+  # Both stay editable; any value already present in the prefill map (e.g.
+  # from an OCR extraction job) wins.
+  defp prefill_user_defaults(attrs, user) do
+    attrs = stringify_keys(attrs)
+    currency = Map.get(user, :default_currency) || "KRW"
+    terms = Map.get(user, :payment_terms) || 30
+    due_date = Date.add(Date.utc_today(), terms)
+
+    attrs
+    |> Map.put_new("currency", currency)
+    |> Map.put_new("due_date", Date.to_iso8601(due_date))
+  end
+
+  defp stringify_keys(map) when is_map(map) do
+    Map.new(map, fn {k, v} -> {to_string(k), v} end)
   end
 
   @impl true

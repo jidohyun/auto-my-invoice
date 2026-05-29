@@ -2,8 +2,8 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
   @moduledoc "Generates PDF for an invoice using ChromicPDF."
 
   @spec generate(map()) :: {:ok, binary()} | {:error, String.t()}
-  def generate(%{invoice: invoice, client: client}) do
-    html = render_html(invoice, client)
+  def generate(%{invoice: invoice, client: client} = args) do
+    html = render_html(invoice, client, Map.get(args, :user))
 
     case ChromicPDF.print_to_pdf({:html, html}, print_params()) do
       {:ok, blob} -> {:ok, blob}
@@ -23,7 +23,7 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
     ]
   end
 
-  defp render_html(invoice, client) do
+  defp render_html(invoice, client, user) do
     due_date = if invoice.due_date, do: format_date(invoice.due_date), else: "-"
     amount = format_amount(invoice.amount, invoice.currency)
     items_html = render_items(invoice.items || [], invoice.currency)
@@ -83,7 +83,7 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
     <body>
       <div class="header">
         <div>
-          <div class="brand">AutoMyInvoice</div>
+          #{supplier_block(user)}
         </div>
         <div>
           <div class="invoice-title">송장 / INVOICE</div>
@@ -115,7 +115,7 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
       #{notes_section}
 
       <div class="footer">
-        AutoMyInvoice 발행 &bull; #{format_date(DateTime.utc_now())}
+        #{escape_html(business_name(user))} 발행 &bull; #{format_date(DateTime.utc_now())}
       </div>
     </body>
     </html>
@@ -210,6 +210,49 @@ defmodule AutoMyInvoice.PDF.InvoicePDF do
   defp currency_symbol("JPY"), do: "¥"
   defp currency_symbol("KRW"), do: "₩"
   defp currency_symbol(code), do: "#{code} "
+
+  # AMI-27: 송장 PDF 상단에 공급자(사용자) 비즈니스 정보를 표시한다.
+  # user 가 없거나 회사명이 비어 있으면 기본 브랜드명으로 폴백한다.
+  defp supplier_block(user) do
+    name = business_name(user)
+    logo = logo_html(user)
+    meta = supplier_meta(user)
+
+    "#{logo}<div class=\"brand\">#{escape_html(name)}</div>#{meta}"
+  end
+
+  defp business_name(%{company_name: name}) when is_binary(name) and name != "", do: name
+  defp business_name(_), do: "AutoMyInvoice"
+
+  defp logo_html(%{logo_url: url}) when is_binary(url) and url != "" do
+    "<img src=\"#{escape_html(url)}\" alt=\"logo\" style=\"max-height:48px;margin-bottom:8px;display:block;\" />"
+  end
+
+  defp logo_html(_), do: ""
+
+  defp supplier_meta(user) when is_map(user) do
+    address = Map.get(user, :business_address)
+    reg_no = Map.get(user, :business_registration_number)
+
+    [
+      address_line(address),
+      reg_no_line(reg_no)
+    ]
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("")
+  end
+
+  defp supplier_meta(_), do: ""
+
+  defp address_line(addr) when is_binary(addr) and addr != "",
+    do: "<div style=\"font-size:12px;color:#666;margin-top:4px;\">#{escape_html(addr)}</div>"
+
+  defp address_line(_), do: ""
+
+  defp reg_no_line(reg) when is_binary(reg) and reg != "",
+    do: "<div style=\"font-size:12px;color:#666;\">사업자등록번호: #{escape_html(reg)}</div>"
+
+  defp reg_no_line(_), do: ""
 
   defp status_label("draft"), do: "임시저장"
   defp status_label("sent"), do: "발송"

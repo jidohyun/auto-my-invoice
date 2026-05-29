@@ -26,6 +26,23 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
     {"격식 있음", "formal"}
   ]
 
+  # AMI-25: 지원 통화 (KRW 최상단)
+  @currencies [
+    {"원 (KRW)", "KRW"},
+    {"미국 달러 (USD)", "USD"},
+    {"유로 (EUR)", "EUR"},
+    {"엔 (JPY)", "JPY"},
+    {"파운드 (GBP)", "GBP"}
+  ]
+
+  # AMI-26: 결제 조건 옵션
+  @payment_terms [
+    {"Net 15 (15일)", 15},
+    {"Net 30 (30일)", 30},
+    {"Net 45 (45일)", 45},
+    {"Net 60 (60일)", 60}
+  ]
+
   def render(assigns) do
     ~H"""
     <div class="max-w-2xl mx-auto p-6">
@@ -117,6 +134,125 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
               </label>
             </div>
 
+            <div class="divider">송장 기본값</div>
+
+            <div class="form-control">
+              <label class="label" for="profile_default_currency">
+                <span class="label-text">기본 통화</span>
+              </label>
+              <select
+                name="profile[default_currency]"
+                id="profile_default_currency"
+                class="select select-bordered w-full"
+              >
+                <option
+                  :for={{label, value} <- @currencies}
+                  value={value}
+                  selected={@form[:default_currency].value == value}
+                >
+                  {label}
+                </option>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/50">
+                  새 송장 생성 시 자동으로 채워집니다 (송장별 변경 가능)
+                </span>
+              </label>
+            </div>
+
+            <div class="form-control">
+              <label class="label" for="profile_payment_terms">
+                <span class="label-text">기본 결제 조건</span>
+              </label>
+              <select
+                name="profile[payment_terms]"
+                id="profile_payment_terms"
+                class="select select-bordered w-full"
+              >
+                <option
+                  :for={{label, value} <- @payment_terms_options}
+                  value={value}
+                  selected={to_string(@form[:payment_terms].value) == to_string(value)}
+                >
+                  {label}
+                </option>
+              </select>
+              <label class="label">
+                <span class="label-text-alt text-base-content/50">
+                  발행일 + 조건 = 마감일이 자동 계산됩니다
+                </span>
+              </label>
+            </div>
+
+            <div class="form-control">
+              <label class="label" for="profile_invoice_prefix">
+                <span class="label-text">송장 번호 접두사</span>
+              </label>
+              <input
+                type="text"
+                name="profile[invoice_prefix]"
+                id="profile_invoice_prefix"
+                value={@form[:invoice_prefix].value}
+                class="input input-bordered w-full"
+                placeholder="INV"
+                maxlength="10"
+              />
+              <label class="label">
+                <span class="label-text-alt text-base-content/50">
+                  예: MYCO → MYCO-202605-XXXX (영문/숫자/하이픈 1~10자)
+                </span>
+              </label>
+            </div>
+
+            <div class="divider">비즈니스 정보</div>
+
+            <div class="form-control">
+              <label class="label" for="profile_business_address">
+                <span class="label-text">사업장 주소</span>
+              </label>
+              <input
+                type="text"
+                name="profile[business_address]"
+                id="profile_business_address"
+                value={@form[:business_address].value}
+                class="input input-bordered w-full"
+                placeholder="서울특별시 ..."
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label" for="profile_business_registration_number">
+                <span class="label-text">사업자등록번호</span>
+              </label>
+              <input
+                type="text"
+                name="profile[business_registration_number]"
+                id="profile_business_registration_number"
+                value={@form[:business_registration_number].value}
+                class="input input-bordered w-full"
+                placeholder="000-00-00000"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label" for="profile_logo_url">
+                <span class="label-text">로고 이미지 URL</span>
+              </label>
+              <input
+                type="url"
+                name="profile[logo_url]"
+                id="profile_logo_url"
+                value={@form[:logo_url].value}
+                class="input input-bordered w-full"
+                placeholder="https://..."
+              />
+              <label class="label">
+                <span class="label-text-alt text-base-content/50">
+                  송장 PDF 상단과 이메일 헤더에 표시됩니다
+                </span>
+              </label>
+            </div>
+
             <div class="form-control mt-6">
               <button type="submit" phx-disable-with="저장 중..." class="btn btn-primary">
                 변경사항 저장
@@ -137,6 +273,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
       socket
       |> assign(:page_title, "설정")
       |> assign(timezones: @timezones, brand_tones: @brand_tones)
+      |> assign(currencies: @currencies, payment_terms_options: @payment_terms)
       |> assign_form(changeset)
 
     {:ok, socket}

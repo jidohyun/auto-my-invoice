@@ -8,7 +8,7 @@ defmodule AutoMyInvoiceWeb.InvoicePDFController do
     user = conn.assigns.current_user
     invoice = Invoices.get_invoice!(user.id, id)
 
-    case InvoicePDF.generate(%{invoice: invoice, client: invoice.client}) do
+    case InvoicePDF.generate(%{invoice: invoice, client: invoice.client, user: user}) do
       {:ok, pdf_data} ->
         filename = "#{invoice.invoice_number}.pdf"
         pdf_binary = Base.decode64!(pdf_data)
