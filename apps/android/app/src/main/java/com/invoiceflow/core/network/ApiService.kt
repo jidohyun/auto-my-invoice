@@ -4,6 +4,9 @@ import com.invoiceflow.features.auth.data.model.AuthData
 import com.invoiceflow.features.auth.data.model.LoginRequest
 import com.invoiceflow.features.auth.data.model.RefreshTokenRequest
 import com.invoiceflow.features.auth.data.model.RegisterRequest
+import com.invoiceflow.features.analytics.data.model.ClientRankingDto
+import com.invoiceflow.features.analytics.data.model.DashboardAnalyticsDto
+import com.invoiceflow.features.analytics.data.model.ReminderEffectivenessDto
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.data.model.ClientRequest
 import com.invoiceflow.features.dashboard.data.model.KpiSummaryDto
@@ -53,6 +56,16 @@ interface ApiService {
 
     @GET("dashboard/recent")
     suspend fun getRecentInvoices(@Query("limit") limit: Int = 5): ApiResponse<List<InvoiceDto>>
+
+    // Analytics (read-only, AMI parity)
+    @GET("dashboard/analytics")
+    suspend fun getDashboardAnalytics(): ApiResponse<DashboardAnalyticsDto>
+
+    @GET("analytics/reminders")
+    suspend fun getReminderEffectiveness(): ApiResponse<ReminderEffectivenessDto>
+
+    @GET("clients/ranking")
+    suspend fun getClientRanking(): ApiResponse<List<ClientRankingDto>>
 
     // Invoices
     @GET("invoices")

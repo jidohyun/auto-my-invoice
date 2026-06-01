@@ -50,4 +50,7 @@ sealed class NavRoutes(val route: String) {
 
     // AMI-42/72: invoice pay QR scanner.
     data object QrScanner : NavRoutes("qr-scanner")
+
+    // AMI parity: read-only analytics dashboard.
+    data object Analytics : NavRoutes("analytics")
 }

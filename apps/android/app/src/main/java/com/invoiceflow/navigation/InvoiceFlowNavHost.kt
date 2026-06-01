@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.invoiceflow.features.analytics.ui.AnalyticsScreen
 import com.invoiceflow.features.auth.ui.LoginScreen
 import com.invoiceflow.features.auth.ui.RegisterScreen
 import com.invoiceflow.features.auth.viewmodel.AuthViewModel
@@ -73,6 +74,7 @@ fun InvoiceFlowNavHost(
                 onNavigateToCreate = { navController.navigate(NavRoutes.InvoiceCreate.route) },
                 onNavigateToInvoices = { navController.navigate(NavRoutes.InvoiceList.route) },
                 onNavigateToSettings = { navController.navigate(NavRoutes.Settings.route) },
+                onNavigateToAnalytics = { navController.navigate(NavRoutes.Analytics.route) },
             )
         }
 
@@ -196,6 +198,11 @@ fun InvoiceFlowNavHost(
         // Settings — AMI-43
         composable(NavRoutes.Settings.route) {
             SettingsScreen()
+        }
+
+        // Analytics — AMI parity
+        composable(NavRoutes.Analytics.route) {
+            AnalyticsScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         // QR Scanner — AMI-42/72
