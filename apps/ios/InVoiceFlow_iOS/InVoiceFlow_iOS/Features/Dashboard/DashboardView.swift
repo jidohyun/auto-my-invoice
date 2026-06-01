@@ -9,12 +9,9 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let error = vm.error {
-                        Text(error)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
+                        ErrorStateView(message: error) {
+                            Task { await vm.refresh() }
+                        }
                     }
 
                     KpiRow(kpi: vm.kpi, isLoading: vm.isLoading)
