@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.viewmodel.InvoiceViewModel
+import com.invoiceflow.ui.components.ErrorState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,9 +57,9 @@ fun InvoiceDetailScreen(
         ) {
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error,
+                state.error != null -> ErrorState(
+                    message = state.error ?: "",
+                    onRetry = { viewModel.loadInvoice(invoiceId) },
                     modifier = Modifier.align(Alignment.Center),
                 )
                 state.invoice != null -> {

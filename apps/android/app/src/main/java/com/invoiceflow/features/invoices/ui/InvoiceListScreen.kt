@@ -53,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import com.invoiceflow.features.invoices.viewmodel.InvoiceViewModel
+import com.invoiceflow.ui.components.ErrorState
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -80,7 +81,6 @@ fun InvoiceListScreen(
             scope.launch {
                 snackbarHostState.showSnackbar("사진 저장 완료: ${photoUri?.lastPathSegment}")
             }
-            // TODO: photoUri를 서버에 업로드하거나 OCR 처리
         }
     }
 
@@ -147,9 +147,9 @@ fun InvoiceListScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     }
                     state.error != null -> Box(Modifier.fillMaxSize()) {
-                        Text(
-                            text = state.error ?: "",
-                            color = MaterialTheme.colorScheme.error,
+                        ErrorState(
+                            message = state.error ?: "",
+                            onRetry = viewModel::loadInvoices,
                             modifier = Modifier.align(Alignment.Center),
                         )
                     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -180,7 +181,17 @@ fun InvoiceCreateScreen(
                 enabled = !state.isSubmitting && selectedClientId != null && amount.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (state.isSubmitting) "생성 중..." else "송장 생성")
+                if (state.isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("생성 중...")
+                } else {
+                    Text("송장 생성")
+                }
             }
         }
     }

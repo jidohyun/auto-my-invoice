@@ -25,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.viewmodel.ClientViewModel
+import com.invoiceflow.ui.components.ErrorState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,13 +47,13 @@ fun ClientListScreen(
         ) {
             when {
                 state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                state.error != null -> Text(
-                    text = state.error ?: "",
-                    color = MaterialTheme.colorScheme.error,
+                state.error != null -> ErrorState(
+                    message = state.error ?: "",
+                    onRetry = viewModel::loadClients,
                     modifier = Modifier.align(Alignment.Center),
                 )
                 state.clients.isEmpty() -> Text(
-                    text = "No clients yet",
+                    text = "아직 거래처가 없습니다",
                     modifier = Modifier.align(Alignment.Center),
                 )
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {

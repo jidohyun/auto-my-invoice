@@ -58,7 +58,13 @@ fun DashboardScreen(
         ) {
             state.error?.let { msg ->
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
-                    Text(msg, modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onErrorContainer)
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(msg, color = MaterialTheme.colorScheme.onErrorContainer)
+                        TextButton(onClick = viewModel::refresh) { Text("다시 시도") }
+                    }
                 }
             }
 

@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -112,7 +114,13 @@ fun RegisterScreen(
                 enabled = !state.isLoading && name.isNotBlank() && email.isNotBlank() && password.isNotBlank(),
             ) {
                 if (state.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.height(20.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Creating...")
                 } else {
                     Text("Register")
                 }
