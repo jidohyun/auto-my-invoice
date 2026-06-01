@@ -31,7 +31,8 @@ final class APIClient {
     /// Override at app start via the `API_BASE_URL` Info.plist key if needed.
     /// Defaults to the live production backend; use Info.plist override (or a
     /// local scheme) to point at a local Phoenix dev server during development.
-    var baseURL = URL(string: "https://automyinvoice.fly.dev/api/v1")!
+    var baseURL = URL(string: "https://automyinvoice.fly.dev/api/v1")
+        ?? URL(string: "https://automyinvoice.fly.dev")!
 
     private init() {
         decoder = JSONDecoder()
