@@ -21,6 +21,9 @@ struct ClientDetailView: View {
                 if let client = vm.client {
                     header(client)
                     countsSection
+                    if let analytics = vm.analytics {
+                        analyticsSection(analytics)
+                    }
                     contactSection(client)
                 } else if vm.isLoading {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
@@ -97,6 +100,34 @@ struct ClientDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
+    }
+
+    /// Server-computed payment behaviour for this client (`/clients/:id/analytics`).
+    /// All money fields are KRW-rolled (AMI-90).
+    private func analyticsSection(_ a: ClientAnalyticsDTO) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("결제 분석").font(.headline)
+            analyticsRow("총 청구액", MoneyFormatter.format(a.totalInvoiced, currency: "KRW"))
+            analyticsRow("총 수금액", MoneyFormatter.format(a.totalPaid, currency: "KRW"))
+            analyticsRow("미수금", MoneyFormatter.format(a.outstandingAmount, currency: "KRW"))
+            if let days = a.avgPaymentDays {
+                analyticsRow("평균 결제 소요", String(format: "%.0f일", days))
+            }
+            if let rate = a.onTimeRate {
+                analyticsRow("정시 결제율", String(format: "%.0f%%", rate))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+    }
+
+    private func analyticsRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label).font(.subheadline).foregroundStyle(.secondary)
+            Spacer()
+            Text(value).font(.subheadline.weight(.medium))
+        }
     }
 }
 

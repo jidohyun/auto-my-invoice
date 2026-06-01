@@ -50,6 +50,21 @@ data class ReminderEffectivenessDto(
     @Json(name = "avg_days_to_payment") val avgDaysToPayment: Double? = null,
 )
 
+/**
+ * `GET /clients/:id/analytics` → `{data: {...}}`. Mirrors
+ * Clients.client_analytics/1 — the per-client payment-behaviour summary.
+ */
+@JsonClass(generateAdapter = true)
+data class ClientAnalyticsDto(
+    @Json(name = "avg_payment_days") val avgPaymentDays: Double? = null,
+    @Json(name = "total_invoiced") val totalInvoiced: String,
+    @Json(name = "total_paid") val totalPaid: String,
+    @Json(name = "on_time_rate") val onTimeRate: Double? = null,
+    @Json(name = "invoice_count") val invoiceCount: Int,
+    @Json(name = "paid_count") val paidCount: Int,
+    @Json(name = "outstanding_amount") val outstandingAmount: String,
+)
+
 /** One client from Clients.client_ranking/1 (`GET /clients/ranking`). */
 @JsonClass(generateAdapter = true)
 data class ClientRankingDto(

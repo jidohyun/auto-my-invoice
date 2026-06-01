@@ -4,6 +4,7 @@ import com.invoiceflow.features.auth.data.model.AuthData
 import com.invoiceflow.features.auth.data.model.LoginRequest
 import com.invoiceflow.features.auth.data.model.RefreshTokenRequest
 import com.invoiceflow.features.auth.data.model.RegisterRequest
+import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.analytics.data.model.ClientRankingDto
 import com.invoiceflow.features.analytics.data.model.DashboardAnalyticsDto
 import com.invoiceflow.features.analytics.data.model.ReminderEffectivenessDto
@@ -66,6 +67,9 @@ interface ApiService {
 
     @GET("clients/ranking")
     suspend fun getClientRanking(): ApiResponse<List<ClientRankingDto>>
+
+    @GET("clients/{id}/analytics")
+    suspend fun getClientAnalytics(@Path("id") id: String): ApiResponse<ClientAnalyticsDto>
 
     // Invoices
     @GET("invoices")

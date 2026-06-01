@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.viewmodel.ClientViewModel
 import com.invoiceflow.ui.components.ErrorState
@@ -81,14 +82,14 @@ fun ClientDetailScreen(
                     onRetry = { viewModel.loadClient(clientId) },
                     modifier = Modifier.align(Alignment.Center),
                 )
-                state.client != null -> ClientDetailContent(state.client!!)
+                state.client != null -> ClientDetailContent(state.client!!, state.analytics)
             }
         }
     }
 }
 
 @Composable
-private fun ClientDetailContent(client: ClientDto) {
+private fun ClientDetailContent(client: ClientDto, analytics: ClientAnalyticsDto?) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -112,6 +113,8 @@ private fun ClientDetailContent(client: ClientDto) {
             StatCard(label = "총 청구액", value = formatKrw(client.totalBilled), modifier = Modifier.weight(1f))
         }
 
+        analytics?.let { AnalyticsSection(it) }
+
         Spacer(Modifier.height(8.dp))
 
         client.email?.takeIf { it.isNotBlank() }?.let { InfoRow("이메일", it) }
@@ -119,6 +122,16 @@ private fun ClientDetailContent(client: ClientDto) {
         client.taxId?.takeIf { it.isNotBlank() }?.let { InfoRow("사업자번호", it) }
         client.notes?.takeIf { it.isNotBlank() }?.let { InfoRow("메모", it) }
     }
+}
+
+@Composable
+private fun AnalyticsSection(a: ClientAnalyticsDto) {
+    Spacer(Modifier.height(8.dp))
+    Text("결제 분석", style = MaterialTheme.typography.titleMedium)
+    InfoRow("총 수금액", formatKrwString(a.totalPaid))
+    InfoRow("미수금", formatKrwString(a.outstandingAmount))
+    a.avgPaymentDays?.let { InfoRow("평균 결제 소요", "%.0f일".format(it)) }
+    a.onTimeRate?.let { InfoRow("정시 결제율", "%.0f%%".format(it)) }
 }
 
 @Composable
@@ -143,4 +156,10 @@ private fun InfoRow(label: String, value: String) {
 private fun formatKrw(amount: Long): String {
     val fmt = NumberFormat.getCurrencyInstance(Locale.KOREA)
     return fmt.format(amount)
+}
+
+/** Formats a decimal-string amount (analytics money fields) as KRW. */
+private fun formatKrwString(raw: String): String {
+    val value = raw.toBigDecimalOrNull() ?: return formatKrw(0)
+    return formatKrw(value.toLong())
 }

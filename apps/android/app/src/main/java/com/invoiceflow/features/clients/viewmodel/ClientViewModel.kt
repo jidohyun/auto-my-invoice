@@ -2,6 +2,7 @@ package com.invoiceflow.features.clients.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.clients.data.ClientRepository
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.data.model.ClientRequest
@@ -21,6 +22,8 @@ data class ClientListState(
 
 data class ClientDetailState(
     val client: ClientDto? = null,
+    /** Supplementary payment-behaviour summary; null until/unless it loads. */
+    val analytics: ClientAnalyticsDto? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
 )
@@ -67,6 +70,10 @@ class ClientViewModel @Inject constructor(
             } catch (e: Exception) {
                 _detailState.update { it.copy(error = e.message ?: "Failed to load client", isLoading = false) }
             }
+            // Analytics is supplementary — swallow its failure so it never
+            // blanks the screen when the core client load already succeeded.
+            runCatching { clientRepository.getClientAnalytics(id) }
+                .onSuccess { analytics -> _detailState.update { it.copy(analytics = analytics) } }
         }
     }
 

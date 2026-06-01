@@ -11,6 +11,7 @@ import Observation
 final class ClientDetailViewModel {
     private(set) var client: ClientDTO?
     private(set) var invoices: [InvoiceDTO] = []
+    private(set) var analytics: ClientAnalyticsDTO?
     private(set) var isLoading = false
     private(set) var isSaving = false
     private(set) var error: String?
@@ -60,6 +61,10 @@ final class ClientDetailViewModel {
         } catch {
             self.error = error.localizedDescription
         }
+
+        // Analytics is supplementary — a failure here must not blank the
+        // screen, so it is fetched separately and its error is swallowed.
+        analytics = try? await api.clientAnalytics(id: clientId)
     }
 
     /// Saves edits via `PUT /clients/:id`. Returns success so the edit sheet

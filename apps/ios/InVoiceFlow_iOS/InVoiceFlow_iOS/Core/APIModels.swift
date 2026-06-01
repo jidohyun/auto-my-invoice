@@ -419,6 +419,28 @@ struct ReminderEffectivenessDTO: Decodable {
     }
 }
 
+/// `GET /clients/:id/analytics` → `{data: {...}}`. Mirrors
+/// `Clients.client_analytics/1` — the per-client payment-behaviour summary.
+struct ClientAnalyticsDTO: Decodable {
+    let avgPaymentDays: Double?
+    let totalInvoiced: String
+    let totalPaid: String
+    let onTimeRate: Double?
+    let invoiceCount: Int
+    let paidCount: Int
+    let outstandingAmount: String
+
+    enum CodingKeys: String, CodingKey {
+        case avgPaymentDays = "avg_payment_days"
+        case totalInvoiced = "total_invoiced"
+        case totalPaid = "total_paid"
+        case onTimeRate = "on_time_rate"
+        case invoiceCount = "invoice_count"
+        case paidCount = "paid_count"
+        case outstandingAmount = "outstanding_amount"
+    }
+}
+
 /// One client in `Clients.client_ranking/1` (`GET /clients/ranking`).
 struct ClientRankingDTO: Decodable, Identifiable {
     let id: String

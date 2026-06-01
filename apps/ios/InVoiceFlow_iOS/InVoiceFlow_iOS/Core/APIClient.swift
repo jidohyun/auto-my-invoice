@@ -100,6 +100,12 @@ final class APIClient {
         return try await send(req, as: APIResponse<[ClientRankingDTO]>.self).data
     }
 
+    /// `GET /clients/:id/analytics` — per-client payment-behaviour summary.
+    func clientAnalytics(id: String) async throws -> ClientAnalyticsDTO {
+        let req = try makeRequest(path: "/clients/\(id)/analytics", method: "GET")
+        return try await send(req, as: APIResponse<ClientAnalyticsDTO>.self).data
+    }
+
     func recentInvoices(limit: Int = 5) async throws -> [InvoiceDTO] {
         let req = try makeRequest(path: "/dashboard/recent?limit=\(limit)", method: "GET")
         return try await send(req, as: APIResponse<[InvoiceDTO]>.self).data
