@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +35,7 @@ import com.invoiceflow.ui.components.ErrorState
 @Composable
 fun ClientListScreen(
     onNavigateToDetail: (String) -> Unit,
+    onNavigateToCreate: () -> Unit = {},
     viewModel: ClientViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -38,7 +43,12 @@ fun ClientListScreen(
     LaunchedEffect(Unit) { viewModel.loadClients() }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Clients") }) }
+        topBar = { TopAppBar(title = { Text("거래처") }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onNavigateToCreate) {
+                Icon(Icons.Default.Add, contentDescription = "거래처 추가")
+            }
+        },
     ) { padding ->
         Box(
             modifier = Modifier

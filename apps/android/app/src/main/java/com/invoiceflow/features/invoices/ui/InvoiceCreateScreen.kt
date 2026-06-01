@@ -46,6 +46,10 @@ import java.time.LocalDate
 fun InvoiceCreateScreen(
     onBack: () -> Unit,
     onCreated: (String) -> Unit,
+    prefillAmount: String? = null,
+    prefillCurrency: String? = null,
+    prefillDueDate: String? = null,
+    prefillNotes: String? = null,
     clientViewModel: ClientViewModel = hiltViewModel(),
     viewModel: InvoiceCreateViewModel = hiltViewModel(),
 ) {
@@ -63,10 +67,10 @@ fun InvoiceCreateScreen(
 
     var clientMenuOpen by remember { mutableStateOf(false) }
     var currencyMenuOpen by remember { mutableStateOf(false) }
-    var amount by rememberSaveable { mutableStateOf("") }
-    var currency by rememberSaveable { mutableStateOf("KRW") }
-    var notes by rememberSaveable { mutableStateOf("") }
-    var dueDate by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(14).toString()) }
+    var amount by rememberSaveable { mutableStateOf(prefillAmount.orEmpty()) }
+    var currency by rememberSaveable { mutableStateOf(prefillCurrency ?: "KRW") }
+    var notes by rememberSaveable { mutableStateOf(prefillNotes.orEmpty()) }
+    var dueDate by rememberSaveable { mutableStateOf(prefillDueDate ?: LocalDate.now().plusDays(14).toString()) }
     var selectedClientId by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedClient = clientState.clients.find { it.id == selectedClientId }
 
