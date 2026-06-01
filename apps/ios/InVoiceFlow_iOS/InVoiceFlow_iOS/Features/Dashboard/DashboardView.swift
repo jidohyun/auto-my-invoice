@@ -57,9 +57,7 @@ struct DashboardView: View {
 
 private struct KpiRow: View {
     let kpi: KpiSummaryDTO?
-    let isLoading: Boolean
-
-    typealias Boolean = Bool
+    let isLoading: Bool
 
     var body: some View {
         HStack(spacing: 8) {
