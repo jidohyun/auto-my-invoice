@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="invoice_photos" path="invoice_photos/" />
+    <cache-path name="invoice_pdfs" path="pdfs/" />
 </paths>

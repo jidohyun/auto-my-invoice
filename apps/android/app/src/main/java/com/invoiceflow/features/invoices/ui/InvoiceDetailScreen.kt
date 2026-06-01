@@ -1,5 +1,7 @@
 package com.invoiceflow.features.invoices.ui
 
+import android.content.Intent
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -38,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,9 +61,26 @@ fun InvoiceDetailScreen(
 ) {
     val state by viewModel.detailState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var paymentAmount by remember { mutableStateOf("") }
 
     LaunchedEffect(invoiceId) { viewModel.loadInvoice(invoiceId) }
+
+    // Once the PDF is cached, fire a share/open chooser then consume it so the
+    // sheet is not re-presented on recomposition.
+    LaunchedEffect(state.pdfFile) {
+        val file = state.pdfFile ?: return@LaunchedEffect
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        val share = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(share, "송장 PDF 공유").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        viewModel.consumePdfFile()
+    }
 
     // Surface action feedback (success or error) in a snackbar, then consume it.
     LaunchedEffect(state.actionMessage, state.actionError) {
@@ -115,8 +138,15 @@ fun InvoiceDetailScreen(
                 state.invoice != null -> InvoiceDetailContent(
                     invoice = state.invoice!!,
                     isActionRunning = state.isActionRunning,
+                    isDownloadingPdf = state.isDownloadingPdf,
                     onSend = { viewModel.send(invoiceId) },
                     onMarkPaid = { viewModel.markPaid(invoiceId) },
+                    onRecordPayment = {
+                        paymentAmount = ""
+                        showPaymentDialog = true
+                    },
+                    onSendReminder = { viewModel.sendReminder(invoiceId) },
+                    onDownloadPdf = { viewModel.downloadPdf(invoiceId) },
                 )
             }
         }
@@ -142,20 +172,60 @@ fun InvoiceDetailScreen(
             },
         )
     }
+
+    if (showPaymentDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaymentDialog = false },
+            title = { Text("부분 결제 기록") },
+            text = {
+                Column {
+                    Text("받은 금액을 입력하세요. 잔액을 초과할 수 없습니다.")
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = paymentAmount,
+                        onValueChange = { paymentAmount = it },
+                        label = { Text("금액") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPaymentDialog = false
+                        viewModel.recordPayment(invoiceId, paymentAmount)
+                    },
+                    enabled = paymentAmount.isNotBlank(),
+                ) {
+                    Text("기록")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPaymentDialog = false }) { Text("취소") }
+            },
+        )
+    }
 }
 
 @Composable
 private fun InvoiceDetailContent(
     invoice: InvoiceDto,
     isActionRunning: Boolean,
+    isDownloadingPdf: Boolean,
     onSend: () -> Unit,
     onMarkPaid: () -> Unit,
+    onRecordPayment: () -> Unit,
+    onSendReminder: () -> Unit,
+    onDownloadPdf: () -> Unit,
 ) {
     val status = invoice.status.lowercase()
     // Send is allowed for draft/sent/overdue/partially_paid; not for paid or cancelled.
     val canSend = status in setOf("draft", "sent", "overdue", "partially_paid")
     // Mark-paid is allowed unless already fully paid or cancelled.
     val canMarkPaid = status !in setOf("paid", "cancelled")
+    // Reminder / partial payment apply to issued-but-unpaid invoices.
+    val isUnpaid = status in setOf("sent", "overdue", "partially_paid")
 
     Column(
         modifier = Modifier
@@ -201,6 +271,42 @@ private fun InvoiceDetailContent(
                 modifier = Modifier.weight(1f),
             ) {
                 Text("결제 완료로 표시")
+            }
+        }
+
+        if (isUnpaid) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onRecordPayment,
+                    enabled = !isActionRunning,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("부분 결제 기록")
+                }
+                OutlinedButton(
+                    onClick = onSendReminder,
+                    enabled = !isActionRunning,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("리마인더 발송")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = onDownloadPdf,
+            enabled = !isDownloadingPdf,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (isDownloadingPdf) {
+                InlineSpinner()
+            } else {
+                Text("PDF 다운로드")
             }
         }
     }

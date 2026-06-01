@@ -11,6 +11,8 @@ import com.invoiceflow.features.invoices.data.model.InvoiceCreateRequest
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import com.invoiceflow.features.invoices.data.model.InvoiceUpdateRequest
 import com.invoiceflow.features.invoices.data.model.MarkPaidRequest
+import com.invoiceflow.features.invoices.data.model.RecordPaymentRequest
+import com.invoiceflow.features.invoices.data.model.ReminderResponse
 import com.invoiceflow.features.invoices.data.model.SendInvoiceRequest
 import com.invoiceflow.features.notifications.data.model.DeviceDto
 import com.invoiceflow.features.notifications.data.model.DeviceRegistrationRequest
@@ -18,6 +20,7 @@ import com.invoiceflow.features.settings.data.model.UserSettingsDto
 import com.invoiceflow.features.settings.data.model.UserSettingsRequest
 import com.invoiceflow.features.upload.data.model.ExtractionJobDto
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -27,6 +30,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface ApiService {
 
@@ -77,6 +81,19 @@ interface ApiService {
 
     @POST("invoices/{id}/mark_paid")
     suspend fun markInvoicePaid(@Path("id") id: String, @Body request: MarkPaidRequest = MarkPaidRequest()): ApiResponse<InvoiceDto>
+
+    @POST("invoices/{id}/record_payment")
+    suspend fun recordPayment(@Path("id") id: String, @Body request: RecordPaymentRequest): ApiResponse<InvoiceDto>
+
+    @POST("invoices/{id}/send_reminder")
+    suspend fun sendReminder(@Path("id") id: String): ApiResponse<ReminderResponse>
+
+    // Streamed so the (potentially large) PDF binary is not buffered fully in
+    // memory. Returns the raw application/pdf bytes; the caller writes them to
+    // a cache file and shares via FileProvider.
+    @Streaming
+    @GET("invoices/{id}/pdf")
+    suspend fun downloadInvoicePdf(@Path("id") id: String): ResponseBody
 
     // Clients
     @GET("clients")

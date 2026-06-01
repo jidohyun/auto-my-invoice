@@ -1,15 +1,20 @@
 package com.invoiceflow.features.invoices.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.invoiceflow.features.invoices.data.InvoiceRepository
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 data class InvoiceListState(
@@ -33,11 +38,16 @@ data class InvoiceDetailState(
     val actionMessage: String? = null,
     /** Set true once a delete succeeds so the screen can pop back. */
     val deleted: Boolean = false,
+    /** True while the PDF is being downloaded/written to cache. */
+    val isDownloadingPdf: Boolean = false,
+    /** Set to the cached PDF file once downloaded so the screen can share it. */
+    val pdfFile: File? = null,
 )
 
 @HiltViewModel
 class InvoiceViewModel @Inject constructor(
     private val invoiceRepository: InvoiceRepository,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _listState = MutableStateFlow(InvoiceListState())
@@ -89,6 +99,61 @@ class InvoiceViewModel @Inject constructor(
 
     /** Mark the invoice as fully paid and refresh detail + list on success. */
     fun markPaid(id: String) = runAction(id, "결제 완료로 표시했습니다") { invoiceRepository.markPaid(id) }
+
+    /** Record a (possibly partial) payment of [amount] and refresh on success. */
+    fun recordPayment(id: String, amount: String) {
+        val trimmed = amount.trim()
+        if (trimmed.isEmpty()) return
+        runAction(id, "결제를 기록했습니다") { invoiceRepository.recordPayment(id, trimmed) }
+    }
+
+    /** Queue a manual reminder. Returns a message (not an invoice), so the
+     *  invoice itself is left unchanged and the result is shown in a snackbar. */
+    fun sendReminder(id: String) {
+        if (_detailState.value.isActionRunning) return
+        _detailState.update { it.copy(isActionRunning = true, actionError = null) }
+        viewModelScope.launch {
+            runCatching { invoiceRepository.sendReminder(id) }
+                .onSuccess { message ->
+                    _detailState.update { it.copy(isActionRunning = false, actionMessage = message) }
+                }
+                .onFailure { e ->
+                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: "리마인더 발송 실패") }
+                }
+        }
+    }
+
+    /** Download the invoice PDF to the cache dir and expose it via
+     *  [InvoiceDetailState.pdfFile] so the screen can share it. */
+    fun downloadPdf(id: String) {
+        if (_detailState.value.isDownloadingPdf) return
+        val number = _detailState.value.invoice?.invoiceNumber ?: id
+        _detailState.update { it.copy(isDownloadingPdf = true, actionError = null) }
+        viewModelScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    val body = invoiceRepository.downloadInvoicePdf(id)
+                    val dir = File(appContext.cacheDir, "pdfs").apply { mkdirs() }
+                    val file = File(dir, "$number.pdf")
+                    body.byteStream().use { input ->
+                        file.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    file
+                }
+            }
+                .onSuccess { file ->
+                    _detailState.update { it.copy(isDownloadingPdf = false, pdfFile = file) }
+                }
+                .onFailure { e ->
+                    _detailState.update { it.copy(isDownloadingPdf = false, actionError = e.message ?: "PDF 다운로드 실패") }
+                }
+        }
+    }
+
+    /** Clear [InvoiceDetailState.pdfFile] after the share sheet has been shown. */
+    fun consumePdfFile() {
+        _detailState.update { it.copy(pdfFile = null) }
+    }
 
     /** Delete the invoice; on success flag [InvoiceDetailState.deleted] so the screen pops. */
     fun delete(id: String) {
