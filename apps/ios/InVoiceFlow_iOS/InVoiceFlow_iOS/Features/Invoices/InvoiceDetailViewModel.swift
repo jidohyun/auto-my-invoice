@@ -42,6 +42,25 @@ final class InvoiceDetailViewModel {
         await act { try await self.api.markInvoicePaid(id: self.invoiceId) }
     }
 
+    /// Deletes the invoice. Returns `true` so the view can pop the detail
+    /// screen; on failure `error` is set and the view stays put.
+    func delete() async -> Bool {
+        guard !isActing else { return false }
+        isActing = true
+        error = nil
+        defer { isActing = false }
+        do {
+            try await api.deleteInvoice(id: invoiceId)
+            return true
+        } catch let e as APIError {
+            error = e.errorDescription
+            return false
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
     private func act(_ operation: @escaping () async throws -> InvoiceDTO) async {
         guard !isActing else { return }
         isActing = true

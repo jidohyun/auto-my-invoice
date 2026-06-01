@@ -3,6 +3,7 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AuthViewModel.self) private var auth
     @State private var vm = DashboardViewModel()
+    @State private var showUpload = false
 
     var body: some View {
         NavigationStack {
@@ -15,6 +16,14 @@ struct DashboardView: View {
                     }
 
                     KpiRow(kpi: vm.kpi, isLoading: vm.isLoading)
+
+                    Button {
+                        showUpload = true
+                    } label: {
+                        Label("송장 사진으로 만들기", systemImage: "doc.viewfinder")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
 
                     HStack {
                         Text("최근 송장").font(.headline)
@@ -38,6 +47,9 @@ struct DashboardView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("로그아웃") { auth.logOut() }
                 }
+            }
+            .sheet(isPresented: $showUpload, onDismiss: { Task { await vm.refresh() } }) {
+                UploadView()
             }
         }
     }

@@ -76,15 +76,18 @@ struct InvoiceItemDTO: Decodable, Identifiable, Hashable {
     }
 }
 
-/// Backend `JsonHelpers.render_client/1`. Only the fields the API actually
-/// emits — the OpenAPI `Client` schema lists more (tax_id, notes, ...) but
-/// they are not serialized today.
+/// Backend `JsonHelpers.render_client/1`. `address`, `inserted_at`, and
+/// `updated_at` are also emitted (see the JSON helper); `decodeIfPresent`
+/// keeps the dashboard/recent payloads — which omit them — decodable.
 struct ClientDTO: Decodable, Identifiable, Hashable {
     let id: String
     let name: String
     let email: String?
     let company: String?
     let phone: String?
+    let address: String?
+    let insertedAt: String?
+    let updatedAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -92,6 +95,9 @@ struct ClientDTO: Decodable, Identifiable, Hashable {
         case email
         case company
         case phone
+        case address
+        case insertedAt = "inserted_at"
+        case updatedAt = "updated_at"
     }
 }
 
@@ -185,6 +191,114 @@ struct InvoiceCreateRequest: Encodable {
 struct DeviceRegistration: Encodable {
     let token: String
     let platform: String
+}
+
+/// Backend `JsonHelpers.render_extraction_job/1` — the OCR upload job returned
+/// by `POST /upload` and polled via `GET /extraction/:id`. `status` walks
+/// pending → processing → completed | failed. `extractedData` is only present
+/// once `completed`; on `failed` `errorMessage` explains why.
+struct ExtractionJobDTO: Decodable, Identifiable, Hashable {
+    let id: String
+    let status: String
+    let originalFilename: String?
+    let confidenceScore: Double?
+    let extractedData: ExtractedDataDTO?
+    let errorMessage: String?
+    let insertedAt: String?
+
+    var isTerminal: Bool {
+        let s = status.lowercased()
+        return s == "completed" || s == "failed"
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case status
+        case originalFilename = "original_filename"
+        case confidenceScore = "confidence_score"
+        case extractedData = "extracted_data"
+        case errorMessage = "error_message"
+        case insertedAt = "inserted_at"
+    }
+}
+
+/// Free-form OCR result map (`extraction_job.extracted_data`). Keys mirror
+/// `AutoMyInvoice.Extraction.to_invoice_attrs/1`, so these are the fields used
+/// to prefill the invoice-create form: amount, currency, due_date, notes,
+/// items, plus the client hints (client_email/name/company).
+struct ExtractedDataDTO: Decodable, Hashable {
+    let amount: String?
+    let currency: String?
+    let dueDate: String?
+    let notes: String?
+    let items: [ExtractedItemDTO]?
+    let clientEmail: String?
+    let clientName: String?
+    let clientCompany: String?
+
+    enum CodingKeys: String, CodingKey {
+        case amount
+        case currency
+        case dueDate = "due_date"
+        case notes
+        case items
+        case clientEmail = "client_email"
+        case clientName = "client_name"
+        case clientCompany = "client_company"
+    }
+
+    /// `amount`/numeric fields can come back as either a JSON string or number
+    /// depending on the extractor; decode both so prefill never throws.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        amount = ExtractedDataDTO.flexibleString(c, .amount)
+        currency = try c.decodeIfPresent(String.self, forKey: .currency)
+        dueDate = try c.decodeIfPresent(String.self, forKey: .dueDate)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        items = try c.decodeIfPresent([ExtractedItemDTO].self, forKey: .items)
+        clientEmail = try c.decodeIfPresent(String.self, forKey: .clientEmail)
+        clientName = try c.decodeIfPresent(String.self, forKey: .clientName)
+        clientCompany = try c.decodeIfPresent(String.self, forKey: .clientCompany)
+    }
+
+    static func flexibleString(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> String? {
+        if let s = try? c.decodeIfPresent(String.self, forKey: key) { return s }
+        if let d = try? c.decodeIfPresent(Double.self, forKey: key) {
+            return NSDecimalNumber(value: d).stringValue
+        }
+        if let i = try? c.decodeIfPresent(Int.self, forKey: key) { return String(i) }
+        return nil
+    }
+}
+
+/// One extracted line item. Numbers tolerate string-or-number encodings, like
+/// `ExtractedDataDTO`.
+struct ExtractedItemDTO: Decodable, Hashable {
+    let description: String?
+    let quantity: String?
+    let unitPrice: String?
+
+    enum CodingKeys: String, CodingKey {
+        case description
+        case quantity
+        case unitPrice = "unit_price"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        description = try c.decodeIfPresent(String.self, forKey: .description)
+        quantity = ExtractedItemDTO.flexibleString(c, .quantity)
+        unitPrice = ExtractedItemDTO.flexibleString(c, .unitPrice)
+    }
+
+    static func flexibleString(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys) -> String? {
+        if let s = try? c.decodeIfPresent(String.self, forKey: key) { return s }
+        if let d = try? c.decodeIfPresent(Double.self, forKey: key) {
+            return NSDecimalNumber(value: d).stringValue
+        }
+        if let i = try? c.decodeIfPresent(Int.self, forKey: key) { return String(i) }
+        return nil
+    }
 }
 
 struct AuthData: Decodable {

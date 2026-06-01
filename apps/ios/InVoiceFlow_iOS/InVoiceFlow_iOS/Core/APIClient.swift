@@ -101,6 +101,13 @@ final class APIClient {
         return try await send(req, as: APIResponse<InvoiceDTO>.self).data
     }
 
+    /// `DELETE /invoices/:id` (the `resources` route). Success is 204 No
+    /// Content, so we skip decoding.
+    func deleteInvoice(id: String) async throws {
+        let req = try makeRequest(path: "/invoices/\(id)", method: "DELETE")
+        _ = try await sendNoContent(req)
+    }
+
     // MARK: - Clients (AMI-44)
 
     func clients(search: String? = nil) async throws -> [ClientDTO] {
@@ -110,9 +117,50 @@ final class APIClient {
         return try await send(req, as: APIResponse<[ClientDTO]>.self).data
     }
 
+    func client(id: String) async throws -> ClientDTO {
+        let req = try makeRequest(path: "/clients/\(id)", method: "GET")
+        return try await send(req, as: APIResponse<ClientDTO>.self).data
+    }
+
     func createClient(_ body: ClientRequest) async throws -> ClientDTO {
         let req = try makeRequest(path: "/clients", method: "POST", body: Wrapped(client: body))
         return try await send(req, as: APIResponse<ClientDTO>.self).data
+    }
+
+    func updateClient(id: String, _ body: ClientRequest) async throws -> ClientDTO {
+        let req = try makeRequest(path: "/clients/\(id)", method: "PUT", body: Wrapped(client: body))
+        return try await send(req, as: APIResponse<ClientDTO>.self).data
+    }
+
+    /// `DELETE /clients/:id`. Success is 204 No Content.
+    func deleteClient(id: String) async throws {
+        let req = try makeRequest(path: "/clients/\(id)", method: "DELETE")
+        _ = try await sendNoContent(req)
+    }
+
+    // MARK: - OCR upload & extraction (AMI-46)
+
+    /// Multipart `POST /upload`. The Phoenix controller pattern-matches the
+    /// `"file"` part (`%Plug.Upload{}`), so the form field MUST be named
+    /// `file`. Returns the freshly-created extraction job (status `pending`).
+    func uploadImage(data: Data, filename: String, contentType: String) async throws -> ExtractionJobDTO {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var req = baseRequest(path: "/upload", method: "POST", query: [], requiresAuth: true)
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        req.httpBody = multipartBody(
+            boundary: boundary,
+            field: "file",
+            filename: filename,
+            contentType: contentType,
+            data: data
+        )
+        return try await send(req, as: APIResponse<ExtractionJobDTO>.self).data
+    }
+
+    /// `GET /extraction/:id` — poll the OCR job until `status` is terminal.
+    func extractionJob(id: String) async throws -> ExtractionJobDTO {
+        let req = try makeRequest(path: "/extraction/\(id)", method: "GET")
+        return try await send(req, as: APIResponse<ExtractionJobDTO>.self).data
     }
 
     // MARK: - Settings (AMI-44)
@@ -184,6 +232,26 @@ final class APIClient {
         requiresAuth: Bool = true
     ) throws -> URLRequest {
         return baseRequest(path: path, method: method, query: query, requiresAuth: requiresAuth)
+    }
+
+    /// Builds a single-file `multipart/form-data` body. Kept here so the upload
+    /// endpoint stays consistent with the rest of the client's request shaping.
+    private func multipartBody(
+        boundary: String,
+        field: String,
+        filename: String,
+        contentType: String,
+        data: Data
+    ) -> Data {
+        var body = Data()
+        let dashes = "--\(boundary)\r\n"
+        body.append(Data(dashes.utf8))
+        let disposition = "Content-Disposition: form-data; name=\"\(field)\"; filename=\"\(filename)\"\r\n"
+        body.append(Data(disposition.utf8))
+        body.append(Data("Content-Type: \(contentType)\r\n\r\n".utf8))
+        body.append(data)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+        return body
     }
 
     private func baseRequest(

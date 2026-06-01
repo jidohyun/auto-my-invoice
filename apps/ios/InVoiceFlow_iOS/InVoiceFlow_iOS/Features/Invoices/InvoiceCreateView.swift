@@ -3,10 +3,24 @@ import SwiftUI
 /// AMI-44 (iOS): new-invoice form presented as a sheet from the invoice list.
 /// Client picker + currency + line items + optional due date and notes.
 struct InvoiceCreateView: View {
-    @State private var vm = InvoiceCreateViewModel()
-    @State private var hasDueDate = false
-    @State private var dueDate = Date()
+    @State private var vm: InvoiceCreateViewModel
+    @State private var hasDueDate: Bool
+    @State private var dueDate: Date
     @Environment(\.dismiss) private var dismiss
+
+    init() {
+        _vm = State(initialValue: InvoiceCreateViewModel())
+        _hasDueDate = State(initialValue: false)
+        _dueDate = State(initialValue: Date())
+    }
+
+    /// OCR entry point (AMI-46): seed the form from an extraction result.
+    init(prefill: ExtractedDataDTO) {
+        let model = InvoiceCreateViewModel(prefill: prefill)
+        _vm = State(initialValue: model)
+        _hasDueDate = State(initialValue: model.dueDate != nil)
+        _dueDate = State(initialValue: model.dueDate ?? Date())
+    }
 
     var body: some View {
         NavigationStack {
@@ -14,6 +28,13 @@ struct InvoiceCreateView: View {
                 if let error = vm.error {
                     Section {
                         Text(error).font(.footnote).foregroundStyle(.red)
+                    }
+                }
+
+                if let notice = vm.prefillNotice {
+                    Section {
+                        Label(notice, systemImage: "sparkles")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
 

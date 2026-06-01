@@ -5,6 +5,8 @@ import SwiftUI
 /// Also the destination for QR pay deep-links (AMI-42).
 struct InvoiceDetailView: View {
     @State private var vm: InvoiceDetailViewModel
+    @State private var showDeleteConfirm = false
+    @Environment(\.dismiss) private var dismiss
 
     init(invoiceId: String) {
         self._vm = State(initialValue: InvoiceDetailViewModel(invoiceId: invoiceId))
@@ -13,15 +15,15 @@ struct InvoiceDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                if let error = vm.error {
-                    Text(error)
-                        .font(.footnote).foregroundStyle(.red)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
-                }
-
                 if let invoice = vm.invoice {
+                    // Inline error (e.g. a failed action) above the loaded content.
+                    if let error = vm.error {
+                        Text(error)
+                            .font(.footnote).foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                            .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
+                    }
                     header(invoice)
                     if let client = invoice.client { clientSection(client) }
                     itemsSection(invoice)
@@ -29,6 +31,10 @@ struct InvoiceDetailView: View {
                     actions(invoice)
                 } else if vm.isLoading {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+                } else if let error = vm.error {
+                    // Load failed with nothing to show — recover with retry.
+                    ErrorStateView(message: error) { Task { await vm.load() } }
+                        .padding(.top, 40)
                 }
             }
             .padding(16)
@@ -36,6 +42,14 @@ struct InvoiceDetailView: View {
         .navigationTitle(vm.invoice.map { "#\($0.invoiceNumber)" } ?? "송장")
         .navigationBarTitleDisplayMode(.inline)
         .task { await vm.load() }
+        .confirmationDialog("이 송장을 삭제할까요?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+            Button("삭제", role: .destructive) {
+                Task { if await vm.delete() { dismiss() } }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("삭제한 송장은 복구할 수 없습니다.")
+        }
     }
 
     private func header(_ invoice: InvoiceDTO) -> some View {
@@ -121,6 +135,15 @@ struct InvoiceDetailView: View {
                 .buttonStyle(.bordered)
                 .disabled(vm.isActing)
             }
+
+            Button(role: .destructive) {
+                showDeleteConfirm = true
+            } label: {
+                Label("송장 삭제", systemImage: "trash").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .disabled(vm.isActing)
         }
         .frame(maxWidth: .infinity)
     }

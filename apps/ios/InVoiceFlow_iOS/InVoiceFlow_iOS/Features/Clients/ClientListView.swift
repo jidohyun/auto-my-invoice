@@ -9,20 +9,34 @@ struct ClientListView: View {
         NavigationStack {
             Group {
                 if vm.clients.isEmpty && !vm.isLoading {
-                    EmptyClients()
+                    if let error = vm.error {
+                        ErrorStateView(message: error) { Task { await vm.refresh() } }
+                            .padding()
+                    } else {
+                        EmptyClients()
+                    }
                 } else {
                     List(vm.clients) { client in
-                        ClientRow(client: client)
+                        NavigationLink(value: client) {
+                            ClientRow(client: client)
+                        }
                     }
                     .listStyle(.plain)
                 }
             }
-            .overlay { if let error = vm.error { ErrorBanner(message: error) } }
+            // Non-blocking banner for refresh failures when a list is already
+            // shown; the full ErrorStateView covers the empty case above.
+            .overlay {
+                if let error = vm.error, !vm.clients.isEmpty { ErrorBanner(message: error) }
+            }
             .searchable(text: $vm.search, prompt: "이름 또는 이메일 검색")
             .onSubmit(of: .search) { Task { await vm.refresh() } }
             .refreshable { await vm.refresh() }
             .task { await vm.refresh() }
             .navigationTitle("고객")
+            .navigationDestination(for: ClientDTO.self) { client in
+                ClientDetailView(client: client)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAdd = true } label: { Image(systemName: "plus") }
@@ -30,7 +44,15 @@ struct ClientListView: View {
                 }
             }
             .sheet(isPresented: $showAdd) {
-                ClientCreateView(vm: vm)
+                ClientFormView(
+                    title: "고객 추가",
+                    saveLabel: "저장",
+                    error: vm.error,
+                    isBusy: vm.isCreating,
+                    save: { name, email, phone, company in
+                        await vm.create(name: name, email: email, phone: phone, company: company)
+                    }
+                )
             }
         }
     }
@@ -64,57 +86,3 @@ private struct EmptyClients: View {
     }
 }
 
-/// Add-client form presented as a sheet. Shares the list's view model so the
-/// new client lands in the list without a round-trip refresh.
-private struct ClientCreateView: View {
-    let vm: ClientListViewModel
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var name = ""
-    @State private var email = ""
-    @State private var phone = ""
-    @State private var company = ""
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                if let error = vm.error {
-                    Section { Text(error).font(.footnote).foregroundStyle(.red) }
-                }
-                Section("필수") {
-                    TextField("이름", text: $name)
-                }
-                Section("선택") {
-                    TextField("이메일", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    TextField("전화번호", text: $phone)
-                        .keyboardType(.phonePad)
-                    TextField("회사명", text: $company)
-                }
-            }
-            .navigationTitle("고객 추가")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("저장") {
-                        Task {
-                            let ok = await vm.create(
-                                name: name,
-                                email: email.isEmpty ? nil : email,
-                                phone: phone.isEmpty ? nil : phone,
-                                company: company.isEmpty ? nil : company
-                            )
-                            if ok { dismiss() }
-                        }
-                    }
-                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || vm.isCreating)
-                }
-            }
-        }
-    }
-}
