@@ -28,9 +28,10 @@ final class APIClient {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
-    /// Override at app start if needed (UserDefaults / build setting).
-    /// Default points at the local Phoenix dev server.
-    var baseURL = URL(string: "http://localhost:4000/api/v1")!
+    /// Override at app start via the `API_BASE_URL` Info.plist key if needed.
+    /// Defaults to the live production backend; use Info.plist override (or a
+    /// local scheme) to point at a local Phoenix dev server during development.
+    var baseURL = URL(string: "https://automyinvoice.fly.dev/api/v1")!
 
     private init() {
         decoder = JSONDecoder()

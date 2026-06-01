@@ -19,7 +19,7 @@ android {
 
         testInstrumentationRunner = "com.invoiceflow.HiltTestRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:4000/api/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
     }
 
     buildTypes {
@@ -27,7 +27,7 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:4000/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
         }
         release {
             isMinifyEnabled = true
@@ -36,7 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api.invoiceflow.app/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
         }
     }
 

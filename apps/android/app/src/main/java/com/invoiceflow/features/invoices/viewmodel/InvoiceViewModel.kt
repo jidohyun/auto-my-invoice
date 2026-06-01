@@ -2,8 +2,6 @@ package com.invoiceflow.features.invoices.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.invoiceflow.BuildConfig
-import com.invoiceflow.core.data.MockData
 import com.invoiceflow.features.invoices.data.InvoiceRepository
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,18 +49,7 @@ class InvoiceViewModel @Inject constructor(
                 )
                 _listState.update { it.copy(invoices = response.data, isLoading = false) }
             } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    val filtered = MockData.invoices
-                        .filter { state.statusFilter == null || it.status == state.statusFilter }
-                        .filter {
-                            state.search.isBlank() ||
-                                it.invoiceNumber.contains(state.search, ignoreCase = true) ||
-                                (it.client?.name ?: "").contains(state.search, ignoreCase = true)
-                        }
-                    _listState.update { it.copy(invoices = filtered, isLoading = false) }
-                } else {
-                    _listState.update { it.copy(error = e.message ?: "Failed to load invoices", isLoading = false) }
-                }
+                _listState.update { it.copy(error = e.message ?: "Failed to load invoices", isLoading = false) }
             }
         }
     }
@@ -84,12 +71,7 @@ class InvoiceViewModel @Inject constructor(
                 val invoice = invoiceRepository.getInvoice(id)
                 _detailState.update { it.copy(invoice = invoice, isLoading = false) }
             } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    val mock = MockData.invoices.find { it.id == id } ?: MockData.invoices.first()
-                    _detailState.update { it.copy(invoice = mock, isLoading = false) }
-                } else {
-                    _detailState.update { it.copy(error = e.message ?: "Failed to load invoice", isLoading = false) }
-                }
+                _detailState.update { it.copy(error = e.message ?: "Failed to load invoice", isLoading = false) }
             }
         }
     }

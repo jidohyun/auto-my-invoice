@@ -2,7 +2,6 @@ package com.invoiceflow.features.auth.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.invoiceflow.BuildConfig
 import com.invoiceflow.features.auth.data.AuthRepository
 import com.invoiceflow.features.notifications.PushTokenRegistrar
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,13 +46,9 @@ class AuthViewModel @Inject constructor(
                 pushTokenRegistrar.pullAndRegister()
                 _events.value = AuthEvent.LoginSuccess(data.accessToken)
             } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    _events.value = AuthEvent.LoginSuccess("dev-mock-token")
-                } else {
-                    val message = e.message ?: "Login failed"
-                    _state.update { it.copy(error = message) }
-                    _events.value = AuthEvent.Error(message)
-                }
+                val message = e.message ?: "Login failed"
+                _state.update { it.copy(error = message) }
+                _events.value = AuthEvent.Error(message)
             } finally {
                 _state.update { it.copy(isLoading = false) }
             }
@@ -69,13 +64,9 @@ class AuthViewModel @Inject constructor(
                 pushTokenRegistrar.pullAndRegister()
                 _events.value = AuthEvent.RegisterSuccess(data.accessToken)
             } catch (e: Exception) {
-                if (BuildConfig.DEBUG) {
-                    _events.value = AuthEvent.RegisterSuccess("dev-mock-token")
-                } else {
-                    val message = e.message ?: "Registration failed"
-                    _state.update { it.copy(error = message) }
-                    _events.value = AuthEvent.Error(message)
-                }
+                val message = e.message ?: "Registration failed"
+                _state.update { it.copy(error = message) }
+                _events.value = AuthEvent.Error(message)
             } finally {
                 _state.update { it.copy(isLoading = false) }
             }
