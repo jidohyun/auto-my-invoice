@@ -2,6 +2,7 @@ defmodule AutoMyInvoiceWeb.Api.InvoiceController do
   use AutoMyInvoiceWeb, :controller
 
   alias AutoMyInvoice.Invoices
+  alias AutoMyInvoice.PDF.InvoicePDF
   alias AutoMyInvoice.Reminders
   alias AutoMyInvoiceWeb.Api.{JsonHelpers, FallbackController}
 
@@ -163,6 +164,36 @@ defmodule AutoMyInvoiceWeb.Api.InvoiceController do
 
       error ->
         error
+    end
+  rescue
+    Ecto.NoResultsError -> {:error, :not_found}
+  end
+
+  @doc """
+  Bearer-authenticated PDF download for mobile clients (AMI parity).
+
+  Mirrors the session-based `InvoicePDFController.download/2`, but lives on the
+  `/api/v1` surface so the apps can fetch it with their Bearer token instead of
+  a browser session cookie. Reuses `InvoicePDF.generate/1` (no new PDF logic).
+  """
+  def pdf(conn, %{"id" => id}) do
+    user = conn.assigns.current_user
+    invoice = Invoices.get_invoice!(user.id, id)
+
+    case InvoicePDF.generate(%{invoice: invoice, client: invoice.client, user: user}) do
+      {:ok, pdf_data} ->
+        conn
+        |> put_resp_content_type("application/pdf")
+        |> put_resp_header(
+          "content-disposition",
+          ~s(attachment; filename="#{invoice.invoice_number}.pdf")
+        )
+        |> send_resp(200, Base.decode64!(pdf_data))
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: "PDF 생성에 실패했습니다: #{inspect(reason)}"})
     end
   rescue
     Ecto.NoResultsError -> {:error, :not_found}

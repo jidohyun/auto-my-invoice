@@ -401,6 +401,107 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
+  /invoices/{id}/record_payment:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [invoices]
+      summary: Record a (possibly partial) payment against an invoice
+      operationId: invoice_record_payment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: string
+                  description: Payment amount as a decimal string (e.g. "400.00")
+                payment_date:
+                  type: string
+                  format: date
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Payment recorded; returns the re-rendered invoice
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /invoices/{id}/send_reminder:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [invoices]
+      summary: Queue a manual reminder email for an invoice
+      operationId: invoice_send_reminder
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Reminder queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '429':
+          description: Daily reminder rate limit exceeded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /invoices/{id}/pdf:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [invoices]
+      summary: Download the rendered invoice PDF
+      description: >
+        Bearer-authenticated PDF download for mobile clients. Mirrors the
+        web (session-auth) `/invoices/:id/pdf` route.
+      operationId: invoice_pdf
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The invoice PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
   # ---------------------------------------------------------------------------
   # Clients
   # ---------------------------------------------------------------------------

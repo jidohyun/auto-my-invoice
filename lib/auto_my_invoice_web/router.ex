@@ -96,6 +96,7 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/invoices/:id/mark_paid", InvoiceController, :mark_paid
     post "/invoices/:id/record_payment", InvoiceController, :record_payment
     post "/invoices/:id/send_reminder", InvoiceController, :send_reminder
+    get "/invoices/:id/pdf", InvoiceController, :pdf
 
     # Client Analytics (ranking must come before :id routes)
     get "/clients/ranking", ClientAnalyticsController, :ranking
