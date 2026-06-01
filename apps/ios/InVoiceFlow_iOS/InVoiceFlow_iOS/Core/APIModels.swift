@@ -315,3 +315,43 @@ struct LoginRequest: Encodable {
     let email: String
     let password: String
 }
+
+/// `POST /invoices/:id/record_payment` request body.
+///
+/// `amount` is the only field the backend currently pattern-matches on, but
+/// `payment_date` and `notes` are included for forward-compatibility with the
+/// full API contract.  Numbers are sent as strings so the server-side
+/// `Decimal` cast accepts them without float rounding (same convention as
+/// `InvoiceItemRequest`).
+///
+/// Encoding omits `nil` fields automatically via `encodeIfPresent`, keeping
+/// the request body minimal when optional fields are not supplied.
+struct RecordPaymentRequest: Encodable {
+    /// Payment amount as a decimal string, e.g. `"50000"` or `"1234.56"`.
+    let amount: String
+
+    /// ISO-8601 date string, e.g. `"2024-06-01"`.  `nil` → server defaults to now.
+    let paymentDate: String?
+
+    /// Free-form notes attached to this payment record.
+    let notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case amount
+        case paymentDate = "payment_date"
+        case notes
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(amount, forKey: .amount)
+        try container.encodeIfPresent(paymentDate, forKey: .paymentDate)
+        try container.encodeIfPresent(notes, forKey: .notes)
+    }
+}
+
+/// Response body for `POST /invoices/:id/send_reminder`.
+/// The server returns `{"data": {"message": "..."}}` on success.
+struct ReminderResponseDTO: Decodable, Equatable {
+    let message: String
+}

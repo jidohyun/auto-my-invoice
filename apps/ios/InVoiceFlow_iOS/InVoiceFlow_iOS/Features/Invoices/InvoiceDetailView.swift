@@ -6,6 +6,8 @@ import SwiftUI
 struct InvoiceDetailView: View {
     @State private var vm: InvoiceDetailViewModel
     @State private var showDeleteConfirm = false
+    @State private var showPaymentSheet = false
+    @State private var paymentAmount = ""
     @Environment(\.dismiss) private var dismiss
 
     init(invoiceId: String) {
@@ -50,6 +52,39 @@ struct InvoiceDetailView: View {
         } message: {
             Text("삭제한 송장은 복구할 수 없습니다.")
         }
+        .alert("부분 결제 기록", isPresented: $showPaymentSheet) {
+            TextField("금액", text: $paymentAmount)
+                .keyboardType(.decimalPad)
+            Button("기록") {
+                Task { await vm.recordPayment(amount: paymentAmount) }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("받은 금액을 입력하세요. 잔액을 초과할 수 없습니다.")
+        }
+        .sheet(isPresented: Binding(
+            get: { vm.pdfShareURL != nil },
+            set: { if !$0 { vm.pdfShareURL = nil } }
+        )) {
+            if let url = vm.pdfShareURL {
+                ShareSheet(items: [url])
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let toast = vm.toast {
+                Text(toast)
+                    .font(.subheadline)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(.regularMaterial, in: .capsule)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(2.5))
+                        vm.toast = nil
+                    }
+            }
+        }
+        .animation(.default, value: vm.toast)
     }
 
     private func header(_ invoice: InvoiceDTO) -> some View {
@@ -115,8 +150,12 @@ struct InvoiceDetailView: View {
     }
 
     private func actions(_ invoice: InvoiceDTO) -> some View {
-        VStack(spacing: 12) {
-            if invoice.status.lowercased() == "draft" {
+        let status = invoice.status.lowercased()
+        // Statuses where the invoice has been issued and still owes a balance.
+        let unpaid = ["sent", "overdue", "partially_paid"].contains(status)
+
+        return VStack(spacing: 12) {
+            if status == "draft" {
                 Button {
                     Task { await vm.send() }
                 } label: {
@@ -126,7 +165,7 @@ struct InvoiceDetailView: View {
                 .disabled(vm.isActing)
             }
 
-            if ["sent", "overdue"].contains(invoice.status.lowercased()) {
+            if unpaid {
                 Button {
                     Task { await vm.markPaid() }
                 } label: {
@@ -134,7 +173,39 @@ struct InvoiceDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(vm.isActing)
+
+                Button {
+                    paymentAmount = ""
+                    showPaymentSheet = true
+                } label: {
+                    Label("부분 결제 기록", systemImage: "won.sign.circle").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(vm.isActing)
+
+                Button {
+                    Task { await vm.sendReminder() }
+                } label: {
+                    actionLabel("리마인더 발송", system: "bell.badge")
+                }
+                .buttonStyle(.bordered)
+                .disabled(vm.isActing)
             }
+
+            // PDF is available for any non-draft invoice (it needs a rendered
+            // document); the server still allows draft, but offering it after
+            // issue matches the web flow.
+            Button {
+                Task { await vm.downloadPDF() }
+            } label: {
+                if vm.isDownloadingPDF {
+                    ProgressView().frame(maxWidth: .infinity)
+                } else {
+                    Label("PDF 다운로드", systemImage: "arrow.down.doc").frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(vm.isActing || vm.isDownloadingPDF)
 
             Button(role: .destructive) {
                 showDeleteConfirm = true

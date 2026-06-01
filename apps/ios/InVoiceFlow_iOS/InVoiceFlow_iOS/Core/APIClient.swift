@@ -39,6 +39,19 @@ final class APIClient {
         encoder = JSONEncoder()
     }
 
+    /// Creates an `APIClient` backed by the given `URLSession`.
+    /// Intended for unit tests only — inject a session whose `protocolClasses`
+    /// contains a `MockURLProtocol` to intercept network calls.
+    static func testInstance(session: URLSession) -> APIClient {
+        let client = APIClient()
+        client.overrideSession = session
+        return client
+    }
+
+    // Overrides `session` when set; used only by `testInstance`.
+    private var overrideSession: URLSession?
+    private var activeSession: URLSession { overrideSession ?? session }
+
     // MARK: - Public surface
 
     func login(email: String, password: String) async throws -> AuthData {
@@ -99,6 +112,39 @@ final class APIClient {
     func markInvoicePaid(id: String) async throws -> InvoiceDTO {
         let req = try makeRequest(path: "/invoices/\(id)/mark_paid", method: "POST")
         return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    /// `POST /invoices/:id/record_payment` — record a (possibly partial)
+    /// payment. The server validates status/amount/overpayment and returns the
+    /// re-rendered invoice with the new `paid_amount`/`status`.
+    func recordPayment(id: String, amount: String) async throws -> InvoiceDTO {
+        let req = try makeRequest(
+            path: "/invoices/\(id)/record_payment",
+            method: "POST",
+            body: RecordPaymentRequest(amount: amount, paymentDate: nil, notes: nil)
+        )
+        return try await send(req, as: APIResponse<InvoiceDTO>.self).data
+    }
+
+    /// `POST /invoices/:id/send_reminder` — triggers a manual reminder email
+    /// for the given invoice. Returns the server's confirmation message.
+    /// Throws `APIError.http(422, ...)` when the invoice status does not allow
+    /// reminders, and `APIError.http(429, ...)` when the daily rate limit is hit.
+    func sendReminder(id: String) async throws -> ReminderResponseDTO {
+        let req = try makeRequest(path: "/invoices/\(id)/send_reminder", method: "POST")
+        return try await send(req, as: APIResponse<ReminderResponseDTO>.self).data
+    }
+
+    /// `GET /api/v1/invoices/:id/pdf` — downloads the PDF binary for the given
+    /// invoice. This Bearer-authenticated parity route mirrors the web
+    /// (session-auth) `/invoices/:id/pdf` so the app can fetch it with its
+    /// stored token. Returns raw `Data` (application/pdf); callers handle
+    /// presentation (share sheet / QuickLook).
+    /// Throws `APIError.http(404, ...)` when the invoice is not found.
+    func invoicePdf(id: String) async throws -> Data {
+        var req = baseRequest(path: "/invoices/\(id)/pdf", method: "GET", query: [], requiresAuth: true)
+        req.setValue("application/pdf", forHTTPHeaderField: "Accept")
+        return try await sendRaw(req)
     }
 
     /// `DELETE /invoices/:id` (the `resources` route). Success is 204 No
@@ -278,7 +324,7 @@ final class APIClient {
     private func send<T: Decodable>(_ req: URLRequest, as: T.Type) async throws -> T {
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await session.data(for: req)
+            (data, response) = try await activeSession.data(for: req)
         } catch {
             throw APIError.transport(error)
         }
@@ -296,13 +342,32 @@ final class APIClient {
         }
     }
 
+    /// Sends a request and returns the raw response body as `Data`.
+    /// Used for binary endpoints (e.g. PDF download) where the body is not
+    /// JSON and must not be decoded.
+    private func sendRaw(_ req: URLRequest) async throws -> Data {
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await activeSession.data(for: req)
+        } catch {
+            throw APIError.transport(error)
+        }
+
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        if status == 401 { throw APIError.unauthorized }
+        guard (200..<300).contains(status) else {
+            throw APIError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
+        }
+        return data
+    }
+
     /// Sends a request whose success response carries no decodable body
     /// (e.g. 204 No Content, or device registration). Status handling matches
     /// `send` but skips JSON decoding.
     private func sendNoContent(_ req: URLRequest) async throws {
         let (data, response): (Data, URLResponse)
         do {
-            (data, response) = try await session.data(for: req)
+            (data, response) = try await activeSession.data(for: req)
         } catch {
             throw APIError.transport(error)
         }
