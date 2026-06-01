@@ -355,3 +355,85 @@ struct RecordPaymentRequest: Encodable {
 struct ReminderResponseDTO: Decodable, Equatable {
     let message: String
 }
+
+// MARK: - Analytics (AMI parity)
+
+/// `GET /dashboard/analytics` → `{data: {...}}`. Mirrors
+/// `AutoMyInvoiceWeb.Api.AnalyticsController.dashboard/2`.
+struct DashboardAnalyticsDTO: Decodable {
+    let monthlyCollections: [MonthlyCollectionDTO]
+    let statusDistribution: [StatusDistributionDTO]
+    let invoiceAging: [String: AgingBucketDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case monthlyCollections = "monthly_collections"
+        case statusDistribution = "status_distribution"
+        case invoiceAging = "invoice_aging"
+    }
+}
+
+/// One month in `Analytics.monthly_collections/2`. Money fields are decimal
+/// strings (Phoenix renders Decimal as strings).
+struct MonthlyCollectionDTO: Decodable, Identifiable {
+    var id: String { month }
+    let month: String
+    let invoiced: String
+    let collected: String
+    let count: Int
+}
+
+/// One status bucket in `Analytics.status_distribution/1`.
+struct StatusDistributionDTO: Decodable, Identifiable {
+    var id: String { status }
+    let status: String
+    let count: Int
+    let total: String
+}
+
+/// One aging bucket (`0-30`, `31-60`, `61-90`, `90+`) from
+/// `Analytics.invoice_aging/1`.
+struct AgingBucketDTO: Decodable {
+    let count: Int
+    let total: String
+}
+
+/// `GET /analytics/reminders` → `{data: {...}}`. Subset of
+/// `Reminders.reminder_effectiveness/1` the mobile screen surfaces.
+struct ReminderEffectivenessDTO: Decodable {
+    let totalSent: Int
+    let totalOpened: Int
+    let totalClicked: Int
+    let overallOpenRate: Double
+    let overallClickRate: Double
+    let overallConversionRate: Double?
+    let avgDaysToPayment: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case totalSent = "total_sent"
+        case totalOpened = "total_opened"
+        case totalClicked = "total_clicked"
+        case overallOpenRate = "overall_open_rate"
+        case overallClickRate = "overall_click_rate"
+        case overallConversionRate = "overall_conversion_rate"
+        case avgDaysToPayment = "avg_days_to_payment"
+    }
+}
+
+/// One client in `Clients.client_ranking/1` (`GET /clients/ranking`).
+struct ClientRankingDTO: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let avgPaymentDays: Double?
+    let totalInvoiced: String
+    let totalPaid: String
+    let onTimeRate: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case avgPaymentDays = "avg_payment_days"
+        case totalInvoiced = "total_invoiced"
+        case totalPaid = "total_paid"
+        case onTimeRate = "on_time_rate"
+    }
+}

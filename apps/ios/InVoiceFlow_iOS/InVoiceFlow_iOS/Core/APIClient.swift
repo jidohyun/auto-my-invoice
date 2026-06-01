@@ -79,6 +79,27 @@ final class APIClient {
         return try await send(req, as: APIResponse<KpiSummaryDTO>.self).data
     }
 
+    // MARK: - Analytics (AMI parity)
+
+    /// `GET /dashboard/analytics` — monthly collections, status distribution,
+    /// and aging buckets for the analytics screen.
+    func dashboardAnalytics() async throws -> DashboardAnalyticsDTO {
+        let req = try makeRequest(path: "/dashboard/analytics", method: "GET")
+        return try await send(req, as: APIResponse<DashboardAnalyticsDTO>.self).data
+    }
+
+    /// `GET /analytics/reminders` — reminder open/click/conversion effectiveness.
+    func reminderEffectiveness() async throws -> ReminderEffectivenessDTO {
+        let req = try makeRequest(path: "/analytics/reminders", method: "GET")
+        return try await send(req, as: APIResponse<ReminderEffectivenessDTO>.self).data
+    }
+
+    /// `GET /clients/ranking` — clients ranked by payment behaviour.
+    func clientRanking() async throws -> [ClientRankingDTO] {
+        let req = try makeRequest(path: "/clients/ranking", method: "GET")
+        return try await send(req, as: APIResponse<[ClientRankingDTO]>.self).data
+    }
+
     func recentInvoices(limit: Int = 5) async throws -> [InvoiceDTO] {
         let req = try makeRequest(path: "/dashboard/recent?limit=\(limit)", method: "GET")
         return try await send(req, as: APIResponse<[InvoiceDTO]>.self).data

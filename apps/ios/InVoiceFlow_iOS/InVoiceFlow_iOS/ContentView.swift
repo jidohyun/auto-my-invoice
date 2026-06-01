@@ -34,7 +34,7 @@ struct MainTabView: View {
     /// Set by the QR scanner; consumed by the Invoices tab to push detail.
     @State private var scannedInvoiceId: String?
 
-    enum Tab: Hashable { case dashboard, invoices, clients, settings }
+    enum Tab: Hashable { case dashboard, invoices, clients, analytics, settings }
 
     var body: some View {
         TabView(selection: $selection) {
@@ -49,6 +49,10 @@ struct MainTabView: View {
             ClientListView()
                 .tabItem { Label("고객", systemImage: "person.2") }
                 .tag(Tab.clients)
+
+            AnalyticsView()
+                .tabItem { Label("분석", systemImage: "chart.pie") }
+                .tag(Tab.analytics)
 
             SettingsView()
                 .tabItem { Label("설정", systemImage: "gearshape") }
