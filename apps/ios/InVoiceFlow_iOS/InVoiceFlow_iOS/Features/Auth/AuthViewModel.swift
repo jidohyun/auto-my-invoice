@@ -68,14 +68,18 @@ final class AuthViewModel {
         }
     }
 
-    func register(email: String, password: String) async {
+    func register(email: String, password: String, companyName: String = "") async {
         guard !isSubmitting else { return }
         isSubmitting = true
         error = nil
         defer { isSubmitting = false }
 
         do {
-            let data = try await api.register(email: email, password: password)
+            let data = try await api.register(
+                email: email,
+                password: password,
+                companyName: companyName.isEmpty ? nil : companyName
+            )
             guard keychain.save(token: data.token) else {
                 self.error = "로그인 정보를 저장하지 못했습니다. 다시 시도해 주세요."
                 return

@@ -316,6 +316,27 @@ struct LoginRequest: Encodable {
     let password: String
 }
 
+/// `POST /auth/register` request body. The backend pattern-matches top-level
+/// `email`/`password` and accepts an optional `company_name`. A nil
+/// `companyName` is omitted from the payload.
+struct RegisterRequest: Encodable {
+    let email: String
+    let password: String
+    let companyName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case email, password
+        case companyName = "company_name"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(email, forKey: .email)
+        try c.encode(password, forKey: .password)
+        try c.encodeIfPresent(companyName, forKey: .companyName)
+    }
+}
+
 /// `POST /invoices/:id/record_payment` request body.
 ///
 /// `amount` is the only field the backend currently pattern-matches on, but

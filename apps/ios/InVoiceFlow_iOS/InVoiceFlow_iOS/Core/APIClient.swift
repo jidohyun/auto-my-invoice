@@ -70,11 +70,11 @@ final class APIClient {
         return try await send(req, as: APIResponse<AuthData>.self).data
     }
 
-    func register(email: String, password: String) async throws -> AuthData {
+    func register(email: String, password: String, companyName: String? = nil) async throws -> AuthData {
         let req = try makeRequest(
             path: "/auth/register",
             method: "POST",
-            body: LoginRequest(email: email, password: password),
+            body: RegisterRequest(email: email, password: password, companyName: companyName),
             requiresAuth: false
         )
         return try await send(req, as: APIResponse<AuthData>.self).data
