@@ -47,7 +47,19 @@ data class ReminderEffectivenessDto(
     @Json(name = "overall_open_rate") val overallOpenRate: Double,
     @Json(name = "overall_click_rate") val overallClickRate: Double,
     @Json(name = "overall_conversion_rate") val overallConversionRate: Double? = null,
-    @Json(name = "avg_days_to_payment") val avgDaysToPayment: Double? = null,
+    // Backend reminder_effectiveness/1 sends this as an ARRAY of per-step rows
+    // (@spec :: [map()]), NOT a scalar — modeling it as Double? crashed Moshi
+    // with "Expected a double but was BEGIN_ARRAY". Default emptyList() so the
+    // common empty response (and any future absence) parses cleanly.
+    @Json(name = "avg_days_to_payment") val avgDaysToPayment: List<AvgDaysToPaymentEntryDto> = emptyList(),
+)
+
+/** One per-step avg-days-to-payment row from reminder_effectiveness/1. */
+@JsonClass(generateAdapter = true)
+data class AvgDaysToPaymentEntryDto(
+    val step: Int,
+    @Json(name = "avg_days") val avgDays: Double,
+    @Json(name = "sample_size") val sampleSize: Int,
 )
 
 /**

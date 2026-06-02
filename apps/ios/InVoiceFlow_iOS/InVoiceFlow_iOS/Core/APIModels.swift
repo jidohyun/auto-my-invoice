@@ -397,6 +397,19 @@ struct AgingBucketDTO: Decodable {
     let total: String
 }
 
+/// One per-step avg-days-to-payment row from `Reminders.reminder_effectiveness/1`.
+struct AvgDaysToPaymentEntryDTO: Decodable {
+    let step: Int
+    let avgDays: Double
+    let sampleSize: Int
+
+    enum CodingKeys: String, CodingKey {
+        case step
+        case avgDays = "avg_days"
+        case sampleSize = "sample_size"
+    }
+}
+
 /// `GET /analytics/reminders` → `{data: {...}}`. Subset of
 /// `Reminders.reminder_effectiveness/1` the mobile screen surfaces.
 struct ReminderEffectivenessDTO: Decodable {
@@ -406,7 +419,10 @@ struct ReminderEffectivenessDTO: Decodable {
     let overallOpenRate: Double
     let overallClickRate: Double
     let overallConversionRate: Double?
-    let avgDaysToPayment: Double?
+    /// Backend sends this as an ARRAY of per-step rows (`@spec :: [map()]`), not
+    /// a scalar — a `Double?` here threw `typeMismatch` on the present array.
+    /// Decoded defensively so a missing/null key still yields `[]`.
+    let avgDaysToPayment: [AvgDaysToPaymentEntryDTO]
 
     enum CodingKeys: String, CodingKey {
         case totalSent = "total_sent"
@@ -416,6 +432,17 @@ struct ReminderEffectivenessDTO: Decodable {
         case overallClickRate = "overall_click_rate"
         case overallConversionRate = "overall_conversion_rate"
         case avgDaysToPayment = "avg_days_to_payment"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        totalSent = try c.decode(Int.self, forKey: .totalSent)
+        totalOpened = try c.decode(Int.self, forKey: .totalOpened)
+        totalClicked = try c.decode(Int.self, forKey: .totalClicked)
+        overallOpenRate = try c.decode(Double.self, forKey: .overallOpenRate)
+        overallClickRate = try c.decode(Double.self, forKey: .overallClickRate)
+        overallConversionRate = try c.decodeIfPresent(Double.self, forKey: .overallConversionRate)
+        avgDaysToPayment = try c.decodeIfPresent([AvgDaysToPaymentEntryDTO].self, forKey: .avgDaysToPayment) ?? []
     }
 }
 

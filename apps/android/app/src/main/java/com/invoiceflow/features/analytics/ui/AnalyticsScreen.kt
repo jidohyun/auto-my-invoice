@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.analytics.data.model.AgingBucketDto
 import com.invoiceflow.features.analytics.data.model.ClientRankingDto
 import com.invoiceflow.features.analytics.data.model.MonthlyCollectionDto
+import com.invoiceflow.features.analytics.data.model.AvgDaysToPaymentEntryDto
 import com.invoiceflow.features.analytics.data.model.ReminderEffectivenessDto
 import com.invoiceflow.features.analytics.data.model.StatusDistributionDto
 import com.invoiceflow.features.analytics.viewmodel.AnalyticsViewModel
@@ -218,8 +219,17 @@ private fun ReminderSection(r: ReminderEffectivenessDto) {
         StatRow("열람률", "%.1f%%".format(r.overallOpenRate))
         StatRow("클릭률", "%.1f%%".format(r.overallClickRate))
         r.overallConversionRate?.let { StatRow("결제 전환율", "%.1f%%".format(it)) }
-        r.avgDaysToPayment?.let { StatRow("평균 결제 소요", "%.1f일".format(it)) }
+        // avg_days_to_payment is a per-step array; collapse to a sample-weighted
+        // overall average so the screen shows a single "평균 결제 소요" figure.
+        weightedAvgDays(r.avgDaysToPayment)?.let { StatRow("평균 결제 소요", "%.1f일".format(it)) }
     }
+}
+
+/** Sample-weighted mean of per-step avg-days rows; null when there is no data. */
+private fun weightedAvgDays(rows: List<AvgDaysToPaymentEntryDto>): Double? {
+    val totalSamples = rows.sumOf { it.sampleSize }
+    if (totalSamples == 0) return null
+    return rows.sumOf { it.avgDays * it.sampleSize } / totalSamples
 }
 
 @Composable

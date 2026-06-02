@@ -108,11 +108,21 @@ struct AnalyticsView: View {
                 if let conv = r.overallConversionRate {
                     statRow("결제 전환율", String(format: "%.1f%%", conv))
                 }
-                if let days = r.avgDaysToPayment {
+                // avg_days_to_payment is a per-step array; collapse to a
+                // sample-weighted overall average for a single figure.
+                if let days = weightedAvgDays(r.avgDaysToPayment) {
                     statRow("평균 결제 소요", String(format: "%.1f일", days))
                 }
             }
         }
+    }
+
+    /// Sample-weighted mean of per-step avg-days rows; nil when there is no data.
+    private func weightedAvgDays(_ rows: [AvgDaysToPaymentEntryDTO]) -> Double? {
+        let totalSamples = rows.reduce(0) { $0 + $1.sampleSize }
+        guard totalSamples > 0 else { return nil }
+        let weighted = rows.reduce(0.0) { $0 + $1.avgDays * Double($1.sampleSize) }
+        return weighted / Double(totalSamples)
     }
 
     // MARK: - Client ranking
