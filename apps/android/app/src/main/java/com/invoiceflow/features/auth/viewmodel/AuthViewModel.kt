@@ -44,7 +44,7 @@ class AuthViewModel @Inject constructor(
                 val data = authRepository.login(email, password)
                 // AMI-41/72: hand the FCM token to the backend for this session.
                 pushTokenRegistrar.pullAndRegister()
-                _events.value = AuthEvent.LoginSuccess(data.accessToken)
+                _events.value = AuthEvent.LoginSuccess(data.token)
             } catch (e: Exception) {
                 val message = e.message ?: "Login failed"
                 _state.update { it.copy(error = message) }
@@ -62,7 +62,7 @@ class AuthViewModel @Inject constructor(
                 val data = authRepository.register(email, password, name)
                 // AMI-41/72: hand the FCM token to the backend for this session.
                 pushTokenRegistrar.pullAndRegister()
-                _events.value = AuthEvent.RegisterSuccess(data.accessToken)
+                _events.value = AuthEvent.RegisterSuccess(data.token)
             } catch (e: Exception) {
                 val message = e.message ?: "Registration failed"
                 _state.update { it.copy(error = message) }

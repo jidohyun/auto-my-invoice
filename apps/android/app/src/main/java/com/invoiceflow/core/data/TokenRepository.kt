@@ -20,25 +20,22 @@ class TokenRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private val accessTokenKey = stringPreferencesKey("access_token")
-    private val refreshTokenKey = stringPreferencesKey("refresh_token")
 
     val accessTokenFlow: Flow<String?> = context.dataStore.data.map { it[accessTokenKey] }
-    val refreshTokenFlow: Flow<String?> = context.dataStore.data.map { it[refreshTokenKey] }
 
     suspend fun getAccessToken(): String? = accessTokenFlow.firstOrNull()
-    suspend fun getRefreshToken(): String? = refreshTokenFlow.firstOrNull()
 
-    suspend fun saveTokens(accessToken: String, refreshToken: String) {
+    // The backend issues a single bearer token (no refresh token), so we
+    // persist just the one value.
+    suspend fun saveToken(accessToken: String) {
         context.dataStore.edit {
             it[accessTokenKey] = accessToken
-            it[refreshTokenKey] = refreshToken
         }
     }
 
     suspend fun clearTokens() {
         context.dataStore.edit {
             it.remove(accessTokenKey)
-            it.remove(refreshTokenKey)
         }
     }
 }

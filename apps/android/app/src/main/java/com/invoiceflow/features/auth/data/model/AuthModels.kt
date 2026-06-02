@@ -7,16 +7,19 @@ import com.squareup.moshi.JsonClass
 data class LoginRequest(val email: String, val password: String)
 
 @JsonClass(generateAdapter = true)
-data class RegisterRequest(val email: String, val password: String, val name: String)
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    @Json(name = "full_name") val fullName: String,
+)
 
-@JsonClass(generateAdapter = true)
-data class RefreshTokenRequest(@Json(name = "refresh_token") val refreshToken: String)
-
+/// Mirrors the backend `POST /auth/login|register` payload exactly:
+/// `{"data": {"token": "...", "user": {...}}}`. The backend issues a single
+/// Phoenix.Token (no refresh token / expiry envelope), so we persist just the
+/// one bearer token; a 401 self-heals by clearing it and returning to login.
 @JsonClass(generateAdapter = true)
 data class AuthData(
-    @Json(name = "access_token") val accessToken: String,
-    @Json(name = "refresh_token") val refreshToken: String,
-    @Json(name = "expires_in") val expiresIn: Int,
+    val token: String,
     val user: UserDto,
 )
 
@@ -24,6 +27,9 @@ data class AuthData(
 data class UserDto(
     val id: String,
     val email: String,
-    val name: String,
-    @Json(name = "avatar_url") val avatarUrl: String?,
+    val plan: String? = null,
+    @Json(name = "company_name") val companyName: String? = null,
+    val timezone: String? = null,
+    @Json(name = "brand_tone") val brandTone: String? = null,
+    @Json(name = "avatar_url") val avatarUrl: String? = null,
 )

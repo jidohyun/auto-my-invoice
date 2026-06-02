@@ -2,7 +2,6 @@ package com.invoiceflow.core.network
 
 import com.invoiceflow.features.auth.data.model.AuthData
 import com.invoiceflow.features.auth.data.model.LoginRequest
-import com.invoiceflow.features.auth.data.model.RefreshTokenRequest
 import com.invoiceflow.features.auth.data.model.RegisterRequest
 import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.analytics.data.model.ClientRankingDto
@@ -44,9 +43,6 @@ interface ApiService {
 
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): ApiResponse<AuthData>
-
-    @POST("auth/refresh")
-    suspend fun refreshToken(@Body request: RefreshTokenRequest): ApiResponse<AuthData>
 
     @DELETE("auth/logout")
     suspend fun logout()

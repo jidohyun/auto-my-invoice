@@ -27,7 +27,11 @@ struct InVoiceFlow_iOSApp: App {
             ContentView()
                 .environment(auth)
                 .task {
-                    auth.bootstrap()
+                    // Wire the centralized 401 self-heal BEFORE any request so a
+                    // stale/invalid token on any endpoint logs out and routes
+                    // back to LoginView instead of stranding a dead shell.
+                    APIClient.shared.onUnauthorized = { [auth] in auth.logOut() }
+                    await auth.bootstrap()
                     // AMI-41: register for APNs after launch. Gated on the
                     // user's push preference inside PushManager.
                     await PushManager.shared.registerIfEnabled()

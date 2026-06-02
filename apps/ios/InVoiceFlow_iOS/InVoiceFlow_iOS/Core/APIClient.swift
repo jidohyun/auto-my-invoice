@@ -28,6 +28,12 @@ final class APIClient {
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
 
+    /// Invoked once on any 401 before `APIError.unauthorized` is thrown. Wired
+    /// at app start to `AuthViewModel.logOut()` so a stale/invalid token sends
+    /// the user back to the login screen instead of stranding them on a dead
+    /// authenticated shell. Covers every endpoint, not just the dashboard.
+    var onUnauthorized: (@MainActor () -> Void)?
+
     /// Override at app start via the `API_BASE_URL` Info.plist key if needed.
     /// Defaults to the live production backend; use Info.plist override (or a
     /// local scheme) to point at a local Phoenix dev server during development.
@@ -357,7 +363,7 @@ final class APIClient {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw APIError.unauthorized }
+        if status == 401 { onUnauthorized?(); throw APIError.unauthorized }
         guard (200..<300).contains(status) else {
             throw APIError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
@@ -381,7 +387,7 @@ final class APIClient {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw APIError.unauthorized }
+        if status == 401 { onUnauthorized?(); throw APIError.unauthorized }
         guard (200..<300).contains(status) else {
             throw APIError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
@@ -400,7 +406,7 @@ final class APIClient {
         }
 
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { throw APIError.unauthorized }
+        if status == 401 { onUnauthorized?(); throw APIError.unauthorized }
         guard (200..<300).contains(status) else {
             throw APIError.http(status: status, body: String(data: data, encoding: .utf8) ?? "")
         }
