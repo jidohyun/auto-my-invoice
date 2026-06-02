@@ -29,7 +29,24 @@ if System.get_env("PHX_SERVER") do
       path -> [chrome_executable: path]
     end
 
-  chromic_opts = [{:no_sandbox, true} | chromic_executable_opt]
+  # 컨테이너에서 Chromium 이 브라우저 컨텍스트 생성 단계에서 멈추는(Timeout
+  # in Channel.run_protocol/3) 문제를 막는 안정화 인자.
+  #   --disable-dev-shm-usage: 컨테이너 기본 /dev/shm(64MB)가 작아 Chrome 이
+  #     공유메모리 부족으로 행에 빠지는 것을 /tmp 사용으로 회피(주원인).
+  #   --disable-gpu / --disable-software-rasterizer: 헤드리스에서 불필요한
+  #     GPU 경로를 꺼 기동 안정성 확보.
+  chromic_opts =
+    [
+      {:no_sandbox, true},
+      {:chrome_args,
+       "--disable-dev-shm-usage --disable-gpu --disable-software-rasterizer"},
+      # 512MB shared-cpu 머신에서 Chromium cold start 가 기본 5초 init/print
+      # 타임아웃을 초과해 "Timeout in Channel.run_protocol/3"(SpawnSession 단계)
+      # 으로 PDF 가 500 나는 문제 → 풀 타임아웃을 20초로 넉넉히 늘린다.
+      {:session_pool,
+       [init_timeout: 20_000, checkout_timeout: 20_000, timeout: 20_000]}
+      | chromic_executable_opt
+    ]
 
   config :auto_my_invoice, ChromicPDF, chromic_opts
 end
