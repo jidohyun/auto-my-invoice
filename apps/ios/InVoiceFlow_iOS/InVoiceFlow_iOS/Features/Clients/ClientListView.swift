@@ -62,12 +62,12 @@ private struct ClientRow: View {
     let client: ClientDTO
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(client.name).font(.body.weight(.semibold))
+            Text(client.name).appFont(.headline)
             if let company = client.company, !company.isEmpty {
-                Text(company).font(.caption).foregroundStyle(.secondary)
+                Text(company).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
             if let email = client.email, !email.isEmpty {
-                Text(email).font(.caption).foregroundStyle(.secondary)
+                Text(email).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
         }
         .padding(.vertical, 4)
@@ -77,10 +77,10 @@ private struct ClientRow: View {
 private struct EmptyClients: View {
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: "person.2").font(.largeTitle).foregroundStyle(.secondary)
-            Text("아직 고객이 없습니다").font(.body)
+            Image(systemName: "person.2").font(.largeTitle).foregroundStyle(AppColor.baseContent.opacity(0.2))
+            Text("아직 고객이 없습니다").appFont(.bodyText)
             Text("+ 버튼으로 첫 고객을 추가하세요.")
-                .font(.caption).foregroundStyle(.secondary)
+                .appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

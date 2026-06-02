@@ -47,7 +47,7 @@ struct ClientFormView: View {
         NavigationStack {
             Form {
                 if let error {
-                    Section { Text(error).font(.footnote).foregroundStyle(.red) }
+                    Section { Text(error).font(.footnote).foregroundStyle(AppColor.error) }
                 }
                 Section("필수") {
                     TextField("이름", text: $name)

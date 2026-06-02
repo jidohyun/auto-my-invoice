@@ -11,10 +11,10 @@ struct RegisterView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("회원가입")
-                    .font(.title2.bold())
+                    .appFont(.displayLarge)
                 Text("이메일과 비밀번호로 새 계정을 만듭니다")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .appFont(.callout)
+                    .foregroundStyle(AppColor.baseContent.opacity(0.6))
 
                 LabeledField(label: "이메일 주소") {
                     TextField("you@example.com", text: $email)
@@ -30,19 +30,20 @@ struct RegisterView: View {
                 }
 
                 if let error = auth.error {
-                    Text(error).foregroundStyle(.red).font(.footnote)
+                    Text(error).foregroundStyle(AppColor.error).appFont(.caption)
                 }
 
                 Button {
                     Task { await auth.register(email: email, password: password) }
                 } label: {
                     if auth.isSubmitting {
-                        ProgressView().tint(.white).frame(maxWidth: .infinity)
+                        ProgressView().tint(AppColor.primaryContent).frame(maxWidth: .infinity)
                     } else {
                         Text("계정 만들기").frame(maxWidth: .infinity)
                     }
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(AppColor.primary)
                 .disabled(auth.isSubmitting || email.isEmpty || password.count < 8)
             }
             .padding(24)

@@ -27,7 +27,7 @@ struct InvoiceCreateView: View {
             Form {
                 if let error = vm.error {
                     Section {
-                        Text(error).font(.footnote).foregroundStyle(.red)
+                        Text(error).font(.footnote).foregroundStyle(AppColor.error)
                     }
                 }
 
@@ -118,7 +118,7 @@ private struct LineItemEditor: View {
             HStack {
                 TextField("설명", text: $item.description)
                 Button(role: .destructive, action: onDelete) {
-                    Image(systemName: "trash").foregroundStyle(.red)
+                    Image(systemName: "trash").foregroundStyle(AppColor.error)
                 }
                 .buttonStyle(.plain)
             }

@@ -36,10 +36,10 @@ struct ClientDetailView: View {
                 // count fetch failed but the client decoded).
                 if vm.client != nil, let error = vm.error {
                     Text(error)
-                        .font(.footnote).foregroundStyle(.red)
+                        .font(.footnote).foregroundStyle(AppColor.error)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
+                        .background(AppColor.error.opacity(0.1), in: .rect(cornerRadius: AppRadius.field))
                 }
             }
             .padding(16)
@@ -69,28 +69,28 @@ struct ClientDetailView: View {
 
     private func header(_ client: ClientDTO) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(client.name).font(.title2.bold())
+            Text(client.name).appFont(.displayTitle)
             if let company = client.company, !company.isEmpty {
                 Label(company, systemImage: "building.2")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .appFont(.callout).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .appCard()
     }
 
     private var countsSection: some View {
         HStack(spacing: 12) {
             CountTile(value: vm.invoiceCount, label: "송장", system: "doc.text")
-            CountTile(value: vm.outstandingCount, label: "미수금", system: "clock", tint: .orange)
-            CountTile(value: vm.paidCount, label: "결제완료", system: "checkmark.circle", tint: .green)
+            CountTile(value: vm.outstandingCount, label: "미수금", system: "clock", tint: AppColor.warning)
+            CountTile(value: vm.paidCount, label: "결제완료", system: "checkmark.circle", tint: AppColor.success)
         }
     }
 
     private func contactSection(_ client: ClientDTO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("연락처").font(.headline)
+            Text("연락처").appFont(.headline)
             ContactRow(system: "envelope", value: client.email, placeholder: "이메일 없음")
             ContactRow(system: "phone", value: client.phone, placeholder: "전화번호 없음")
             if let address = client.address, !address.isEmpty {
@@ -99,14 +99,14 @@ struct ClientDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
+        .appCard()
     }
 
     /// Server-computed payment behaviour for this client (`/clients/:id/analytics`).
     /// All money fields are KRW-rolled (AMI-90).
     private func analyticsSection(_ a: ClientAnalyticsDTO) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("결제 분석").font(.headline)
+            Text("결제 분석").appFont(.headline)
             analyticsRow("총 청구액", MoneyFormatter.format(a.totalInvoiced, currency: "KRW"))
             analyticsRow("총 수금액", MoneyFormatter.format(a.totalPaid, currency: "KRW"))
             analyticsRow("미수금", MoneyFormatter.format(a.outstandingAmount, currency: "KRW"))
@@ -119,14 +119,14 @@ struct ClientDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .appCard()
     }
 
     private func analyticsRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).font(.subheadline).foregroundStyle(.secondary)
+            Text(label).appFont(.callout).foregroundStyle(AppColor.baseContent.opacity(0.6))
             Spacer()
-            Text(value).font(.subheadline.weight(.medium))
+            Text(value).font(AppFont.money())
         }
     }
 }
@@ -135,17 +135,17 @@ private struct CountTile: View {
     let value: Int
     let label: String
     let system: String
-    var tint: Color = .accentColor
+    var tint: Color = AppColor.primary
 
     var body: some View {
         VStack(spacing: 4) {
             Image(systemName: system).font(.title3).foregroundStyle(tint)
-            Text("\(value)").font(.title2.bold())
-            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text("\(value)").font(AppFont.money(20, weight: .semibold))
+            Text(label).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
-        .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
+        .appCard()
     }
 }
 
@@ -159,7 +159,7 @@ private struct ContactRow: View {
             Label(value, systemImage: system).font(.body)
         } else if !placeholder.isEmpty {
             Label(placeholder, systemImage: system)
-                .font(.body).foregroundStyle(.secondary)
+                .font(.body).foregroundStyle(AppColor.baseContent.opacity(0.5))
         }
     }
 }

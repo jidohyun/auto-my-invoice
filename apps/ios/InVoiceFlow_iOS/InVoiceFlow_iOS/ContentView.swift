@@ -58,6 +58,7 @@ struct MainTabView: View {
                 .tabItem { Label("설정", systemImage: "gearshape") }
                 .tag(Tab.settings)
         }
+        .tint(AppColor.primary)
         .overlay(alignment: .bottomTrailing) { scanButton }
         .sheet(isPresented: $showScanner) {
             QrScannerView { invoiceId in
@@ -73,9 +74,9 @@ struct MainTabView: View {
         } label: {
             Image(systemName: "qrcode.viewfinder")
                 .font(.title2)
-                .foregroundStyle(.white)
+                .foregroundStyle(AppColor.primaryContent)
                 .frame(width: 56, height: 56)
-                .background(Color.accentColor, in: .circle)
+                .background(AppColor.primary, in: .circle)
                 .shadow(radius: 4, y: 2)
         }
         .accessibilityLabel("QR 결제 스캔")

@@ -21,10 +21,10 @@ struct InvoiceDetailView: View {
                     // Inline error (e.g. a failed action) above the loaded content.
                     if let error = vm.error {
                         Text(error)
-                            .font(.footnote).foregroundStyle(.red)
+                            .font(.footnote).foregroundStyle(AppColor.error)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
-                            .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
+                            .background(AppColor.error.opacity(0.1), in: .rect(cornerRadius: AppRadius.button))
                     }
                     header(invoice)
                     if let client = invoice.client { clientSection(client) }
@@ -90,29 +90,29 @@ struct InvoiceDetailView: View {
     private func header(_ invoice: InvoiceDTO) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("#\(invoice.invoiceNumber)").font(.title2.bold())
+                Text("#\(invoice.invoiceNumber)").appFont(.displayTitle)
                 Spacer()
                 StatusBadge(status: invoice.status)
             }
             Text(MoneyFormatter.format(invoice.amount, currency: invoice.currency))
-                .font(.largeTitle.weight(.semibold))
+                .font(AppFont.money(34, weight: .semibold))
             if let due = invoice.dueDate {
                 Label("결제 기한 \(due)", systemImage: "calendar")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.subheadline).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .appCard()
     }
 
     private func clientSection(_ client: ClientDTO) -> some View {
         Section {
             VStack(alignment: .leading, spacing: 4) {
-                Text("고객").font(.headline)
+                Text("고객").appFont(.headline)
                 Text(client.name).font(.body.weight(.medium))
-                if let email = client.email { Text(email).font(.caption).foregroundStyle(.secondary) }
-                if let company = client.company { Text(company).font(.caption).foregroundStyle(.secondary) }
+                if let email = client.email { Text(email).font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6)) }
+                if let company = client.company { Text(company).font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6)) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -120,17 +120,17 @@ struct InvoiceDetailView: View {
 
     private func itemsSection(_ invoice: InvoiceDTO) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("항목").font(.headline)
+            Text("항목").appFont(.headline)
             let items = invoice.items ?? []
             if items.isEmpty {
-                Text("항목이 없습니다.").font(.caption).foregroundStyle(.secondary)
+                Text("항목이 없습니다.").font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
             } else {
                 ForEach(items) { item in
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.description).font(.body)
                             Text("\(item.quantity) × \(MoneyFormatter.format(item.unitPrice, currency: invoice.currency))")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
                         }
                         Spacer()
                     }
@@ -143,8 +143,8 @@ struct InvoiceDetailView: View {
 
     private func notesSection(_ notes: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("메모").font(.headline)
-            Text(notes).font(.body).foregroundStyle(.secondary)
+            Text("메모").appFont(.headline)
+            Text(notes).font(.body).foregroundStyle(AppColor.baseContent.opacity(0.6))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -162,6 +162,7 @@ struct InvoiceDetailView: View {
                     actionLabel("송장 발송", system: "paperplane")
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(AppColor.primary)
                 .disabled(vm.isActing)
             }
 
@@ -213,7 +214,7 @@ struct InvoiceDetailView: View {
                 Label("송장 삭제", systemImage: "trash").frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
-            .tint(.red)
+            .tint(AppColor.error)
             .disabled(vm.isActing)
         }
         .frame(maxWidth: .infinity)

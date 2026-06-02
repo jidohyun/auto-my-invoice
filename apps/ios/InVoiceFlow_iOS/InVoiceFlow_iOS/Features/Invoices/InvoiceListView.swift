@@ -81,14 +81,14 @@ struct InvoiceListView: View {
                         Task { await vm.setFilter(filter.value) }
                     } label: {
                         Text(filter.label)
-                            .font(.subheadline)
+                            .appFont(.callout)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(
-                                isOn ? Color.accentColor : Color(.secondarySystemBackground),
+                                isOn ? AppColor.primary : AppColor.base300,
                                 in: .capsule
                             )
-                            .foregroundStyle(isOn ? Color.white : Color.primary)
+                            .foregroundStyle(isOn ? AppColor.primaryContent : AppColor.baseContent)
                     }
                     .buttonStyle(.plain)
                 }
@@ -124,32 +124,26 @@ private struct InvoiceRow: View {
 struct StatusBadge: View {
     let status: String
     var body: some View {
+        // 웹 status_class / Android StatusColors 와 동일한 색 매핑.
+        let (fg, bg) = AppColor.statusColor(for: status)
         Text(InvoiceStatus.label(status))
-            .font(.caption2.weight(.medium))
-            .padding(.horizontal, 8)
+            .font(AppFont.caption.weight(.medium))
+            .padding(.horizontal, AppSpacing.sm)
             .padding(.vertical, 2)
-            .background(color.opacity(0.15), in: .capsule)
-            .foregroundStyle(color)
-    }
-
-    private var color: Color {
-        switch status.lowercased() {
-        case "paid": return .green
-        case "overdue": return .red
-        case "sent": return .blue
-        case "draft": return .gray
-        default: return .secondary
-        }
+            .background(bg, in: .capsule)
+            .foregroundStyle(fg)
     }
 }
 
 private struct EmptyInvoices: View {
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: "doc.text").font(.largeTitle).foregroundStyle(.secondary)
-            Text("아직 송장이 없습니다").font(.body)
+        VStack(spacing: AppSpacing.sm) {
+            Image(systemName: "doc.text").font(.largeTitle)
+                .foregroundStyle(AppColor.baseContent.opacity(0.2))
+            Text("아직 송장이 없습니다").appFont(.bodyText)
+                .foregroundStyle(AppColor.baseContent.opacity(0.7))
             Text("+ 버튼으로 첫 송장을 만들어 보세요.")
-                .font(.caption).foregroundStyle(.secondary)
+                .appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.5))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -161,12 +155,12 @@ struct ErrorBanner: View {
         VStack {
             Spacer()
             Text(message)
-                .font(.footnote)
-                .foregroundStyle(.white)
+                .appFont(.caption)
+                .foregroundStyle(AppColor.errorContent)
                 .padding(12)
                 .frame(maxWidth: .infinity)
-                .background(Color.red.opacity(0.9), in: .rect(cornerRadius: 8))
-                .padding(16)
+                .background(AppColor.error.opacity(0.9), in: .rect(cornerRadius: AppRadius.button))
+                .padding(AppSpacing.md)
         }
     }
 }

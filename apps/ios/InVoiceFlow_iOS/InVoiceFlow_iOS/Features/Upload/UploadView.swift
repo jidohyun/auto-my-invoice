@@ -26,14 +26,14 @@ struct UploadView: View {
                 case .processing:
                     statusView("OCR 처리 중...", system: "doc.text.magnifyingglass")
                 case .completed:
-                    statusView("추출 완료", system: "checkmark.circle", tint: .green)
+                    statusView("추출 완료", system: "checkmark.circle", tint: AppColor.success)
                 case .failed(let message):
                     ErrorStateView(message: message) { retry() }
                     picker
                 }
 
                 if let loadError {
-                    Text(loadError).font(.footnote).foregroundStyle(.red)
+                    Text(loadError).font(.footnote).foregroundStyle(AppColor.error)
                 }
 
                 Spacer()
@@ -63,19 +63,19 @@ struct UploadView: View {
 
     private var preview: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.secondarySystemBackground))
+            RoundedRectangle(cornerRadius: AppRadius.card)
+                .fill(AppColor.base200)
             if let previewImage {
                 previewImage
                     .resizable()
                     .scaledToFit()
-                    .clipShape(.rect(cornerRadius: 12))
+                    .clipShape(.rect(cornerRadius: AppRadius.card))
             } else {
                 VStack(spacing: 8) {
                     Image(systemName: "photo.on.rectangle.angled")
-                        .font(.largeTitle).foregroundStyle(.secondary)
+                        .font(.largeTitle).foregroundStyle(AppColor.baseContent.opacity(0.2))
                     Text("송장 사진을 선택하세요")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.subheadline).foregroundStyle(AppColor.baseContent.opacity(0.5))
                 }
             }
             if vm.isBusy {
@@ -91,10 +91,11 @@ struct UploadView: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
+        .tint(AppColor.primary)
         .disabled(vm.isBusy)
     }
 
-    private func statusView(_ title: String, system: String, tint: Color = .accentColor) -> some View {
+    private func statusView(_ title: String, system: String, tint: Color = AppColor.primary) -> some View {
         HStack(spacing: 8) {
             Image(systemName: system).foregroundStyle(tint)
             Text(title).font(.body)
@@ -102,7 +103,7 @@ struct UploadView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(tint.opacity(0.1), in: .rect(cornerRadius: 10))
+        .background(tint.opacity(0.1), in: .rect(cornerRadius: AppRadius.card))
     }
 
     private func handlePick(_ item: PhotosPickerItem) async {

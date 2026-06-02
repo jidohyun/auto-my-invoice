@@ -12,10 +12,10 @@ struct LoginView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("다시 오신 걸 환영합니다")
-                        .font(.title2.bold())
+                        .appFont(.displayLarge)
                     Text("로그인하여 송장을 관리하세요")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .appFont(.callout)
+                        .foregroundStyle(AppColor.baseContent.opacity(0.6))
 
                     LabeledField(label: "이메일 주소") {
                         TextField("you@example.com", text: $email)
@@ -31,26 +31,27 @@ struct LoginView: View {
                     }
 
                     if let error = auth.error {
-                        Text(error).foregroundStyle(.red).font(.footnote)
+                        Text(error).foregroundStyle(AppColor.error).font(.footnote)
                     }
 
                     Button {
                         Task { await auth.login(email: email, password: password) }
                     } label: {
                         if auth.isSubmitting {
-                            ProgressView().tint(.white).frame(maxWidth: .infinity)
+                            ProgressView().tint(AppColor.primaryContent).frame(maxWidth: .infinity)
                         } else {
                             Text("로그인").frame(maxWidth: .infinity)
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(AppColor.primary)
                     .disabled(auth.isSubmitting || email.isEmpty || password.isEmpty)
 
                     Button("계정이 없으신가요? 회원가입") {
                         showRegister = true
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(AppColor.primary)
                     .frame(maxWidth: .infinity)
                 }
                 .padding(24)
@@ -67,7 +68,7 @@ struct LabeledField<Content: View>: View {
     @ViewBuilder var content: () -> Content
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(label).font(.footnote).foregroundStyle(.secondary)
+            Text(label).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
             content()
                 .textFieldStyle(.roundedBorder)
         }

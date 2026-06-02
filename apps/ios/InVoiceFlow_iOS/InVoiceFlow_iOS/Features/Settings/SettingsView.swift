@@ -11,7 +11,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 if let error = vm.error {
-                    Section { Text(error).font(.footnote).foregroundStyle(.red) }
+                    Section { Text(error).font(.footnote).foregroundStyle(AppColor.error) }
                 }
 
                 Section("프로필") {

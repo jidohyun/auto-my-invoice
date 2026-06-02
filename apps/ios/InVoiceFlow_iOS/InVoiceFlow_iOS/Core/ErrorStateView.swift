@@ -12,17 +12,18 @@ struct ErrorStateView: View {
         VStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.title2)
-                .foregroundStyle(.red)
+                .foregroundStyle(AppColor.error)
             Text(message)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .appFont(.bodyText)
+                .foregroundStyle(AppColor.baseContent.opacity(0.6))
                 .multilineTextAlignment(.center)
             Button("다시 시도", action: retry)
                 .buttonStyle(.bordered)
+                .tint(AppColor.primary)
         }
         .frame(maxWidth: .infinity)
         .padding(20)
-        .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 10))
+        .background(AppColor.error.opacity(0.10), in: .rect(cornerRadius: AppRadius.card))
     }
 }
 

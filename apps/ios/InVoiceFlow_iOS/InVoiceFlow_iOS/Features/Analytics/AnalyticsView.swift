@@ -68,7 +68,7 @@ struct AnalyticsView: View {
                             Spacer()
                             Text("\(row.count)건").font(.subheadline)
                             Text(MoneyFormatter.format(row.total, currency: "KRW"))
-                                .font(.subheadline).foregroundStyle(.secondary)
+                                .font(AppFont.money(15)).foregroundStyle(AppColor.baseContent.opacity(0.6))
                         }
                     }
                 }
@@ -90,7 +90,7 @@ struct AnalyticsView: View {
                         Spacer()
                         Text("\(bucket?.count ?? 0)건").font(.subheadline)
                         Text(MoneyFormatter.format(bucket?.total ?? "0", currency: "KRW"))
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(AppFont.money(15)).foregroundStyle(AppColor.baseContent.opacity(0.6))
                     }
                 }
             }
@@ -137,16 +137,16 @@ struct AnalyticsView: View {
                             Spacer()
                             if let days = row.avgPaymentDays {
                                 Text(String(format: "평균 %.0f일", days))
-                                    .font(.caption).foregroundStyle(.secondary)
+                                    .font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
                             }
                         }
                         HStack {
                             Text("청구 \(MoneyFormatter.format(row.totalInvoiced, currency: "KRW"))")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
                             Spacer()
                             if let rate = row.onTimeRate {
                                 Text(String(format: "정시 %.0f%%", rate))
-                                    .font(.caption).foregroundStyle(.secondary)
+                                    .font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
                             }
                         }
                     }
@@ -160,24 +160,24 @@ struct AnalyticsView: View {
 
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.headline)
+            Text(title).appFont(.headline)
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 12))
+        .appCard()
     }
 
     private func statRow(_ label: String, _ value: String) -> some View {
         HStack {
-            Text(label).font(.subheadline).foregroundStyle(.secondary)
+            Text(label).font(.subheadline).foregroundStyle(AppColor.baseContent.opacity(0.6))
             Spacer()
             Text(value).font(.subheadline.weight(.medium))
         }
     }
 
     private func emptyHint(_ text: String) -> some View {
-        Text(text).font(.caption).foregroundStyle(.secondary)
+        Text(text).font(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
     }
 }
 
@@ -196,10 +196,10 @@ private struct MonthlyBar: View {
                 Text(row.month).font(.caption.weight(.medium))
                 Spacer()
                 Text(MoneyFormatter.format(row.collected, currency: "KRW"))
-                    .font(.caption2).foregroundStyle(.secondary)
+                    .font(AppFont.money(11)).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
-            bar(value: invoiced, color: .secondary.opacity(0.35))
-            bar(value: collected, color: .accentColor)
+            bar(value: invoiced, color: AppColor.base300)
+            bar(value: collected, color: AppColor.primary)
         }
     }
 
