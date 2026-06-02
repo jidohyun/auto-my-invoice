@@ -113,7 +113,14 @@ final class APIClient {
     }
 
     func recentInvoices(limit: Int = 5) async throws -> [InvoiceDTO] {
-        let req = try makeRequest(path: "/dashboard/recent?limit=\(limit)", method: "GET")
+        // Pass `limit` via the query parameter, NOT embedded in `path` — a path
+        // like "/dashboard/recent?limit=5" gets its "?" percent-encoded to
+        // "%3F" by URL.appendingPathComponent, producing a 404.
+        let req = try makeRequest(
+            path: "/dashboard/recent",
+            method: "GET",
+            query: [URLQueryItem(name: "limit", value: String(limit))]
+        )
         return try await send(req, as: APIResponse<[InvoiceDTO]>.self).data
     }
 
