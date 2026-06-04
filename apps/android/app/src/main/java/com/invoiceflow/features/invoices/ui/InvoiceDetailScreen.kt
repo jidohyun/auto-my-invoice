@@ -43,8 +43,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.invoiceflow.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
@@ -66,6 +68,9 @@ fun InvoiceDetailScreen(
     var showPaymentDialog by remember { mutableStateOf(false) }
     var paymentAmount by remember { mutableStateOf("") }
 
+    // Resolved at composition since the share chooser is built inside a coroutine.
+    val pdfShareTitle = stringResource(R.string.invoices_pdf_share_chooser)
+
     LaunchedEffect(invoiceId) { viewModel.loadInvoice(invoiceId) }
 
     // Once the PDF is cached, fire a share/open chooser then consume it so the
@@ -78,7 +83,7 @@ fun InvoiceDetailScreen(
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(share, "송장 PDF 공유").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        context.startActivity(Intent.createChooser(share, pdfShareTitle).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         viewModel.consumePdfFile()
     }
 
@@ -99,10 +104,10 @@ fun InvoiceDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("송장 상세") },
+                title = { Text(stringResource(R.string.invoices_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.invoices_back))
                     }
                 },
                 actions = {
@@ -113,7 +118,7 @@ fun InvoiceDetailScreen(
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "삭제",
+                                contentDescription = stringResource(R.string.invoices_delete),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -155,8 +160,8 @@ fun InvoiceDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("송장 삭제") },
-            text = { Text("이 송장을 삭제하시겠습니까? 되돌릴 수 없습니다.") },
+            title = { Text(stringResource(R.string.invoices_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.invoices_delete_dialog_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -164,11 +169,11 @@ fun InvoiceDetailScreen(
                         viewModel.delete(invoiceId)
                     },
                 ) {
-                    Text("삭제", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.invoices_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("취소") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.invoices_cancel)) }
             },
         )
     }
@@ -176,15 +181,15 @@ fun InvoiceDetailScreen(
     if (showPaymentDialog) {
         AlertDialog(
             onDismissRequest = { showPaymentDialog = false },
-            title = { Text("부분 결제 기록") },
+            title = { Text(stringResource(R.string.invoices_record_payment)) },
             text = {
                 Column {
-                    Text("받은 금액을 입력하세요. 잔액을 초과할 수 없습니다.")
+                    Text(stringResource(R.string.invoices_record_payment_message))
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
                         value = paymentAmount,
                         onValueChange = { paymentAmount = it },
-                        label = { Text("금액") },
+                        label = { Text(stringResource(R.string.invoices_amount_label)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     )
@@ -198,11 +203,11 @@ fun InvoiceDetailScreen(
                     },
                     enabled = paymentAmount.isNotBlank(),
                 ) {
-                    Text("기록")
+                    Text(stringResource(R.string.invoices_record))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPaymentDialog = false }) { Text("취소") }
+                TextButton(onClick = { showPaymentDialog = false }) { Text(stringResource(R.string.invoices_cancel)) }
             },
         )
     }
@@ -233,19 +238,19 @@ private fun InvoiceDetailContent(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Text(text = "송장 #${invoice.invoiceNumber}", style = MaterialTheme.typography.headlineMedium)
+        Text(text = stringResource(R.string.invoices_number_header, invoice.invoiceNumber), style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
         StatusPill(statusString = invoice.status)
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "거래처: ${invoice.client?.name ?: "-"}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "금액: ${invoice.currency} ${invoice.amount}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "결제액: ${invoice.currency} ${invoice.paidAmount}", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "지급 기한: ${invoice.dueDate ?: "-"}", style = MaterialTheme.typography.bodyLarge)
-        invoice.sentAt?.let { Text(text = "발송일: $it", style = MaterialTheme.typography.bodyMedium) }
-        invoice.paidAt?.let { Text(text = "결제일: $it", style = MaterialTheme.typography.bodyMedium) }
+        Text(text = stringResource(R.string.invoices_field_client, invoice.client?.name ?: "-"), style = MaterialTheme.typography.bodyLarge)
+        Text(text = stringResource(R.string.invoices_field_amount, invoice.currency, invoice.amount), style = MaterialTheme.typography.bodyLarge)
+        Text(text = stringResource(R.string.invoices_field_paid, invoice.currency, invoice.paidAmount), style = MaterialTheme.typography.bodyLarge)
+        Text(text = stringResource(R.string.invoices_field_due_date, invoice.dueDate ?: "-"), style = MaterialTheme.typography.bodyLarge)
+        invoice.sentAt?.let { Text(text = stringResource(R.string.invoices_field_sent_at, it), style = MaterialTheme.typography.bodyMedium) }
+        invoice.paidAt?.let { Text(text = stringResource(R.string.invoices_field_paid_at, it), style = MaterialTheme.typography.bodyMedium) }
         invoice.notes?.takeIf { it.isNotBlank() }?.let {
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "메모: $it", style = MaterialTheme.typography.bodyMedium)
+            Text(text = stringResource(R.string.invoices_field_notes, it), style = MaterialTheme.typography.bodyMedium)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -262,7 +267,7 @@ private fun InvoiceDetailContent(
                 if (isActionRunning) {
                     InlineSpinner()
                 } else {
-                    Text("발송")
+                    Text(stringResource(R.string.invoices_action_send))
                 }
             }
             OutlinedButton(
@@ -270,7 +275,7 @@ private fun InvoiceDetailContent(
                 enabled = canMarkPaid && !isActionRunning,
                 modifier = Modifier.weight(1f),
             ) {
-                Text("결제 완료로 표시")
+                Text(stringResource(R.string.invoices_mark_paid))
             }
         }
 
@@ -285,14 +290,14 @@ private fun InvoiceDetailContent(
                     enabled = !isActionRunning,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("부분 결제 기록")
+                    Text(stringResource(R.string.invoices_record_payment))
                 }
                 OutlinedButton(
                     onClick = onSendReminder,
                     enabled = !isActionRunning,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("리마인더 발송")
+                    Text(stringResource(R.string.invoices_send_reminder))
                 }
             }
         }
@@ -306,7 +311,7 @@ private fun InvoiceDetailContent(
             if (isDownloadingPdf) {
                 InlineSpinner()
             } else {
-                Text("PDF 다운로드")
+                Text(stringResource(R.string.invoices_download_pdf))
             }
         }
     }
@@ -320,5 +325,5 @@ private fun InlineSpinner() {
         color = MaterialTheme.colorScheme.onPrimary,
     )
     Spacer(Modifier.width(8.dp))
-    Text("처리 중...")
+    Text(stringResource(R.string.invoices_processing))
 }

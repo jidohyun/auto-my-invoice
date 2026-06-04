@@ -1,6 +1,8 @@
 package com.invoiceflow.features.qr.viewmodel
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
+import com.invoiceflow.R
 import com.invoiceflow.features.qr.data.InvoicePayUrlParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +18,7 @@ import javax.inject.Inject
 data class QrScannerUiState(
     val handled: Boolean = false,
     val invoiceId: String? = null,
-    val error: String? = null,
+    @StringRes val errorRes: Int? = null,
 )
 
 sealed interface QrScannerIntent {
@@ -34,7 +36,7 @@ class QrScannerViewModel @Inject constructor() : ViewModel() {
     fun onIntent(intent: QrScannerIntent) {
         when (intent) {
             is QrScannerIntent.CodeScanned -> onCodeScanned(intent.rawValue)
-            QrScannerIntent.ErrorDismissed -> _state.update { it.copy(error = null) }
+            QrScannerIntent.ErrorDismissed -> _state.update { it.copy(errorRes = null) }
             QrScannerIntent.Reset -> _state.value = QrScannerUiState()
         }
     }
@@ -44,9 +46,9 @@ class QrScannerViewModel @Inject constructor() : ViewModel() {
 
         val invoiceId = InvoicePayUrlParser.parseInvoiceId(rawValue)
         if (invoiceId == null) {
-            _state.update { it.copy(error = "송장 결제 QR 코드가 아닙니다") }
+            _state.update { it.copy(errorRes = R.string.qr_error_not_invoice_qr) }
             return
         }
-        _state.update { it.copy(handled = true, invoiceId = invoiceId, error = null) }
+        _state.update { it.copy(handled = true, invoiceId = invoiceId, errorRes = null) }
     }
 }

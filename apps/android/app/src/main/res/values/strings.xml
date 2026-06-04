@@ -1,4 +1,214 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">InvoiceFlow</string>
+
+    <!-- auth -->
+    <string name="auth_login_title">로그인</string>
+    <string name="auth_login_subtitle">송장 리마인더를 자동으로 관리하세요</string>
+    <string name="auth_login_google">Google로 계속하기</string>
+    <string name="auth_login_github">GitHub로 계속하기</string>
+    <string name="auth_login_button">로그인</string>
+    <string name="auth_login_loading">로그인 중…</string>
+    <string name="auth_login_to_register">계정이 없으신가요? 회원가입</string>
+    <string name="auth_login_social_coming_soon">소셜 로그인은 곧 제공될 예정입니다</string>
+    <string name="auth_forgot_password">비밀번호를 잊으셨나요?</string>
+    <string name="auth_email_label">이메일</string>
+    <string name="auth_password_label">비밀번호</string>
+    <string name="auth_register_title">회원가입</string>
+    <string name="auth_register_subtitle">무료로 계정을 만드세요</string>
+    <string name="auth_register_google">Google로 가입하기</string>
+    <string name="auth_register_github">GitHub로 가입하기</string>
+    <string name="auth_register_password_label">비밀번호 (8자 이상)</string>
+    <string name="auth_register_company_label">회사명 (선택)</string>
+    <string name="auth_register_button">회원가입</string>
+    <string name="auth_register_loading">가입 중…</string>
+    <string name="auth_register_to_login">이미 계정이 있으신가요? 로그인</string>
+    <string name="auth_register_social_coming_soon">소셜 가입은 곧 제공될 예정입니다</string>
+
+    <!-- settings -->
+    <string name="settings_title">설정</string>
+    <string name="settings_save">저장</string>
+    <string name="settings_saving">저장 중…</string>
+    <string name="settings_logout">로그아웃</string>
+    <string name="settings_profile">프로필</string>
+    <string name="settings_company_name">회사명</string>
+    <string name="settings_payment_terms">결제 기한</string>
+    <string name="settings_default_currency">기본 통화</string>
+    <string name="settings_notifications">알림</string>
+    <string name="settings_notify_payment">결제 완료 알림</string>
+    <string name="settings_notify_overdue">연체 알림</string>
+    <string name="settings_notify_reminder">리마인더 발송 알림</string>
+
+    <!-- dashboard -->
+    <string name="dashboard_title">한눈에 보기</string>
+    <string name="dashboard_action_create">새 송장</string>
+    <string name="dashboard_action_clients">고객</string>
+    <string name="dashboard_action_analytics">분석</string>
+    <string name="dashboard_action_settings">설정</string>
+    <string name="dashboard_retry">다시 시도</string>
+    <string name="dashboard_recent_title">최근 송장</string>
+    <string name="dashboard_view_all">전체 보기</string>
+    <string name="dashboard_kpi_outstanding">미수금</string>
+    <string name="dashboard_kpi_overdue_count">연체 %d건</string>
+    <string name="dashboard_kpi_collection_rate">수금률</string>
+    <string name="dashboard_kpi_this_month_label">이번 달</string>
+    <string name="dashboard_kpi_collected_this_month">이번달 수금</string>
+    <string name="dashboard_invoice_number_fallback">송장 #%s</string>
+    <string name="dashboard_empty_title">아직 송장이 없습니다</string>
+    <string name="dashboard_empty_subtitle">첫 송장을 발행해 시작해 보세요.</string>
+    <string name="dashboard_empty_create">송장 만들기</string>
+    <string name="dashboard_load_error">대시보드를 불러오지 못했습니다</string>
+
+    <!-- invoices -->
+    <string name="invoices_photo_saved">사진 저장 완료: %s</string>
+    <string name="invoices_camera_permission_required">카메라 권한이 필요합니다</string>
+    <string name="invoices_scan_ocr_desc">송장 스캔 (OCR)</string>
+    <string name="invoices_scan_qr_desc">QR 스캔</string>
+    <string name="invoices_photo_capture_desc">송장 촬영</string>
+    <string name="invoices_empty">조건에 맞는 송장이 없습니다</string>
+    <string name="invoices_filter_all">전체</string>
+    <string name="invoices_filter_draft">임시저장</string>
+    <string name="invoices_filter_sent">발송</string>
+    <string name="invoices_filter_overdue">연체</string>
+    <string name="invoices_filter_paid">결제완료</string>
+    <string name="invoices_filter_partially_paid">부분결제</string>
+    <string name="invoices_search_placeholder">송장 번호, 거래처, 메모 검색</string>
+    <string name="invoices_pdf_share_chooser">송장 PDF 공유</string>
+    <string name="invoices_detail_title">송장 상세</string>
+    <string name="invoices_back">뒤로</string>
+    <string name="invoices_delete">삭제</string>
+    <string name="invoices_delete_dialog_title">송장 삭제</string>
+    <string name="invoices_delete_dialog_message">이 송장을 삭제하시겠습니까? 되돌릴 수 없습니다.</string>
+    <string name="invoices_cancel">취소</string>
+    <string name="invoices_record_payment">부분 결제 기록</string>
+    <string name="invoices_record_payment_message">받은 금액을 입력하세요. 잔액을 초과할 수 없습니다.</string>
+    <string name="invoices_amount_label">금액</string>
+    <string name="invoices_record">기록</string>
+    <string name="invoices_number_header">송장 #%s</string>
+    <string name="invoices_field_client">거래처: %s</string>
+    <string name="invoices_field_amount">금액: %1$s %2$s</string>
+    <string name="invoices_field_paid">결제액: %1$s %2$s</string>
+    <string name="invoices_field_due_date">지급 기한: %s</string>
+    <string name="invoices_field_sent_at">발송일: %s</string>
+    <string name="invoices_field_paid_at">결제일: %s</string>
+    <string name="invoices_field_notes">메모: %s</string>
+    <string name="invoices_action_send">발송</string>
+    <string name="invoices_mark_paid">결제 완료로 표시</string>
+    <string name="invoices_send_reminder">리마인더 발송</string>
+    <string name="invoices_download_pdf">PDF 다운로드</string>
+    <string name="invoices_processing">처리 중...</string>
+    <string name="invoices_create_title">새 송장</string>
+    <string name="invoices_select_client">거래처를 선택하세요</string>
+    <string name="invoices_items">품목</string>
+    <string name="invoices_add_item">항목 추가</string>
+    <string name="invoices_item_description">설명</string>
+    <string name="invoices_item_quantity">수량</string>
+    <string name="invoices_item_unit_price">단가</string>
+    <string name="invoices_total">합계</string>
+    <string name="invoices_currency">통화: %s</string>
+    <string name="invoices_due_date">지급 기한: %s</string>
+    <string name="invoices_notes_label">메모 (선택)</string>
+    <string name="invoices_creating">생성 중...</string>
+    <string name="invoices_create_button">송장 생성</string>
+    <string name="invoices_confirm">확인</string>
+
+    <!-- clients -->
+    <string name="clients_title">거래처</string>
+    <string name="clients_add">거래처 추가</string>
+    <string name="clients_empty">아직 거래처가 없습니다</string>
+    <string name="clients_back">뒤로</string>
+    <string name="clients_edit">편집</string>
+    <string name="clients_form_new_title">새 거래처</string>
+    <string name="clients_form_edit_title">거래처 편집</string>
+    <string name="clients_field_name">이름 *</string>
+    <string name="clients_field_email">이메일</string>
+    <string name="clients_field_company">회사</string>
+    <string name="clients_field_phone">전화번호</string>
+    <string name="clients_saving">저장 중...</string>
+    <string name="clients_save_changes">변경 사항 저장</string>
+    <string name="clients_detail_title">거래처 상세</string>
+    <string name="clients_stat_invoice_count">송장 수</string>
+    <string name="clients_count_suffix">%d건</string>
+    <string name="clients_stat_total_billed">총 청구액</string>
+    <string name="clients_analytics_title">결제 분석</string>
+    <string name="clients_analytics_total_paid">총 수금액</string>
+    <string name="clients_analytics_outstanding">미수금</string>
+    <string name="clients_analytics_avg_payment">평균 결제 소요</string>
+    <string name="clients_days_value">%.0f일</string>
+    <string name="clients_analytics_ontime_rate">정시 결제율</string>
+    <string name="clients_percent_value">%.0f%%</string>
+    <string name="clients_info_phone">전화</string>
+    <string name="clients_info_tax_id">사업자번호</string>
+    <string name="clients_info_notes">메모</string>
+
+    <!-- analytics (i18n batch 2) -->
+    <string name="analytics_aging_days_label">%s일</string>
+    <string name="analytics_aging_section">미수금 연령</string>
+    <string name="analytics_avg_payment_days_label">평균 결제 소요</string>
+    <string name="analytics_collected_amount">수금 %s</string>
+    <string name="analytics_count_unit">%d건</string>
+    <string name="analytics_invoiced_amount">청구 %s</string>
+    <string name="analytics_load_error">분석 정보를 불러오지 못했습니다</string>
+    <string name="analytics_monthly_section">월별 청구·수금</string>
+    <string name="analytics_no_data">데이터가 없습니다.</string>
+    <string name="analytics_ranking_section">고객 결제 순위</string>
+    <string name="analytics_reminder_click_rate">클릭률</string>
+    <string name="analytics_reminder_conversion_rate">결제 전환율</string>
+    <string name="analytics_reminder_open_rate">열람률</string>
+    <string name="analytics_reminder_section">리마인더 효과</string>
+    <string name="analytics_reminder_sent">발송</string>
+    <string name="analytics_reminder_sent_count">%d건</string>
+    <string name="analytics_status_section">상태 분포</string>
+    <string name="analytics_title">분석</string>
+    <string name="analytics_back">뒤로</string>
+    <string name="analytics_reminder_rate_value">%.1f%%</string>
+    <string name="analytics_reminder_avg_days_value">%.1f일</string>
+    <string name="analytics_ranking_avg_days">평균 %.0f일</string>
+    <string name="analytics_ranking_on_time">정시 %.0f%%</string>
+
+    <!-- clients (i18n batch 2) -->
+    <string name="clients_save_failed">거래처 저장 실패</string>
+
+    <!-- qr scanner (i18n batch 2) -->
+    <string name="qr_back">뒤로</string>
+    <string name="qr_error_not_invoice_qr">송장 결제 QR 코드가 아닙니다</string>
+    <string name="qr_grant_permission">권한 허용</string>
+    <string name="qr_permission_rationale">QR 스캔을 위해 카메라 권한이 필요합니다</string>
+    <string name="qr_title">QR 스캔</string>
+
+    <!-- OCR upload (i18n batch 2) -->
+    <string name="upload_back">뒤로</string>
+    <string name="upload_completed">완료! 이동 중...</string>
+    <string name="upload_error_extract_failed">추출에 실패했습니다</string>
+    <string name="upload_error_failed">업로드에 실패했습니다</string>
+    <string name="upload_error_timeout">추출 시간이 초과되었습니다. 다시 시도해 주세요.</string>
+    <string name="upload_idle_hint">송장 사진을 선택하면 자동으로 항목을 인식해\n새 송장을 채워 드립니다.</string>
+    <string name="upload_pick_image">이미지 선택</string>
+    <string name="upload_processing">송장에서 데이터를 추출하는 중...</string>
+    <string name="upload_title">송장 스캔 (OCR)</string>
+    <string name="upload_uploading">이미지를 업로드하는 중...</string>
+
+    <!-- invoices (viewmodel messages) (i18n batch 2) -->
+    <string name="invoices_action_failed">작업에 실패했습니다</string>
+    <string name="invoices_create_failed">송장 생성 실패</string>
+    <string name="invoices_delete_failed">송장 삭제 실패</string>
+    <string name="invoices_delete_success">송장을 삭제했습니다</string>
+    <string name="invoices_mark_paid_success">결제 완료로 표시했습니다</string>
+    <string name="invoices_pdf_download_failed">PDF 다운로드 실패</string>
+    <string name="invoices_record_payment_success">결제를 기록했습니다</string>
+    <string name="invoices_reminder_failed">리마인더 발송 실패</string>
+    <string name="invoices_send_success">송장을 발송했습니다</string>
+
+    <!-- settings (viewmodel messages) (i18n batch 2) -->
+    <string name="settings_error_load_failed">설정을 불러오지 못했습니다</string>
+    <string name="settings_error_save_failed">저장에 실패했습니다</string>
+    <string name="settings_saved">저장되었습니다</string>
+
+    <!-- notifications (i18n batch 2) -->
+    <string name="notifications_channel_description">결제 / 연체 / 리마인더 발송 안내</string>
+    <string name="notifications_channel_name">기본 알림</string>
+
+    <!-- shared components (i18n batch 2) -->
+    <string name="common_or_continue_with_email">또는 이메일로 계속</string>
+    <string name="common_retry">다시 시도</string>
 </resources>

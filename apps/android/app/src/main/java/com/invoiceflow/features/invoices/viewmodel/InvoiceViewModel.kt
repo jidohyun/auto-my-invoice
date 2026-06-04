@@ -3,6 +3,7 @@ package com.invoiceflow.features.invoices.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
 import com.invoiceflow.features.invoices.data.InvoiceRepository
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -95,16 +96,16 @@ class InvoiceViewModel @Inject constructor(
     }
 
     /** Send the invoice to the client and refresh detail + list on success. */
-    fun send(id: String) = runAction(id, "송장을 발송했습니다") { invoiceRepository.sendInvoice(id) }
+    fun send(id: String) = runAction(id, appContext.getString(R.string.invoices_send_success)) { invoiceRepository.sendInvoice(id) }
 
     /** Mark the invoice as fully paid and refresh detail + list on success. */
-    fun markPaid(id: String) = runAction(id, "결제 완료로 표시했습니다") { invoiceRepository.markPaid(id) }
+    fun markPaid(id: String) = runAction(id, appContext.getString(R.string.invoices_mark_paid_success)) { invoiceRepository.markPaid(id) }
 
     /** Record a (possibly partial) payment of [amount] and refresh on success. */
     fun recordPayment(id: String, amount: String) {
         val trimmed = amount.trim()
         if (trimmed.isEmpty()) return
-        runAction(id, "결제를 기록했습니다") { invoiceRepository.recordPayment(id, trimmed) }
+        runAction(id, appContext.getString(R.string.invoices_record_payment_success)) { invoiceRepository.recordPayment(id, trimmed) }
     }
 
     /** Queue a manual reminder. Returns a message (not an invoice), so the
@@ -118,7 +119,7 @@ class InvoiceViewModel @Inject constructor(
                     _detailState.update { it.copy(isActionRunning = false, actionMessage = message) }
                 }
                 .onFailure { e ->
-                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: "리마인더 발송 실패") }
+                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: appContext.getString(R.string.invoices_reminder_failed)) }
                 }
         }
     }
@@ -145,7 +146,7 @@ class InvoiceViewModel @Inject constructor(
                     _detailState.update { it.copy(isDownloadingPdf = false, pdfFile = file) }
                 }
                 .onFailure { e ->
-                    _detailState.update { it.copy(isDownloadingPdf = false, actionError = e.message ?: "PDF 다운로드 실패") }
+                    _detailState.update { it.copy(isDownloadingPdf = false, actionError = e.message ?: appContext.getString(R.string.invoices_pdf_download_failed)) }
                 }
         }
     }
@@ -162,11 +163,11 @@ class InvoiceViewModel @Inject constructor(
         viewModelScope.launch {
             runCatching { invoiceRepository.deleteInvoice(id) }
                 .onSuccess {
-                    _detailState.update { it.copy(isActionRunning = false, deleted = true, actionMessage = "송장을 삭제했습니다") }
+                    _detailState.update { it.copy(isActionRunning = false, deleted = true, actionMessage = appContext.getString(R.string.invoices_delete_success)) }
                     loadInvoices()
                 }
                 .onFailure { e ->
-                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: "송장 삭제 실패") }
+                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: appContext.getString(R.string.invoices_delete_failed)) }
                 }
         }
     }
@@ -184,7 +185,7 @@ class InvoiceViewModel @Inject constructor(
                     loadInvoices()
                 }
                 .onFailure { e ->
-                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: "작업에 실패했습니다") }
+                    _detailState.update { it.copy(isActionRunning = false, actionError = e.message ?: appContext.getString(R.string.invoices_action_failed)) }
                 }
         }
     }

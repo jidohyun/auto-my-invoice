@@ -55,11 +55,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun register(email: String, password: String, name: String) {
+    fun register(email: String, password: String, companyName: String?) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val data = authRepository.register(email, password, name)
+                val data = authRepository.register(email, password, companyName)
                 // AMI-41/72: hand the FCM token to the backend for this session.
                 pushTokenRegistrar.pullAndRegister()
                 _events.value = AuthEvent.RegisterSuccess(data.token)

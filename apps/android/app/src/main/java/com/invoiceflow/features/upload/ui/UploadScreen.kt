@@ -29,10 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.upload.data.model.ExtractedDataDto
 import com.invoiceflow.features.upload.viewmodel.UploadStage
 import com.invoiceflow.features.upload.viewmodel.UploadViewModel
@@ -77,10 +79,13 @@ fun UploadScreen(
     Scaffold(
         topBar = {
             androidx.compose.material3.TopAppBar(
-                title = { Text("송장 스캔 (OCR)") },
+                title = { Text(stringResource(R.string.upload_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.upload_back),
+                        )
                     }
                 },
             )
@@ -102,11 +107,11 @@ fun UploadScreen(
                     },
                 )
 
-                UploadStage.UPLOADING -> ProgressLabel("이미지를 업로드하는 중...")
-                UploadStage.PROCESSING -> ProgressLabel("송장에서 데이터를 추출하는 중...")
+                UploadStage.UPLOADING -> ProgressLabel(stringResource(R.string.upload_uploading))
+                UploadStage.PROCESSING -> ProgressLabel(stringResource(R.string.upload_processing))
 
                 UploadStage.FAILED -> ErrorState(
-                    message = state.error ?: "업로드에 실패했습니다",
+                    message = state.error ?: stringResource(R.string.upload_error_failed),
                     onRetry = {
                         viewModel.reset()
                         pickerLauncher.launch(
@@ -116,7 +121,7 @@ fun UploadScreen(
                 )
 
                 // COMPLETED is transient — navigation fires via LaunchedEffect.
-                UploadStage.COMPLETED -> ProgressLabel("완료! 이동 중...")
+                UploadStage.COMPLETED -> ProgressLabel(stringResource(R.string.upload_completed))
             }
         }
     }
@@ -135,12 +140,12 @@ private fun IdlePicker(onPick: () -> Unit) {
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = "송장 사진을 선택하면 자동으로 항목을 인식해\n새 송장을 채워 드립니다.",
+            text = stringResource(R.string.upload_idle_hint),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
         Button(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
-            Text("이미지 선택")
+            Text(stringResource(R.string.upload_pick_image))
         }
     }
 }

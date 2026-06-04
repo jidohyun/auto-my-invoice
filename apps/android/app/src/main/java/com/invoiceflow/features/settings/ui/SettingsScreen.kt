@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,10 +33,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.settings.viewmodel.SettingsIntent
 import com.invoiceflow.features.settings.viewmodel.SettingsUiState
 import com.invoiceflow.features.settings.viewmodel.SettingsViewModel
@@ -42,12 +46,17 @@ import com.invoiceflow.features.settings.viewmodel.SettingsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onLoggedOut: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) { viewModel.onIntent(SettingsIntent.Load) }
+
+    LaunchedEffect(state.loggedOut) {
+        if (state.loggedOut) onLoggedOut()
+    }
 
     LaunchedEffect(state.savedMessage, state.error) {
         val message = state.savedMessage ?: state.error
@@ -58,7 +67,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("설정") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (state.isLoading) {
@@ -100,7 +109,16 @@ fun SettingsScreen(
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (state.isSaving) "저장 중..." else "저장")
+                Text(stringResource(if (state.isSaving) R.string.settings_saving else R.string.settings_save))
+            }
+            OutlinedButton(
+                onClick = { viewModel.onIntent(SettingsIntent.Logout) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+            ) {
+                Text(stringResource(R.string.settings_logout))
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -119,11 +137,11 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
 
 @Composable
 private fun ProfileSection(businessName: String, onBusinessNameChange: (String) -> Unit) {
-    SectionCard(title = "프로필") {
+    SectionCard(title = stringResource(R.string.settings_profile)) {
         OutlinedTextField(
             value = businessName,
             onValueChange = onBusinessNameChange,
-            label = { Text("회사명") },
+            label = { Text(stringResource(R.string.settings_company_name)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -133,7 +151,7 @@ private fun ProfileSection(businessName: String, onBusinessNameChange: (String) 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PaymentTermsSection(selected: Int, onSelect: (Int) -> Unit) {
-    SectionCard(title = "결제 기한") {
+    SectionCard(title = stringResource(R.string.settings_payment_terms)) {
         Row(
             modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -152,7 +170,7 @@ private fun PaymentTermsSection(selected: Int, onSelect: (Int) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CurrencySection(selected: String, onSelect: (String) -> Unit) {
-    SectionCard(title = "기본 통화") {
+    SectionCard(title = stringResource(R.string.settings_default_currency)) {
         Row(
             modifier = Modifier.fillMaxWidth().selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -177,10 +195,10 @@ private fun NotificationSection(
     onOverdueChange: (Boolean) -> Unit,
     onReminderChange: (Boolean) -> Unit,
 ) {
-    SectionCard(title = "알림") {
-        ToggleRow("결제 완료 알림", notifyPayment, onPaymentChange)
-        ToggleRow("연체 알림", notifyOverdue, onOverdueChange)
-        ToggleRow("리마인더 발송 알림", notifyReminder, onReminderChange)
+    SectionCard(title = stringResource(R.string.settings_notifications)) {
+        ToggleRow(stringResource(R.string.settings_notify_payment), notifyPayment, onPaymentChange)
+        ToggleRow(stringResource(R.string.settings_notify_overdue), notifyOverdue, onOverdueChange)
+        ToggleRow(stringResource(R.string.settings_notify_reminder), notifyReminder, onReminderChange)
     }
 }
 

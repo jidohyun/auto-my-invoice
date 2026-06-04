@@ -1,10 +1,14 @@
 package com.invoiceflow.features.settings.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
+import com.invoiceflow.features.auth.data.AuthRepository
 import com.invoiceflow.features.settings.data.SettingsRepository
 import com.invoiceflow.features.settings.data.model.UserSettingsRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +36,8 @@ data class SettingsUiState(
     val notifyPayment: Boolean = true,
     val notifyOverdue: Boolean = true,
     val notifyReminder: Boolean = true,
+    /** Set once logout completes so the UI can navigate back to login. */
+    val loggedOut: Boolean = false,
 ) {
     companion object {
         /** Allowed default currencies surfaced in the picker. */
@@ -52,11 +58,14 @@ sealed interface SettingsIntent {
     data class NotifyReminderChanged(val enabled: Boolean) : SettingsIntent
     data object Save : SettingsIntent
     data object MessageShown : SettingsIntent
+    data object Logout : SettingsIntent
 }
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val settingsRepository: SettingsRepository,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState())
@@ -80,6 +89,17 @@ class SettingsViewModel @Inject constructor(
             SettingsIntent.Save -> save()
             SettingsIntent.MessageShown ->
                 _state.update { it.copy(savedMessage = null, error = null) }
+            SettingsIntent.Logout -> logout()
+        }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            // authRepository.logout() best-effort calls DELETE /auth/logout then
+            // always clears the local token, so the flow below is safe even if
+            // the network call fails.
+            authRepository.logout()
+            _state.update { it.copy(loggedOut = true) }
         }
     }
 
@@ -98,7 +118,7 @@ class SettingsViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _state.update {
-                    it.copy(isLoading = false, error = e.message ?: "설정을 불러오지 못했습니다")
+                    it.copy(isLoading = false, error = e.message ?: appContext.getString(R.string.settings_error_load_failed))
                 }
             }
         }
@@ -116,10 +136,10 @@ class SettingsViewModel @Inject constructor(
                         paymentTermsDays = current.paymentTermsDays,
                     )
                 )
-                _state.update { it.copy(isSaving = false, savedMessage = "저장되었습니다") }
+                _state.update { it.copy(isSaving = false, savedMessage = appContext.getString(R.string.settings_saved)) }
             } catch (e: Exception) {
                 _state.update {
-                    it.copy(isSaving = false, error = e.message ?: "저장에 실패했습니다")
+                    it.copy(isSaving = false, error = e.message ?: appContext.getString(R.string.settings_error_save_failed))
                 }
             }
         }

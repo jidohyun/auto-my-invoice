@@ -28,10 +28,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.viewmodel.ClientViewModel
@@ -54,16 +56,16 @@ fun ClientDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("거래처 상세") },
+                title = { Text(stringResource(R.string.clients_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.clients_back))
                     }
                 },
                 actions = {
                     if (state.client != null) {
                         IconButton(onClick = { onEdit(clientId) }) {
-                            Icon(Icons.Default.Edit, contentDescription = "편집")
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.clients_edit))
                         }
                     }
                 },
@@ -109,29 +111,29 @@ private fun ClientDetailContent(client: ClientDto, analytics: ClientAnalyticsDto
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            StatCard(label = "송장 수", value = "${client.invoiceCount}건", modifier = Modifier.weight(1f))
-            StatCard(label = "총 청구액", value = formatKrw(client.totalBilled), modifier = Modifier.weight(1f))
+            StatCard(label = stringResource(R.string.clients_stat_invoice_count), value = stringResource(R.string.clients_count_suffix, client.invoiceCount), modifier = Modifier.weight(1f))
+            StatCard(label = stringResource(R.string.clients_stat_total_billed), value = formatKrw(client.totalBilled), modifier = Modifier.weight(1f))
         }
 
         analytics?.let { AnalyticsSection(it) }
 
         Spacer(Modifier.height(8.dp))
 
-        client.email?.takeIf { it.isNotBlank() }?.let { InfoRow("이메일", it) }
-        client.phone?.takeIf { it.isNotBlank() }?.let { InfoRow("전화", it) }
-        client.taxId?.takeIf { it.isNotBlank() }?.let { InfoRow("사업자번호", it) }
-        client.notes?.takeIf { it.isNotBlank() }?.let { InfoRow("메모", it) }
+        client.email?.takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.clients_field_email), it) }
+        client.phone?.takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.clients_info_phone), it) }
+        client.taxId?.takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.clients_info_tax_id), it) }
+        client.notes?.takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.clients_info_notes), it) }
     }
 }
 
 @Composable
 private fun AnalyticsSection(a: ClientAnalyticsDto) {
     Spacer(Modifier.height(8.dp))
-    Text("결제 분석", style = MaterialTheme.typography.titleMedium)
-    InfoRow("총 수금액", formatKrwString(a.totalPaid))
-    InfoRow("미수금", formatKrwString(a.outstandingAmount))
-    a.avgPaymentDays?.let { InfoRow("평균 결제 소요", "%.0f일".format(it)) }
-    a.onTimeRate?.let { InfoRow("정시 결제율", "%.0f%%".format(it)) }
+    Text(stringResource(R.string.clients_analytics_title), style = MaterialTheme.typography.titleMedium)
+    InfoRow(stringResource(R.string.clients_analytics_total_paid), formatKrwString(a.totalPaid))
+    InfoRow(stringResource(R.string.clients_analytics_outstanding), formatKrwString(a.outstandingAmount))
+    a.avgPaymentDays?.let { InfoRow(stringResource(R.string.clients_analytics_avg_payment), stringResource(R.string.clients_days_value, it)) }
+    a.onTimeRate?.let { InfoRow(stringResource(R.string.clients_analytics_ontime_rate), stringResource(R.string.clients_percent_value, it)) }
 }
 
 @Composable

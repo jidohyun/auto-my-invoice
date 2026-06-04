@@ -1,12 +1,15 @@
 package com.invoiceflow.features.clients.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
 import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.clients.data.ClientRepository
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.data.model.ClientRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +40,7 @@ data class ClientFormState(
 
 @HiltViewModel
 class ClientViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val clientRepository: ClientRepository,
 ) : ViewModel() {
 
@@ -96,7 +100,7 @@ class ClientViewModel @Inject constructor(
                     loadClients()
                 }
                 .onFailure { e ->
-                    _formState.update { it.copy(isSubmitting = false, error = e.message ?: "거래처 저장 실패") }
+                    _formState.update { it.copy(isSubmitting = false, error = e.message ?: appContext.getString(R.string.clients_save_failed)) }
                 }
         }
     }

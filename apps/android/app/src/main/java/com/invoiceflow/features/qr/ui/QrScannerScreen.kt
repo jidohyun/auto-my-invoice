@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.invoiceflow.R
 import com.invoiceflow.features.qr.viewmodel.QrScannerIntent
 import com.invoiceflow.features.qr.viewmodel.QrScannerViewModel
 import java.util.concurrent.Executors
@@ -72,10 +74,13 @@ fun QrScannerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("QR 스캔") },
+                title = { Text(stringResource(R.string.qr_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.qr_back),
+                        )
                     }
                 },
             )
@@ -88,9 +93,9 @@ fun QrScannerScreen(
                         viewModel.onIntent(QrScannerIntent.CodeScanned(raw))
                     },
                 )
-                state.error?.let { msg ->
+                state.errorRes?.let { errorRes ->
                     Text(
-                        text = msg,
+                        text = stringResource(errorRes),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -156,7 +161,10 @@ private fun PermissionRationale(onRequest: () -> Unit, modifier: Modifier = Modi
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("QR 스캔을 위해 카메라 권한이 필요합니다", style = MaterialTheme.typography.bodyLarge)
-        Button(onClick = onRequest) { Text("권한 허용") }
+        Text(
+            stringResource(R.string.qr_permission_rationale),
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Button(onClick = onRequest) { Text(stringResource(R.string.qr_grant_permission)) }
     }
 }

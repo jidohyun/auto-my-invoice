@@ -71,10 +71,11 @@ fun InvoiceFlowNavHost(
                 onNavigateToInvoice = { id ->
                     navController.navigate(NavRoutes.InvoiceDetail.createRoute(id))
                 },
-                onNavigateToCreate = { navController.navigate(NavRoutes.InvoiceCreate.route) },
+                onNavigateToCreate = { navController.navigate(NavRoutes.InvoiceCreate.createRoute()) },
                 onNavigateToInvoices = { navController.navigate(NavRoutes.InvoiceList.route) },
                 onNavigateToSettings = { navController.navigate(NavRoutes.Settings.route) },
                 onNavigateToAnalytics = { navController.navigate(NavRoutes.Analytics.route) },
+                onNavigateToClients = { navController.navigate(NavRoutes.ClientList.route) },
             )
         }
 
@@ -197,7 +198,13 @@ fun InvoiceFlowNavHost(
 
         // Settings — AMI-43
         composable(NavRoutes.Settings.route) {
-            SettingsScreen()
+            SettingsScreen(
+                onLoggedOut = {
+                    navController.navigate(NavRoutes.Login.route) {
+                        popUpTo(navController.graph.id) { inclusive = true }
+                    }
+                },
+            )
         }
 
         // Analytics — AMI parity

@@ -10,12 +10,13 @@ data class ClientDto(
     val email: String?,
     val phone: String?,
     val company: String?,
-    val address: AddressDto? = null,
+    val address: String? = null,
     @Json(name = "tax_id") val taxId: String? = null,
     val notes: String? = null,
     @Json(name = "invoice_count") val invoiceCount: Int = 0,
     @Json(name = "total_billed") val totalBilled: Long = 0,
     @Json(name = "inserted_at") val insertedAt: String? = null,
+    @Json(name = "updated_at") val updatedAt: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

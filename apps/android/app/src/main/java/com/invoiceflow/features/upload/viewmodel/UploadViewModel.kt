@@ -1,10 +1,13 @@
 package com.invoiceflow.features.upload.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
 import com.invoiceflow.features.upload.data.UploadRepository
 import com.invoiceflow.features.upload.data.model.ExtractedDataDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +28,7 @@ data class UploadState(
 
 @HiltViewModel
 class UploadViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val uploadRepository: UploadRepository,
 ) : ViewModel() {
 
@@ -56,14 +60,14 @@ class UploadViewModel @Inject constructor(
                         it.copy(stage = UploadStage.COMPLETED, extractedData = current.extractedData)
                     }
                     "failed" -> _state.update {
-                        it.copy(stage = UploadStage.FAILED, error = current.errorMessage ?: "추출에 실패했습니다")
+                        it.copy(stage = UploadStage.FAILED, error = current.errorMessage ?: appContext.getString(R.string.upload_error_extract_failed))
                     }
                     else -> _state.update {
-                        it.copy(stage = UploadStage.FAILED, error = "추출 시간이 초과되었습니다. 다시 시도해 주세요.")
+                        it.copy(stage = UploadStage.FAILED, error = appContext.getString(R.string.upload_error_timeout))
                     }
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(stage = UploadStage.FAILED, error = e.message ?: "업로드에 실패했습니다") }
+                _state.update { it.copy(stage = UploadStage.FAILED, error = e.message ?: appContext.getString(R.string.upload_error_failed)) }
             } finally {
                 runCatching { if (file.exists()) file.delete() }
             }

@@ -30,10 +30,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.analytics.data.model.AgingBucketDto
 import com.invoiceflow.features.analytics.data.model.ClientRankingDto
 import com.invoiceflow.features.analytics.data.model.MonthlyCollectionDto
@@ -63,10 +65,10 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("분석") },
+                title = { Text(stringResource(R.string.analytics_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.analytics_back))
                     }
                 },
             )
@@ -126,9 +128,9 @@ private fun Section(title: String, content: @Composable () -> Unit) {
 @Composable
 private fun MonthlySection(rows: List<MonthlyCollectionDto>) {
     val maxValue = rows.mapNotNull { it.invoiced.toDoubleOrNull() }.maxOrNull() ?: 1.0
-    Section("월별 청구·수금") {
+    Section(stringResource(R.string.analytics_monthly_section)) {
         if (rows.isEmpty()) {
-            HintText("데이터가 없습니다.")
+            HintText(stringResource(R.string.analytics_no_data))
         } else {
             rows.forEach { row -> MonthlyBar(row, if (maxValue == 0.0) 1.0 else maxValue) }
         }
@@ -144,7 +146,7 @@ private fun MonthlyBar(row: MonthlyCollectionDto, maxValue: Double) {
             Text(row.month, style = MaterialTheme.typography.labelMedium)
             Spacer(Modifier.fillMaxWidth(0.5f))
             Text(
-                "수금 ${formatKrw(row.collected)}",
+                stringResource(R.string.analytics_collected_amount, formatKrw(row.collected)),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -167,9 +169,9 @@ private fun Bar(fraction: Float, color: androidx.compose.ui.graphics.Color) {
 
 @Composable
 private fun StatusSection(rows: List<StatusDistributionDto>) {
-    Section("상태 분포") {
+    Section(stringResource(R.string.analytics_status_section)) {
         if (rows.isEmpty()) {
-            HintText("데이터가 없습니다.")
+            HintText(stringResource(R.string.analytics_no_data))
         } else {
             rows.forEach { row ->
                 Row(
@@ -178,7 +180,7 @@ private fun StatusSection(rows: List<StatusDistributionDto>) {
                 ) {
                     StatusPill(statusString = row.status)
                     Spacer(Modifier.fillMaxWidth(0.4f))
-                    Text("${row.count}건", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.analytics_count_unit, row.count), style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.fillMaxWidth())
                     Text(
                         formatKrw(row.total),
@@ -194,13 +196,13 @@ private fun StatusSection(rows: List<StatusDistributionDto>) {
 @Composable
 private fun AgingSection(buckets: Map<String, AgingBucketDto>) {
     val order = listOf("0-30", "31-60", "61-90", "90+")
-    Section("미수금 연령") {
+    Section(stringResource(R.string.analytics_aging_section)) {
         order.forEach { key ->
             val bucket = buckets[key]
             Row(modifier = Modifier.fillMaxWidth()) {
-                Text("${key}일", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.analytics_aging_days_label, key), style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.fillMaxWidth(0.4f))
-                Text("${bucket?.count ?: 0}건", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.analytics_count_unit, bucket?.count ?: 0), style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.fillMaxWidth())
                 Text(
                     formatKrw(bucket?.total ?: "0"),
@@ -214,14 +216,14 @@ private fun AgingSection(buckets: Map<String, AgingBucketDto>) {
 
 @Composable
 private fun ReminderSection(r: ReminderEffectivenessDto) {
-    Section("리마인더 효과") {
-        StatRow("발송", "${r.totalSent}건")
-        StatRow("열람률", "%.1f%%".format(r.overallOpenRate))
-        StatRow("클릭률", "%.1f%%".format(r.overallClickRate))
-        r.overallConversionRate?.let { StatRow("결제 전환율", "%.1f%%".format(it)) }
+    Section(stringResource(R.string.analytics_reminder_section)) {
+        StatRow(stringResource(R.string.analytics_reminder_sent), stringResource(R.string.analytics_reminder_sent_count, r.totalSent))
+        StatRow(stringResource(R.string.analytics_reminder_open_rate), stringResource(R.string.analytics_reminder_rate_value, r.overallOpenRate))
+        StatRow(stringResource(R.string.analytics_reminder_click_rate), stringResource(R.string.analytics_reminder_rate_value, r.overallClickRate))
+        r.overallConversionRate?.let { StatRow(stringResource(R.string.analytics_reminder_conversion_rate), stringResource(R.string.analytics_reminder_rate_value, it)) }
         // avg_days_to_payment is a per-step array; collapse to a sample-weighted
         // overall average so the screen shows a single "평균 결제 소요" figure.
-        weightedAvgDays(r.avgDaysToPayment)?.let { StatRow("평균 결제 소요", "%.1f일".format(it)) }
+        weightedAvgDays(r.avgDaysToPayment)?.let { StatRow(stringResource(R.string.analytics_avg_payment_days_label), stringResource(R.string.analytics_reminder_avg_days_value, it)) }
     }
 }
 
@@ -234,7 +236,7 @@ private fun weightedAvgDays(rows: List<AvgDaysToPaymentEntryDto>): Double? {
 
 @Composable
 private fun RankingSection(rows: List<ClientRankingDto>) {
-    Section("고객 결제 순위") {
+    Section(stringResource(R.string.analytics_ranking_section)) {
         rows.forEach { row ->
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(modifier = Modifier.fillMaxWidth()) {
@@ -242,7 +244,7 @@ private fun RankingSection(rows: List<ClientRankingDto>) {
                     Spacer(Modifier.fillMaxWidth())
                     row.avgPaymentDays?.let {
                         Text(
-                            "평균 %.0f일".format(it),
+                            stringResource(R.string.analytics_ranking_avg_days, it),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -250,14 +252,14 @@ private fun RankingSection(rows: List<ClientRankingDto>) {
                 }
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        "청구 ${formatKrw(row.totalInvoiced)}",
+                        stringResource(R.string.analytics_invoiced_amount, formatKrw(row.totalInvoiced)),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.fillMaxWidth())
                     row.onTimeRate?.let {
                         Text(
-                            "정시 %.0f%%".format(it),
+                            stringResource(R.string.analytics_ranking_on_time, it),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

@@ -24,9 +24,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.viewmodel.ClientViewModel
 import com.invoiceflow.ui.components.ErrorState
@@ -43,10 +45,10 @@ fun ClientListScreen(
     LaunchedEffect(Unit) { viewModel.loadClients() }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("거래처") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.clients_title)) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = onNavigateToCreate) {
-                Icon(Icons.Default.Add, contentDescription = "거래처 추가")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.clients_add))
             }
         },
     ) { padding ->
@@ -63,7 +65,7 @@ fun ClientListScreen(
                     modifier = Modifier.align(Alignment.Center),
                 )
                 state.clients.isEmpty() -> Text(
-                    text = "아직 거래처가 없습니다",
+                    text = stringResource(R.string.clients_empty),
                     modifier = Modifier.align(Alignment.Center),
                 )
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {

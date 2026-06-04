@@ -1,12 +1,15 @@
 package com.invoiceflow.features.analytics.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
 import com.invoiceflow.features.analytics.data.AnalyticsRepository
 import com.invoiceflow.features.analytics.data.model.ClientRankingDto
 import com.invoiceflow.features.analytics.data.model.DashboardAnalyticsDto
 import com.invoiceflow.features.analytics.data.model.ReminderEffectivenessDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +29,7 @@ data class AnalyticsState(
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val repository: AnalyticsRepository,
 ) : ViewModel() {
 
@@ -55,7 +59,7 @@ class AnalyticsViewModel @Inject constructor(
                     }
                 }
                 .onFailure { e ->
-                    _state.update { it.copy(isLoading = false, error = e.message ?: "분석 정보를 불러오지 못했습니다") }
+                    _state.update { it.copy(isLoading = false, error = e.message ?: appContext.getString(R.string.analytics_load_error)) }
                 }
         }
     }

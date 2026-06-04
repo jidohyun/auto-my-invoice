@@ -10,7 +10,9 @@ data class LoginRequest(val email: String, val password: String)
 data class RegisterRequest(
     val email: String,
     val password: String,
-    @Json(name = "full_name") val fullName: String,
+    // 백엔드 User 스키마는 name/full_name 이 없고 company_name(선택)만 받는다.
+    // null 이면 Moshi 기본적으로 키를 생략하므로 회사명 미입력도 안전.
+    @Json(name = "company_name") val companyName: String? = null,
 )
 
 /// Mirrors the backend `POST /auth/login|register` payload exactly:

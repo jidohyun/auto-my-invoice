@@ -21,8 +21,10 @@ class AuthRepository @Inject constructor(
         return response.data
     }
 
-    suspend fun register(email: String, password: String, name: String): AuthData {
-        val response = apiService.register(RegisterRequest(email, password, name))
+    suspend fun register(email: String, password: String, companyName: String?): AuthData {
+        val response = apiService.register(
+            RegisterRequest(email, password, companyName?.takeIf { it.isNotBlank() })
+        )
         tokenRepository.saveToken(response.data.token)
         return response.data
     }

@@ -48,8 +48,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.invoiceflow.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
@@ -72,6 +74,11 @@ fun InvoiceListScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Resolve snackbar strings at composition time; the launcher callbacks run
+    // outside the composition so stringResource cannot be called there.
+    val photoSavedTemplate = stringResource(R.string.invoices_photo_saved)
+    val cameraPermissionMessage = stringResource(R.string.invoices_camera_permission_required)
+
     // 촬영된 이미지 URI
     var photoUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -81,7 +88,7 @@ fun InvoiceListScreen(
     ) { success ->
         if (success && photoUri != null) {
             scope.launch {
-                snackbarHostState.showSnackbar("사진 저장 완료: ${photoUri?.lastPathSegment}")
+                snackbarHostState.showSnackbar(photoSavedTemplate.format(photoUri?.lastPathSegment))
             }
         }
     }
@@ -96,7 +103,7 @@ fun InvoiceListScreen(
             cameraLauncher.launch(uri)
         } else {
             scope.launch {
-                snackbarHostState.showSnackbar("카메라 권한이 필요합니다")
+                snackbarHostState.showSnackbar(cameraPermissionMessage)
             }
         }
     }
@@ -111,21 +118,21 @@ fun InvoiceListScreen(
                     IconButton(onClick = onNavigateToUpload) {
                         Icon(
                             imageVector = Icons.Default.DocumentScanner,
-                            contentDescription = "송장 스캔 (OCR)",
+                            contentDescription = stringResource(R.string.invoices_scan_ocr_desc),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                     IconButton(onClick = onNavigateToScanner) {
                         Icon(
                             imageVector = Icons.Default.QrCodeScanner,
-                            contentDescription = "QR 스캔",
+                            contentDescription = stringResource(R.string.invoices_scan_qr_desc),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                     IconButton(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "송장 촬영",
+                            contentDescription = stringResource(R.string.invoices_photo_capture_desc),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -163,7 +170,7 @@ fun InvoiceListScreen(
                         )
                     }
                     state.invoices.isEmpty() -> Box(Modifier.fillMaxSize()) {
-                        Text(text = "조건에 맞는 송장이 없습니다", modifier = Modifier.align(Alignment.Center))
+                        Text(text = stringResource(R.string.invoices_empty), modifier = Modifier.align(Alignment.Center))
                     }
                     else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(state.invoices, key = { it.id }) { invoice ->
@@ -240,18 +247,18 @@ private fun FilterBar(
     onSearchChange: (String) -> Unit,
 ) {
     val options: List<Pair<String?, String>> = listOf(
-        null to "전체",
-        "draft" to "임시저장",
-        "sent" to "발송",
-        "overdue" to "연체",
-        "paid" to "결제완료",
-        "partially_paid" to "부분결제",
+        null to stringResource(R.string.invoices_filter_all),
+        "draft" to stringResource(R.string.invoices_filter_draft),
+        "sent" to stringResource(R.string.invoices_filter_sent),
+        "overdue" to stringResource(R.string.invoices_filter_overdue),
+        "paid" to stringResource(R.string.invoices_filter_paid),
+        "partially_paid" to stringResource(R.string.invoices_filter_partially_paid),
     )
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         OutlinedTextField(
             value = search,
             onValueChange = onSearchChange,
-            placeholder = { Text("송장 번호, 거래처, 메모 검색") },
+            placeholder = { Text(stringResource(R.string.invoices_search_placeholder)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )

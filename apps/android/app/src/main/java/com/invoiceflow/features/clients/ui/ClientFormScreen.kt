@@ -29,11 +29,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.clients.data.model.ClientRequest
 import com.invoiceflow.features.clients.viewmodel.ClientViewModel
 
@@ -90,10 +92,10 @@ fun ClientFormScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEdit) "거래처 편집" else "새 거래처") },
+                title = { Text(stringResource(if (isEdit) R.string.clients_form_edit_title else R.string.clients_form_new_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.clients_back))
                     }
                 },
             )
@@ -109,7 +111,7 @@ fun ClientFormScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("이름 *") },
+                label = { Text(stringResource(R.string.clients_field_name)) },
                 singleLine = true,
                 isError = name.isBlank(),
                 modifier = Modifier.fillMaxWidth(),
@@ -117,7 +119,7 @@ fun ClientFormScreen(
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                label = { Text("이메일") },
+                label = { Text(stringResource(R.string.clients_field_email)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 modifier = Modifier.fillMaxWidth(),
@@ -125,14 +127,14 @@ fun ClientFormScreen(
             OutlinedTextField(
                 value = company,
                 onValueChange = { company = it },
-                label = { Text("회사") },
+                label = { Text(stringResource(R.string.clients_field_company)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                label = { Text("전화번호") },
+                label = { Text(stringResource(R.string.clients_field_phone)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth(),
@@ -165,9 +167,9 @@ fun ClientFormScreen(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("저장 중...")
+                    Text(stringResource(R.string.clients_saving))
                 } else {
-                    Text(if (isEdit) "변경 사항 저장" else "거래처 추가")
+                    Text(stringResource(if (isEdit) R.string.clients_save_changes else R.string.clients_add))
                 }
             }
         }

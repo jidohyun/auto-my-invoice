@@ -8,15 +8,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.invoiceflow.R
 import com.invoiceflow.features.dashboard.viewmodel.DashboardViewModel
 import com.invoiceflow.features.dashboard.data.model.KpiSummaryDto
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
@@ -31,6 +34,7 @@ fun DashboardScreen(
     onNavigateToInvoices: () -> Unit,
     onNavigateToSettings: () -> Unit = {},
     onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToClients: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -39,16 +43,19 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("한눈에 보기") },
+                title = { Text(stringResource(R.string.dashboard_title)) },
                 actions = {
                     IconButton(onClick = onNavigateToCreate) {
-                        Icon(Icons.Default.Add, contentDescription = "새 송장")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.dashboard_action_create))
+                    }
+                    IconButton(onClick = onNavigateToClients) {
+                        Icon(Icons.Default.People, contentDescription = stringResource(R.string.dashboard_action_clients))
                     }
                     IconButton(onClick = onNavigateToAnalytics) {
-                        Icon(Icons.Default.Assessment, contentDescription = "분석")
+                        Icon(Icons.Default.Assessment, contentDescription = stringResource(R.string.dashboard_action_analytics))
                     }
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "설정")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.dashboard_action_settings))
                     }
                 }
             )
@@ -68,7 +75,7 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(msg, color = MaterialTheme.colorScheme.onErrorContainer)
-                        TextButton(onClick = viewModel::refresh) { Text("다시 시도") }
+                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.dashboard_retry)) }
                     }
                 }
             }
@@ -80,8 +87,8 @@ fun DashboardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("최근 송장", style = MaterialTheme.typography.titleMedium)
-                TextButton(onClick = onNavigateToInvoices) { Text("전체 보기") }
+                Text(stringResource(R.string.dashboard_recent_title), style = MaterialTheme.typography.titleMedium)
+                TextButton(onClick = onNavigateToInvoices) { Text(stringResource(R.string.dashboard_view_all)) }
             }
 
             if (state.recent.isEmpty() && !refreshing) {
@@ -101,19 +108,19 @@ fun DashboardScreen(
 private fun KpiRow(kpi: KpiSummaryDto?, refreshing: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         KpiCard(
-            label = "미수금",
+            label = stringResource(R.string.dashboard_kpi_outstanding),
             value = kpi?.outstandingAmount?.let { formatKrw(it) } ?: if (refreshing) "..." else "₩0",
-            sub = kpi?.overdueCount?.let { "연체 ${it}건" } ?: "",
+            sub = kpi?.overdueCount?.let { stringResource(R.string.dashboard_kpi_overdue_count, it) } ?: "",
             modifier = Modifier.weight(1f),
         )
         KpiCard(
-            label = "수금률",
+            label = stringResource(R.string.dashboard_kpi_collection_rate),
             value = kpi?.collectionRate?.let { "${it}%" } ?: if (refreshing) "..." else "0%",
-            sub = "이번 달",
+            sub = stringResource(R.string.dashboard_kpi_this_month_label),
             modifier = Modifier.weight(1f),
         )
         KpiCard(
-            label = "이번달 수금",
+            label = stringResource(R.string.dashboard_kpi_collected_this_month),
             value = kpi?.collectedThisMonth?.let { formatKrw(it) } ?: if (refreshing) "..." else "₩0",
             sub = "",
             modifier = Modifier.weight(1f),
@@ -147,7 +154,7 @@ private fun RecentInvoiceRow(invoice: InvoiceDto, onClick: () -> Unit) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    invoice.invoiceNumber ?: "송장 #${invoice.id.take(6)}",
+                    invoice.invoiceNumber ?: stringResource(R.string.dashboard_invoice_number_fallback, invoice.id.take(6)),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -172,9 +179,9 @@ private fun EmptyRecentInvoices(onCreate: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("아직 송장이 없습니다", style = MaterialTheme.typography.bodyMedium)
-            Text("첫 송장을 발행해 시작해 보세요.", style = MaterialTheme.typography.labelSmall)
-            Button(onClick = onCreate) { Text("송장 만들기") }
+            Text(stringResource(R.string.dashboard_empty_title), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.dashboard_empty_subtitle), style = MaterialTheme.typography.labelSmall)
+            Button(onClick = onCreate) { Text(stringResource(R.string.dashboard_empty_create)) }
         }
     }
 }
