@@ -38,13 +38,11 @@ if System.get_env("PHX_SERVER") do
   chromic_opts =
     [
       {:no_sandbox, true},
-      {:chrome_args,
-       "--disable-dev-shm-usage --disable-gpu --disable-software-rasterizer"},
+      {:chrome_args, "--disable-dev-shm-usage --disable-gpu --disable-software-rasterizer"},
       # 512MB shared-cpu 머신에서 Chromium cold start 가 기본 5초 init/print
       # 타임아웃을 초과해 "Timeout in Channel.run_protocol/3"(SpawnSession 단계)
       # 으로 PDF 가 500 나는 문제 → 풀 타임아웃을 20초로 넉넉히 늘린다.
-      {:session_pool,
-       [init_timeout: 20_000, checkout_timeout: 20_000, timeout: 20_000]}
+      {:session_pool, [init_timeout: 20_000, checkout_timeout: 20_000, timeout: 20_000]}
       | chromic_executable_opt
     ]
 

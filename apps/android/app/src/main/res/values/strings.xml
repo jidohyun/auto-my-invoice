@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">InvoiceFlow</string>
+    <string name="app_name" translatable="false">InvoiceFlow</string>
 
     <!-- auth -->
     <string name="auth_login_title">로그인</string>
