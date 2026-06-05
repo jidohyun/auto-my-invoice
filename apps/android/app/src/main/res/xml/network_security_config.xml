@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- 개발: 에뮬레이터 → 로컬 Phoenix 서버 HTTP 허용 -->
+    <!-- Default: no cleartext anywhere. Release uses HTTPS (api.invoiceflow.app),
+         so production traffic is always encrypted. -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Dev-only exception: emulator loopback to the local Phoenix server.
+         10.0.2.2 maps to the host machine's localhost from the Android emulator.
+         This is the only cleartext endpoint permitted, and it is unreachable
+         from a real release build (which points at the HTTPS API). -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="false">10.0.2.2</domain>
-    </domain-config>
-    <!-- 실기기 로컬 테스트용 -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">192.168.0.0</domain>
     </domain-config>
 </network-security-config>

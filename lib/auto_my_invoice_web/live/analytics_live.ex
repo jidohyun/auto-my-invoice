@@ -2,6 +2,8 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
   use AutoMyInvoiceWeb, :live_view
 
   alias AutoMyInvoice.Analytics
+  alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.Reminders
 
   @impl true
   def mount(_params, _session, socket) do
@@ -18,12 +20,18 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
     status_dist = Analytics.status_distribution(user.id)
     aging = Analytics.invoice_aging(user.id)
     forecast = Analytics.cashflow_forecast(user.id, 90)
+    conversion = Reminders.conversion_rate(user.id)
+    problem_clients = Clients.problem_clients(user.id)
+    currency = Analytics.currency_breakdown(user.id)
 
     socket
     |> assign(:monthly_collections, monthly)
     |> assign(:status_distribution, status_dist)
     |> assign(:invoice_aging, aging)
     |> assign(:cashflow_forecast, forecast)
+    |> assign(:conversion, conversion)
+    |> assign(:problem_clients, problem_clients)
+    |> assign(:currency_breakdown, currency)
     |> assign(:monthly_chart_data, build_monthly_chart_data(monthly))
     |> assign(:status_chart_data, build_status_chart_data(status_dist))
     |> assign(:aging_chart_data, build_aging_chart_data(aging))
@@ -42,6 +50,82 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
         <.icon name="hero-arrow-left" class="size-4" /> 대시보드로
       </.link>
     </header>
+
+    <%!-- Problem Clients Warning (AMI-35) --%>
+    <%= if @problem_clients != [] do %>
+      <div class="bg-warning/10 border border-warning/40 rounded-xl p-6 mb-6">
+        <div class="flex items-center gap-2 mb-4">
+          <.icon name="hero-exclamation-triangle" class="size-5 text-warning" />
+          <h3 class="text-lg font-semibold">주의 거래처</h3>
+          <span class="badge badge-warning badge-sm">{length(@problem_clients)}</span>
+        </div>
+        <p class="text-sm text-base-content/60 mb-4">
+          결제가 지연되거나 정시 결제율이 낮은 거래처입니다. 미리 확인하세요.
+        </p>
+        <ul class="divide-y divide-base-300">
+          <li :for={client <- @problem_clients} class="py-3 flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <span class="font-medium">{client.name}</span>
+              <span class="text-sm text-base-content/60">정시 결제율 {client.on_time_rate}%</span>
+            </div>
+            <ul class="text-xs text-warning/90 list-disc list-inside">
+              <li :for={reason <- client.reasons}>{reason}</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    <% end %>
+
+    <%!-- AMI-51: multi-currency outstanding totals converted to KRW --%>
+    <div
+      :if={@currency_breakdown.rows != []}
+      class="bg-base-100 p-6 rounded-xl shadow-sm border border-base-300 mb-6"
+    >
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+        <h3 class="text-lg font-semibold">통화별 미수금 (KRW 환산)</h3>
+        <div class="text-right">
+          <p class="text-xs text-base-content/60">KRW 환산 총액</p>
+          <p class="text-2xl font-bold">
+            <.money amount={@currency_breakdown.total_krw} currency="KRW" />
+          </p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-base-200 text-base-content/60 text-xs uppercase tracking-wider">
+              <th class="px-4 py-2 font-medium">통화</th>
+              <th class="px-4 py-2 font-medium text-right">미수금</th>
+              <th class="px-4 py-2 font-medium text-right">적용 환율</th>
+              <th class="px-4 py-2 font-medium text-right">KRW 환산</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-base-300">
+            <tr :for={row <- @currency_breakdown.rows}>
+              <td class="px-4 py-2 font-medium font-mono">{row.currency}</td>
+              <td class="px-4 py-2 text-right">
+                <.money amount={row.native_total} currency={row.currency} />
+              </td>
+              <td class="px-4 py-2 text-right text-base-content/60 text-sm">
+                {format_fx_rate(row)}
+              </td>
+              <td class="px-4 py-2 text-right font-medium">
+                <%= if row.converted? do %>
+                  <.money amount={row.krw_total} currency="KRW" />
+                <% else %>
+                  <span class="text-warning text-sm">환율 없음</span>
+                <% end %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p :if={@currency_breakdown.multi_currency?} class="text-xs text-base-content/40 mt-3">
+        환율은 최신 캐시된 KRW 기준 환율이며, 매일 자동 갱신됩니다.
+      </p>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <%!-- Monthly Collection Trends --%>
@@ -121,6 +205,43 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
           </div>
         <% else %>
           <.empty_chart_state message="예측할 미결제 송장이 없습니다. 좋습니다!" />
+        <% end %>
+      </div>
+
+      <%!-- Reminder Conversion Rate (AMI-34) --%>
+      <div class="bg-base-100 p-6 rounded-xl shadow-sm border border-base-300 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold">리마인더 전환율</h3>
+          <div class="text-right">
+            <p class="text-2xl font-semibold">{@conversion.overall_conversion_rate}%</p>
+            <p class="text-xs text-base-content/60">
+              {@conversion.overall_converted} / {@conversion.overall_reminded} 결제 전환
+            </p>
+          </div>
+        </div>
+        <%= if @conversion.by_step != [] do %>
+          <div class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>단계</th>
+                  <th class="text-right">리마인더 발송</th>
+                  <th class="text-right">결제 전환</th>
+                  <th class="text-right">전환율</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={step <- @conversion.by_step}>
+                  <td>{step_label(step.step)}</td>
+                  <td class="text-right">{step.reminded}</td>
+                  <td class="text-right">{step.converted}</td>
+                  <td class="text-right font-medium">{step.conversion_rate}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        <% else %>
+          <.empty_chart_state message="아직 발송된 리마인더가 없습니다." />
         <% end %>
       </div>
     </div>
@@ -273,6 +394,20 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
   end
 
   defp has_aging_data?(_), do: false
+
+  defp step_label(0), do: "수동"
+  defp step_label(1), do: "1차"
+  defp step_label(2), do: "2차"
+  defp step_label(3), do: "3차"
+  defp step_label(step), do: "#{step}차"
+
+  # AMI-51: render "1 USD = ₩1,350" style rate label, or a dash for KRW/missing.
+  defp format_fx_rate(%{currency: "KRW"}), do: "-"
+  defp format_fx_rate(%{rate: nil}), do: "-"
+
+  defp format_fx_rate(%{currency: currency, rate: rate}) do
+    "1 #{currency} = #{format_money(rate, "KRW")}"
+  end
 
   defp format_status("paid"), do: "결제완료"
   defp format_status("sent"), do: "발송"

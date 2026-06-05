@@ -76,9 +76,9 @@ class AmiMessagingService : FirebaseMessagingService() {
         nm.createNotificationChannel(
             NotificationChannel(
                 CHANNEL_ID,
-                "기본 알림",
+                getString(R.string.notifications_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT,
-            ).apply { description = "결제 / 연체 / 리마인더 발송 안내" }
+            ).apply { description = getString(R.string.notifications_channel_description) }
         )
     }
 

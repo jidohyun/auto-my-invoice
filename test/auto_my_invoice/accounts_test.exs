@@ -90,6 +90,54 @@ defmodule AutoMyInvoice.AccountsTest do
       assert updated.id == original.id
       assert updated.avatar_url == "https://example.com/new.png"
     end
+
+    # GitHub OAuth 최초 로그인
+    test "creates new user on first GitHub OAuth login" do
+      attrs = %{
+        email: "gh@example.com",
+        github_uid: "github-789",
+        avatar_url: "https://example.com/gh.png"
+      }
+
+      assert {:ok, %User{} = user} = Accounts.find_or_create_oauth_user(attrs)
+      assert user.email == "gh@example.com"
+      assert user.github_uid == "github-789"
+      assert user.confirmed_at != nil
+    end
+
+    # 이메일 기준 자동 계정 연결: 기존 Google 계정에 GitHub uid 가 붙는다
+    test "links GitHub uid to an existing account with the same email" do
+      {:ok, existing} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "same@example.com",
+          google_uid: "google-same"
+        })
+
+      {:ok, linked} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "same@example.com",
+          github_uid: "github-same"
+        })
+
+      assert linked.id == existing.id
+      assert linked.google_uid == "google-same"
+      assert linked.github_uid == "github-same"
+    end
+
+    # 이메일 기준 자동 연결: 비밀번호 가입 계정에 OAuth 가 붙는다
+    test "links OAuth to an existing password account by email" do
+      {:ok, pw_user} =
+        Accounts.register_user(%{email: "pw@example.com", password: "validpassword123"})
+
+      {:ok, linked} =
+        Accounts.find_or_create_oauth_user(%{
+          email: "pw@example.com",
+          github_uid: "github-pw"
+        })
+
+      assert linked.id == pw_user.id
+      assert linked.github_uid == "github-pw"
+    end
   end
 
   describe "update_profile/2" do
@@ -116,6 +164,95 @@ defmodule AutoMyInvoice.AccountsTest do
 
       assert {:error, changeset} = Accounts.update_profile(user, %{brand_tone: "invalid"})
       assert {"is invalid", _} = changeset.errors[:brand_tone]
+    end
+
+    # AMI-25: 기본 통화 설정
+    test "defaults default_currency to KRW on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur-default@example.com", password: "validpassword123"})
+
+      assert user.default_currency == "KRW"
+    end
+
+    test "updates default_currency" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{default_currency: "USD"})
+      assert updated.default_currency == "USD"
+    end
+
+    test "rejects unsupported default_currency" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "cur-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{default_currency: "BTC"})
+      assert changeset.errors[:default_currency]
+    end
+
+    # AMI-26: 기본 결제조건 설정
+    test "defaults payment_terms to 30 on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt-default@example.com", password: "validpassword123"})
+
+      assert user.payment_terms == 30
+    end
+
+    test "updates payment_terms to a valid Net value" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{payment_terms: 45})
+      assert updated.payment_terms == 45
+    end
+
+    test "rejects payment_terms outside Net 15/30/45/60" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pt-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{payment_terms: 90})
+      assert changeset.errors[:payment_terms]
+    end
+
+    # AMI-27: 비즈니스 정보 입력
+    test "updates business_address, registration number, and logo_url" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "biz@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} =
+               Accounts.update_profile(user, %{
+                 business_address: "서울특별시 강남구 테헤란로 1",
+                 business_registration_number: "123-45-67890",
+                 logo_url: "https://example.com/logo.png"
+               })
+
+      assert updated.business_address == "서울특별시 강남구 테헤란로 1"
+      assert updated.business_registration_number == "123-45-67890"
+      assert updated.logo_url == "https://example.com/logo.png"
+    end
+
+    # AMI-28: 송장 번호 접두사 설정
+    test "defaults invoice_prefix to INV on new users" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx-default@example.com", password: "validpassword123"})
+
+      assert user.invoice_prefix == "INV"
+    end
+
+    test "updates invoice_prefix" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx@example.com", password: "validpassword123"})
+
+      assert {:ok, updated} = Accounts.update_profile(user, %{invoice_prefix: "ACME"})
+      assert updated.invoice_prefix == "ACME"
+    end
+
+    test "rejects invoice_prefix with invalid characters" do
+      {:ok, user} =
+        Accounts.register_user(%{email: "pfx-bad@example.com", password: "validpassword123"})
+
+      assert {:error, changeset} = Accounts.update_profile(user, %{invoice_prefix: "송장!"})
+      assert changeset.errors[:invoice_prefix]
     end
   end
 

@@ -11,7 +11,14 @@ defmodule AutoMyInvoice.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ]
     ]
   end
 
@@ -27,7 +34,13 @@ defmodule AutoMyInvoice.MixProject do
 
   def cli do
     [
-      preferred_envs: [precommit: :test]
+      preferred_envs: [
+        precommit: :test,
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ]
     ]
   end
 
@@ -80,6 +93,7 @@ defmodule AutoMyInvoice.MixProject do
       # 인증
       {:ueberauth, "~> 0.10"},
       {:ueberauth_google, "~> 0.12"},
+      {:ueberauth_github, "~> 0.8"},
       {:bcrypt_elixir, "~> 3.0"},
 
       # 캐싱
@@ -109,6 +123,7 @@ defmodule AutoMyInvoice.MixProject do
       # 코드 품질
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test, runtime: false},
       {:ex_machina, "~> 2.7", only: :test},
       {:mox, "~> 1.1", only: :test}
     ]

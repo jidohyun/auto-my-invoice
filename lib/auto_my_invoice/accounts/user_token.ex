@@ -65,8 +65,9 @@ defmodule AutoMyInvoice.Accounts.UserToken do
         query =
           from t in by_token_and_context_query(hashed_token, "reset_password"),
             join: user in assoc(t, :user),
-            where: t.inserted_at > ago(@reset_password_validity_in_days, "day") and
-                     t.sent_to == user.email,
+            where:
+              t.inserted_at > ago(@reset_password_validity_in_days, "day") and
+                t.sent_to == user.email,
             select: user
 
         {:ok, query}

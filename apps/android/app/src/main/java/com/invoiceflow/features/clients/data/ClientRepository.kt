@@ -1,6 +1,7 @@
 package com.invoiceflow.features.clients.data
 
 import com.invoiceflow.core.network.ApiService
+import com.invoiceflow.features.analytics.data.model.ClientAnalyticsDto
 import com.invoiceflow.features.clients.data.model.ClientDto
 import com.invoiceflow.features.clients.data.model.ClientRequest
 import javax.inject.Inject
@@ -19,4 +20,8 @@ class ClientRepository @Inject constructor(private val apiService: ApiService) {
     suspend fun updateClient(id: String, request: ClientRequest): ClientDto = apiService.updateClient(id, request).data
 
     suspend fun deleteClient(id: String) = apiService.deleteClient(id)
+
+    /** Per-client payment-behaviour summary (`GET /clients/:id/analytics`). */
+    suspend fun getClientAnalytics(id: String): ClientAnalyticsDto =
+        apiService.getClientAnalytics(id).data
 }

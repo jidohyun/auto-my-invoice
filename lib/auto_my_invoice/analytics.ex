@@ -3,8 +3,16 @@ defmodule AutoMyInvoice.Analytics do
 
   import Ecto.Query
   alias AutoMyInvoice.Repo
+  alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.FxRates
   alias AutoMyInvoice.Invoices.Invoice
   alias AutoMyInvoice.Clients.Client
+
+  # AMI-33: collection probability applied when a client has no payment history yet.
+  @default_collection_probability Decimal.new("0.7")
+
+  # AMI-51: invoice statuses considered outstanding for currency breakdown.
+  @outstanding_statuses ~w(sent overdue partially_paid)
 
   @doc """
   Monthly collection trends for the last N months.
@@ -117,8 +125,12 @@ defmodule AutoMyInvoice.Analytics do
 
   @doc """
   Cashflow forecast for the next N days.
-  For each unpaid invoice, predicts payment date as due_date + client.avg_payment_days.
-  Groups by predicted date and sums amounts.
+
+  For each unpaid invoice, predicts payment date as due_date + client.avg_payment_days
+  and groups by predicted date. Each bucket reports both the raw `expected_amount`
+  (full outstanding) and a probability-adjusted `weighted_amount` (AMI-33), scaling
+  the outstanding by each client's historical on-time collection rate. Clients with
+  no payment history use a conservative default collection probability.
   """
   @spec cashflow_forecast(binary(), pos_integer()) :: [map()]
   def cashflow_forecast(user_id, days \\ 90) do
@@ -137,33 +149,137 @@ defmodule AutoMyInvoice.Analytics do
           paid_amount: i.paid_amount,
           currency: i.currency,
           due_date: i.due_date,
-          avg_payment_days: c.avg_payment_days
+          avg_payment_days: c.avg_payment_days,
+          client_id: c.id
         }
       )
       |> Repo.all()
+
+    probabilities = collection_probabilities(unpaid_invoices)
 
     unpaid_invoices
     |> Enum.map(fn inv ->
       offset = inv.avg_payment_days || 0
       predicted_date = Date.add(inv.due_date || today, offset)
       remaining = Decimal.sub(inv.amount, inv.paid_amount)
-      {predicted_date, remaining}
+      probability = Map.get(probabilities, inv.client_id, @default_collection_probability)
+      weighted = Decimal.mult(remaining, probability)
+      {predicted_date, remaining, weighted}
     end)
-    |> Enum.filter(fn {date, _amount} ->
+    |> Enum.filter(fn {date, _remaining, _weighted} ->
       Date.compare(date, horizon) != :gt
     end)
-    |> Enum.group_by(fn {date, _} -> date end, fn {_, amount} -> amount end)
-    |> Enum.map(fn {date, amounts} ->
+    |> Enum.group_by(fn {date, _, _} -> date end)
+    |> Enum.map(fn {date, entries} ->
       %{
         date: date,
-        expected_amount: Enum.reduce(amounts, Decimal.new(0), &Decimal.add/2),
-        invoice_count: length(amounts)
+        expected_amount: sum_amounts(entries, fn {_, remaining, _} -> remaining end),
+        weighted_amount: sum_amounts(entries, fn {_, _, weighted} -> weighted end),
+        invoice_count: length(entries)
       }
     end)
     |> Enum.sort_by(& &1.date, Date)
   end
 
+  @doc """
+  AMI-51: per-currency breakdown of outstanding invoices for multi-currency
+  portfolios. For each currency in use it returns the native total, the
+  KRW-equivalent total, the FX rate used (1 unit → KRW), and whether the
+  conversion succeeded (false when no FX rate is cached yet).
+
+  Returns `%{rows: [...], total_krw: Decimal, multi_currency?: boolean}`.
+  The `rows` are sorted with the largest KRW total first.
+  """
+  @spec currency_breakdown(binary()) :: %{
+          rows: [map()],
+          total_krw: Decimal.t(),
+          multi_currency?: boolean()
+        }
+  def currency_breakdown(user_id) do
+    rows =
+      from(i in Invoice,
+        where: i.user_id == ^user_id,
+        where: i.status in ^@outstanding_statuses,
+        group_by: i.currency,
+        select: %{
+          currency: i.currency,
+          native_total: coalesce(sum(i.amount), 0),
+          count: count(i.id)
+        }
+      )
+      |> Repo.all()
+      |> Enum.map(&convert_row/1)
+      |> Enum.sort_by(& &1.krw_total, &(Decimal.compare(&1, &2) != :lt))
+
+    total_krw = Enum.reduce(rows, Decimal.new(0), &Decimal.add(&2, &1.krw_total))
+
+    %{
+      rows: rows,
+      total_krw: total_krw,
+      multi_currency?: length(rows) > 1
+    }
+  end
+
   ## Private
+
+  # AMI-33: per-client collection probability derived from historical on-time rate.
+  defp collection_probabilities(invoices) do
+    invoices
+    |> Enum.map(& &1.client_id)
+    |> Enum.uniq()
+    |> Map.new(fn client_id ->
+      probability =
+        case Clients.on_time_rate(client_id) do
+          rate when is_float(rate) and rate > 0.0 ->
+            Decimal.div(Decimal.from_float(rate), Decimal.new(100))
+
+          _ ->
+            @default_collection_probability
+        end
+
+      {client_id, probability}
+    end)
+  end
+
+  defp sum_amounts(entries, mapper) do
+    entries
+    |> Enum.map(mapper)
+    |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+  end
+
+  # AMI-51: convert one currency bucket's native total to KRW using latest FX rate.
+  defp convert_row(%{currency: currency, native_total: native, count: count}) do
+    case FxRates.to_krw(native, currency) do
+      {:ok, krw} ->
+        %{
+          currency: currency,
+          native_total: native,
+          krw_total: krw,
+          rate: fx_rate_for(currency),
+          count: count,
+          converted?: true
+        }
+
+      {:error, :missing_rate} ->
+        %{
+          currency: currency,
+          native_total: native,
+          krw_total: Decimal.new(0),
+          rate: nil,
+          count: count,
+          converted?: false
+        }
+    end
+  end
+
+  defp fx_rate_for("KRW"), do: Decimal.new(1)
+
+  defp fx_rate_for(currency) do
+    case FxRates.latest_rate(currency) do
+      %{rate: rate} -> rate
+      nil -> nil
+    end
+  end
 
   defp aging_bucket(days) when days <= 30, do: "0-30"
   defp aging_bucket(days) when days <= 60, do: "31-60"

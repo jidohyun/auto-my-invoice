@@ -14,6 +14,7 @@ defmodule AutoMyInvoiceWeb.PaddleWebhookSignatureTest do
   defp with_secret(secret, fun) do
     prev = Application.get_env(:auto_my_invoice, :paddle_webhook_secret)
     Application.put_env(:auto_my_invoice, :paddle_webhook_secret, secret)
+
     try do
       fun.()
     after
@@ -26,6 +27,7 @@ defmodule AutoMyInvoiceWeb.PaddleWebhookSignatureTest do
   defp with_env(env, fun) do
     prev = Application.get_env(:auto_my_invoice, :env)
     Application.put_env(:auto_my_invoice, :env, env)
+
     try do
       fun.()
     after
@@ -34,7 +36,10 @@ defmodule AutoMyInvoiceWeb.PaddleWebhookSignatureTest do
   end
 
   defp valid_signature(body, ts) do
-    hash = :crypto.mac(:hmac, :sha256, @secret_for_test, "#{ts}:#{body}") |> Base.encode16(case: :lower)
+    hash =
+      :crypto.mac(:hmac, :sha256, @secret_for_test, "#{ts}:#{body}")
+      |> Base.encode16(case: :lower)
+
     "ts=#{ts};h1=#{hash}"
   end
 

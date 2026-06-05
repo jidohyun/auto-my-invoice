@@ -74,3 +74,20 @@ data class MarkPaidRequest(
     @Json(name = "payment_method") val paymentMethod: String? = null,
     @Json(name = "payment_reference") val paymentReference: String? = null,
 )
+
+/**
+ * Body for `POST /invoices/:id/record_payment`. `amount` is a decimal string
+ * (Phoenix casts it to Decimal); `paymentDate`/`notes` are optional.
+ */
+@JsonClass(generateAdapter = true)
+data class RecordPaymentRequest(
+    val amount: String,
+    @Json(name = "payment_date") val paymentDate: String? = null,
+    val notes: String? = null,
+)
+
+/**
+ * `{data: {message}}` payload returned by `POST /invoices/:id/send_reminder`.
+ */
+@JsonClass(generateAdapter = true)
+data class ReminderResponse(val message: String)

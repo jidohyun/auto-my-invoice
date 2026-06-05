@@ -15,7 +15,12 @@ final class KeychainStore {
 
     private init() {}
 
-    func save(token: String, account: String = "session") {
+    /// Persists `token`, replacing any existing item for `account`.
+    /// Returns `true` only when the write actually committed — a silent
+    /// `SecItemAdd` failure here previously let the app believe it was logged
+    /// in while no token was stored, producing a 401 on the next call.
+    @discardableResult
+    func save(token: String, account: String = "session") -> Bool {
         let data = Data(token.utf8)
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
@@ -27,7 +32,8 @@ final class KeychainStore {
         var attrs = query
         attrs[kSecValueData as String] = data
         attrs[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(attrs as CFDictionary, nil)
+        let status = SecItemAdd(attrs as CFDictionary, nil)
+        return status == errSecSuccess
     }
 
     func token(account: String = "session") -> String? {

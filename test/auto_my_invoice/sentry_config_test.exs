@@ -25,6 +25,7 @@ defmodule AutoMyInvoice.SentryConfigTest do
 
   test "Endpoint pipeline includes Sentry.PlugContext" do
     contents = File.read!("lib/auto_my_invoice_web/endpoint.ex")
+
     assert contents =~ "Sentry.PlugContext",
            "AMI-19: Sentry.PlugContext must be plugged in the Endpoint so request " <>
              "metadata is attached to events"
@@ -32,6 +33,7 @@ defmodule AutoMyInvoice.SentryConfigTest do
 
   test "Application start attaches Sentry.LoggerHandler conditionally on DSN" do
     contents = File.read!("lib/auto_my_invoice/application.ex")
+
     assert contents =~ "Sentry.LoggerHandler",
            "AMI-19: LoggerHandler must be attached after the supervisor starts"
 

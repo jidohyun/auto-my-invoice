@@ -85,7 +85,9 @@ defmodule AutoMyInvoice.AccountsResetPasswordTest do
       # Backdate past the 1-day validity window.
       Repo.update_all(
         from(t in UserToken, where: t.id == ^inserted.id),
-        set: [inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)]
+        set: [
+          inserted_at: DateTime.add(DateTime.utc_now(), -2, :day) |> DateTime.truncate(:second)
+        ]
       )
 
       assert Accounts.get_user_by_reset_password_token(encoded) == nil
@@ -133,8 +135,8 @@ defmodule AutoMyInvoice.AccountsResetPasswordTest do
                })
 
       assert "비밀번호가 일치하지 않습니다" in (changeset
-                                                 |> errors_on()
-                                                 |> Map.get(:password_confirmation, []))
+                                   |> errors_on()
+                                   |> Map.get(:password_confirmation, []))
     end
 
     test "returns a changeset error when password is too short" do

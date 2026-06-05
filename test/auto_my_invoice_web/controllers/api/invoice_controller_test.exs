@@ -210,6 +210,42 @@ defmodule AutoMyInvoiceWeb.Api.InvoiceControllerTest do
     end
   end
 
+  describe "GET /api/v1/invoices/:id/pdf" do
+    test "returns a PDF for the owner", %{conn: conn, user: user, client: client} do
+      {:ok, invoice} =
+        Invoices.create_invoice(user, %{
+          client_id: client.id,
+          amount: Decimal.new("1000"),
+          currency: "USD",
+          due_date: Date.add(Date.utc_today(), 30)
+        })
+
+      conn = get(conn, "/api/v1/invoices/#{invoice.id}/pdf")
+
+      # ChromicPDF may be unavailable in CI; accept the rendered PDF (200) or a
+      # clean generation error (422), but never a crash/404 for an owned invoice.
+      case conn.status do
+        200 ->
+          assert get_resp_header(conn, "content-type") |> hd() =~ "application/pdf"
+          assert get_resp_header(conn, "content-disposition") |> hd() =~ ".pdf"
+          assert byte_size(conn.resp_body) > 0
+
+        422 ->
+          assert %{"error" => _} = json_response(conn, 422)
+      end
+    end
+
+    test "returns 404 for a non-existent invoice", %{conn: conn} do
+      conn = get(conn, "/api/v1/invoices/#{Ecto.UUID.generate()}/pdf")
+      assert json_response(conn, 404)
+    end
+
+    test "rejects an unauthenticated request" do
+      conn = get(build_conn(), "/api/v1/invoices/#{Ecto.UUID.generate()}/pdf")
+      assert conn.status in [401, 403]
+    end
+  end
+
   describe "DELETE /api/v1/invoices/:id" do
     test "deletes draft invoice", %{conn: conn, user: user, client: client} do
       {:ok, invoice} =

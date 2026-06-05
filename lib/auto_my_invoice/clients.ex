@@ -169,6 +169,68 @@ defmodule AutoMyInvoice.Clients do
     |> Enum.sort_by(fn entry -> entry.avg_payment_days || 999_999 end, :asc)
   end
 
+  # AMI-35: thresholds for flagging problem clients.
+  @problem_on_time_threshold 70.0
+  @problem_payment_days_margin 7
+
+  @doc """
+  Problem clients (AMI-35): flags clients with a weak payment track record.
+
+  A client is flagged when, given enough paid history, either their on-time rate is
+  below `#{@problem_on_time_threshold}%` or their average payment days exceed the
+  portfolio average by more than #{@problem_payment_days_margin} days. Each entry
+  includes the human-readable Korean `reasons` that triggered the flag.
+  """
+  @spec problem_clients(binary()) :: [map()]
+  def problem_clients(user_id) do
+    ranking = client_ranking(user_id)
+    portfolio_avg = portfolio_avg_payment_days(ranking)
+
+    ranking
+    |> Enum.map(fn entry ->
+      reasons = problem_reasons(entry, portfolio_avg)
+      Map.put(entry, :reasons, reasons)
+    end)
+    |> Enum.filter(fn entry -> entry.reasons != [] end)
+    |> Enum.sort_by(& &1.on_time_rate, :asc)
+  end
+
+  defp portfolio_avg_payment_days(ranking) do
+    days =
+      ranking
+      |> Enum.map(& &1.avg_payment_days)
+      |> Enum.reject(&is_nil/1)
+
+    case days do
+      [] -> nil
+      values -> Enum.sum(values) / length(values)
+    end
+  end
+
+  defp problem_reasons(entry, portfolio_avg) do
+    []
+    |> maybe_flag_on_time_rate(entry.on_time_rate)
+    |> maybe_flag_payment_days(entry.avg_payment_days, portfolio_avg)
+  end
+
+  defp maybe_flag_on_time_rate(reasons, on_time_rate)
+       when is_float(on_time_rate) and on_time_rate < @problem_on_time_threshold do
+    ["정시 결제율 #{on_time_rate}% (기준 #{@problem_on_time_threshold}% 미만)" | reasons]
+  end
+
+  defp maybe_flag_on_time_rate(reasons, _on_time_rate), do: reasons
+
+  defp maybe_flag_payment_days(reasons, avg_payment_days, portfolio_avg)
+       when is_integer(avg_payment_days) and is_number(portfolio_avg) do
+    if avg_payment_days > portfolio_avg + @problem_payment_days_margin do
+      ["평균 결제일 #{avg_payment_days}일 (포트폴리오 평균 대비 지연)" | reasons]
+    else
+      reasons
+    end
+  end
+
+  defp maybe_flag_payment_days(reasons, _avg_payment_days, _portfolio_avg), do: reasons
+
   @doc "Single client analytics"
   @spec client_analytics(binary()) :: map()
   def client_analytics(client_id) do

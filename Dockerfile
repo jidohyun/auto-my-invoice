@@ -49,11 +49,12 @@ COPY priv priv
 COPY lib lib
 COPY assets assets
 
-# compile assets
-RUN mix assets.deploy
-
-# Compile the release
+# Compile the project FIRST so Phoenix 1.8 colocated hooks are generated
+# under _build/$MIX_ENV/phoenix-colocated (referenced by esbuild NODE_PATH).
 RUN mix compile
+
+# compile assets (needs phoenix-colocated/* from the compile step above)
+RUN mix assets.deploy
 
 # Changes to config/runtime.exs don't require recompiling the code
 COPY config/runtime.exs config/
@@ -67,7 +68,12 @@ FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
   apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  chromium fonts-noto-cjk fonts-liberation \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# ChromicPDF(송장 PDF 생성)가 부팅 시 찾는 Chrome 실행 경로.
+# Debian chromium 패키지는 /usr/bin/chromium 에 설치된다.
+ENV CHROME_BIN="/usr/bin/chromium"
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen

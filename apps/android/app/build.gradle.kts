@@ -19,7 +19,7 @@ android {
 
         testInstrumentationRunner = "com.invoiceflow.HiltTestRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:4000/api/v1/\"")
+        buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
     }
 
     buildTypes {
@@ -27,7 +27,7 @@ android {
             isDebuggable = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:4000/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
         }
         release {
             isMinifyEnabled = true
@@ -36,7 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api.invoiceflow.app/api/v1/\"")
+            buildConfigField("String", "BASE_URL", "\"https://automyinvoice.fly.dev/api/v1/\"")
         }
     }
 
@@ -96,6 +96,14 @@ dependencies {
     // overdue, and reminder-sent events. BoM keeps internal artifacts in sync.
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // AMI-42/72: CameraX + ML Kit barcode scanning for the QR scanner.
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.mlkit.barcode.scanning)
+    implementation(libs.accompanist.permissions)
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)

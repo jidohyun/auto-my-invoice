@@ -88,4 +88,75 @@ defmodule AutoMyInvoice.Emails.ReminderEmailTest do
       assert email.html_body =~ "#ff5722"
     end
   end
+
+  describe "build/1 custom message (AMI-29)" do
+    test "uses persisted email_subject/email_body and interpolates variables" do
+      assigns =
+        build_assigns(0)
+        |> put_in([:reminder], %{
+          step: 0,
+          email_subject: "{{client_name}}님 결제 안내",
+          email_body: "{{amount}} 결제를 {{due_date}}까지 부탁드립니다."
+        })
+
+      email = ReminderEmail.build(assigns)
+
+      assert email.subject == "Alice Corp님 결제 안내"
+      assert email.text_body =~ "$1500.00 결제를"
+      assert email.html_body =~ "$1500.00 결제를"
+    end
+
+    test "falls back to default template when only one of subject/body present" do
+      assigns =
+        build_assigns(0)
+        |> put_in([:reminder], %{step: 0, email_subject: "제목만", email_body: nil})
+
+      email = ReminderEmail.build(assigns)
+      # step 0 default subject contains "결제 안내: 송장"
+      assert email.subject =~ "송장 INV-001"
+    end
+  end
+
+  describe "build/1 user template (AMI-39)" do
+    test "uses the user's per-step template with interpolation" do
+      {:ok, user} =
+        AutoMyInvoice.Accounts.register_user(%{
+          email: "tmpl-#{System.unique_integer([:positive])}@example.com",
+          password: "validpassword123"
+        })
+
+      {:ok, _template} =
+        AutoMyInvoice.Reminders.create_template(user.id, %{
+          step: 1,
+          tone: "friendly",
+          subject_template: "맞춤 제목 {{amount}}",
+          body_template: "{{client_name}}님, 안녕하세요."
+        })
+
+      assigns =
+        build_assigns(1)
+        |> Map.put(:user, %{id: user.id})
+
+      email = ReminderEmail.build(assigns)
+
+      assert email.subject == "맞춤 제목 $1500.00"
+      assert email.html_body =~ "Alice Corp님, 안녕하세요."
+    end
+
+    test "falls back to default when user has no template for the step" do
+      {:ok, user} =
+        AutoMyInvoice.Accounts.register_user(%{
+          email: "notmpl-#{System.unique_integer([:positive])}@example.com",
+          password: "validpassword123"
+        })
+
+      assigns =
+        build_assigns(1)
+        |> Map.put(:user, %{id: user.id})
+
+      email = ReminderEmail.build(assigns)
+      assert email.subject =~ "결제 안내"
+      assert email.subject =~ "INV-001"
+    end
+  end
 end

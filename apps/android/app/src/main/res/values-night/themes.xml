@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Activity-level dark variant so the system window/background follows
+         system dark mode, matching the Compose DarkColorScheme. -->
+    <style name="Theme.InvoiceFlow" parent="android:Theme.Material.NoActionBar" />
+</resources>

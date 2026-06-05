@@ -64,6 +64,17 @@ defmodule AutoMyInvoiceWeb.Api.JsonHelpers do
     }
   end
 
+  def render_device(device) do
+    %{
+      id: device.id,
+      token: device.token,
+      platform: device.platform,
+      last_seen_at: device.last_seen_at,
+      inserted_at: device.inserted_at,
+      updated_at: device.updated_at
+    }
+  end
+
   def render_extraction_job(job) do
     %{
       id: job.id,

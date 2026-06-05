@@ -63,7 +63,6 @@ defmodule AutoMyInvoiceWeb.PayLive do
               <div class="alert alert-success mt-4 w-full">
                 <span>결제가 완료되었습니다. 감사합니다.</span>
               </div>
-
             <% is_binary(@invoice.paddle_payment_link) and @invoice.paddle_payment_link != "" -> %>
               <a
                 href={@invoice.paddle_payment_link}
@@ -75,7 +74,6 @@ defmodule AutoMyInvoiceWeb.PayLive do
               <p class="text-xs text-base-content/60 mt-1">
                 Paddle에서 안전하게 결제됩니다.
               </p>
-
             <% true -> %>
               <div class="alert alert-info mt-4 w-full text-sm">
                 <span>이 가맹점은 카드 결제가 아직 연결되어 있지 않습니다. 가게 직원에게 결제 방법을 안내받아 주세요.</span>

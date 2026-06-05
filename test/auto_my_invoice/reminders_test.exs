@@ -423,4 +423,268 @@ defmodule AutoMyInvoice.RemindersTest do
       assert steps == [1, 2, 3]
     end
   end
+
+  describe "send_manual_reminder/2 custom message (AMI-29)" do
+    test "persists custom subject and body on the reminder" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{
+                 subject: "긴급: 결제 부탁드립니다",
+                 body: "안녕하세요, {{client_name}}님. {{amount}} 결제 부탁드립니다."
+               })
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == "긴급: 결제 부탁드립니다"
+      assert stored.email_body == "안녕하세요, {{client_name}}님. {{amount}} 결제 부탁드립니다."
+    end
+
+    test "accepts string-keyed custom message map" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{
+                 "subject" => "안내",
+                 "body" => "본문"
+               })
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == "안내"
+      assert stored.email_body == "본문"
+    end
+
+    test "blank custom message leaves subject/body nil (fallback to default)" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} =
+               Reminders.send_manual_reminder(invoice, %{subject: "  ", body: ""})
+
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == nil
+      assert stored.email_body == nil
+    end
+
+    test "still works with single-arity call (no custom message)" do
+      user = create_user()
+      invoice = create_sent_invoice(user)
+
+      assert {:ok, reminder} = Reminders.send_manual_reminder(invoice)
+      stored = Repo.get!(Reminder, reminder.id)
+      assert stored.email_subject == nil
+    end
+  end
+
+  describe "reminder templates CRUD (AMI-39)" do
+    test "create_template/2 persists a per-step template for the user" do
+      user = create_user()
+
+      assert {:ok, template} =
+               Reminders.create_template(user.id, %{
+                 step: 1,
+                 tone: "friendly",
+                 subject_template: "{{amount}} 결제 안내",
+                 body_template: "{{client_name}}님께"
+               })
+
+      assert template.user_id == user.id
+      assert template.step == 1
+      assert template.subject_template == "{{amount}} 결제 안내"
+    end
+
+    test "create_template/2 rejects invalid step" do
+      user = create_user()
+
+      assert {:error, changeset} =
+               Reminders.create_template(user.id, %{
+                 step: 9,
+                 tone: "friendly",
+                 subject_template: "s",
+                 body_template: "b"
+               })
+
+      assert errors_on(changeset).step != []
+    end
+
+    test "get_template/2 returns the user's template for a step" do
+      user = create_user()
+
+      {:ok, _t} =
+        Reminders.create_template(user.id, %{
+          step: 2,
+          tone: "firm",
+          subject_template: "s",
+          body_template: "b"
+        })
+
+      assert %ReminderTemplate{step: 2} = Reminders.get_template(user.id, 2)
+      assert Reminders.get_template(user.id, 3) == nil
+    end
+
+    test "list_templates/1 returns the user's templates ordered by step" do
+      user = create_user()
+
+      {:ok, _} =
+        Reminders.create_template(user.id, %{
+          step: 3,
+          tone: "firm",
+          subject_template: "s3",
+          body_template: "b3"
+        })
+
+      {:ok, _} =
+        Reminders.create_template(user.id, %{
+          step: 1,
+          tone: "friendly",
+          subject_template: "s1",
+          body_template: "b1"
+        })
+
+      steps = user.id |> Reminders.list_templates() |> Enum.map(& &1.step)
+      assert steps == [1, 3]
+    end
+
+    test "upsert_template/3 creates then updates a single template" do
+      user = create_user()
+
+      assert {:ok, created} =
+               Reminders.upsert_template(user.id, 1, %{
+                 tone: "friendly",
+                 subject_template: "old",
+                 body_template: "old body"
+               })
+
+      assert {:ok, updated} =
+               Reminders.upsert_template(user.id, 1, %{
+                 tone: "firm",
+                 subject_template: "new",
+                 body_template: "new body"
+               })
+
+      assert created.id == updated.id
+      assert updated.subject_template == "new"
+      assert length(Reminders.list_templates(user.id)) == 1
+    end
+  end
+
+  describe "conversion_rate/1 (AMI-34)" do
+    defp mark_invoice_paid(invoice, paid_at) do
+      invoice
+      |> Ecto.Changeset.change(
+        status: "paid",
+        paid_at: paid_at,
+        paid_amount: invoice.amount
+      )
+      |> Repo.update!()
+    end
+
+    defp insert_sent_reminder(invoice, step, sent_at) do
+      %Reminder{invoice_id: invoice.id}
+      |> Reminder.changeset(%{step: step, scheduled_at: sent_at, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, sent_at)
+      |> Repo.insert!()
+    end
+
+    test "computes overall and per-step conversion rate" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -5 * 86_400, :second)
+
+      # Invoice 1: reminded (step 1) and then paid -> converted
+      inv1 = create_sent_invoice(user)
+      insert_sent_reminder(inv1, 1, sent_at)
+      mark_invoice_paid(inv1, now)
+
+      # Invoice 2: reminded (step 1) but not paid -> not converted
+      inv2 = create_sent_invoice(user)
+      insert_sent_reminder(inv2, 1, sent_at)
+
+      result = Reminders.conversion_rate(user.id)
+
+      # overall: 1 of 2 reminded invoices paid = 50%
+      assert result.overall_reminded == 2
+      assert result.overall_converted == 1
+      assert result.overall_conversion_rate == 50.0
+
+      step1 = Enum.find(result.by_step, &(&1.step == 1))
+      assert step1.reminded == 2
+      assert step1.converted == 1
+      assert step1.conversion_rate == 50.0
+    end
+
+    test "only counts payment that occurred after the reminder was sent" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      # Paid BEFORE the reminder was sent -> not a conversion
+      inv = create_sent_invoice(user)
+      paid_at = DateTime.add(now, -10 * 86_400, :second)
+      reminder_sent_at = DateTime.add(now, -5 * 86_400, :second)
+      mark_invoice_paid(inv, paid_at)
+      insert_sent_reminder(inv, 1, reminder_sent_at)
+
+      result = Reminders.conversion_rate(user.id)
+
+      assert result.overall_reminded == 1
+      assert result.overall_converted == 0
+      assert result.overall_conversion_rate == 0.0
+    end
+
+    test "deduplicates invoices reminded multiple times at the same step" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -5 * 86_400, :second)
+
+      inv = create_sent_invoice(user)
+      insert_sent_reminder(inv, 1, sent_at)
+      insert_sent_reminder(inv, 2, sent_at)
+      mark_invoice_paid(inv, now)
+
+      result = Reminders.conversion_rate(user.id)
+
+      # One unique invoice reminded, one converted
+      assert result.overall_reminded == 1
+      assert result.overall_converted == 1
+      assert result.overall_conversion_rate == 100.0
+    end
+
+    test "returns zeros when no reminders sent" do
+      user = create_user()
+      _invoice = create_sent_invoice(user)
+
+      result = Reminders.conversion_rate(user.id)
+
+      assert result.overall_reminded == 0
+      assert result.overall_converted == 0
+      assert result.overall_conversion_rate == 0.0
+      assert result.by_step == []
+    end
+  end
+
+  describe "reminder_effectiveness/1 includes conversion (AMI-34)" do
+    test "surfaces conversion_rate inside effectiveness map" do
+      user = create_user()
+      now = DateTime.utc_now() |> DateTime.truncate(:second)
+      sent_at = DateTime.add(now, -3 * 86_400, :second)
+
+      inv = create_sent_invoice(user)
+
+      %Reminder{invoice_id: inv.id}
+      |> Reminder.changeset(%{step: 1, scheduled_at: sent_at, status: "sent"})
+      |> Ecto.Changeset.put_change(:sent_at, sent_at)
+      |> Repo.insert!()
+
+      inv
+      |> Ecto.Changeset.change(status: "paid", paid_at: now, paid_amount: inv.amount)
+      |> Repo.update!()
+
+      effectiveness = Reminders.reminder_effectiveness(user.id)
+
+      assert Map.has_key?(effectiveness, :overall_conversion_rate)
+      assert effectiveness.overall_conversion_rate == 100.0
+      assert is_list(effectiveness.conversion_by_step)
+    end
+  end
 end

@@ -52,8 +52,7 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Quick do
          |> put_flash(:info, "QR을 손님에게 보여주세요. 결제 완료 시 자동으로 paid 상태가 됩니다.")}
 
       {:error, :plan_limit} ->
-        {:noreply,
-         put_flash(socket, :error, "이번 달 송장 발행 한도에 도달했습니다. 결제 플랜을 확인해 주세요.")}
+        {:noreply, put_flash(socket, :error, "이번 달 송장 발행 한도에 도달했습니다. 결제 플랜을 확인해 주세요.")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, :form, to_form(changeset, as: "quick"))}

@@ -156,4 +156,79 @@ defmodule AutoMyInvoice.BillingTest do
       assert Billing.get_active_subscription(user.id) == nil
     end
   end
+
+  describe "downgrade_plan/2" do
+    alias AutoMyInvoice.Teams
+    alias AutoMyInvoice.ApiKeys
+
+    test "moves a pro user down to starter" do
+      user = create_user(%{plan: "pro"})
+      assert {:ok, updated} = Billing.downgrade_plan(user, "starter")
+      assert updated.plan == "starter"
+    end
+
+    test "moves a starter user down to free" do
+      user = create_user(%{plan: "starter"})
+      assert {:ok, updated} = Billing.downgrade_plan(user, "free")
+      assert updated.plan == "free"
+    end
+
+    test "rejects an upgrade direction" do
+      user = create_user(%{plan: "free"})
+      assert {:error, :not_a_downgrade} = Billing.downgrade_plan(user, "pro")
+    end
+
+    test "rejects an unknown plan" do
+      user = create_user(%{plan: "pro"})
+      assert {:error, :invalid_plan} = Billing.downgrade_plan(user, "enterprise")
+    end
+
+    test "preserves teams and api keys on downgrade (data not deleted)" do
+      user = create_user(%{plan: "pro"})
+      {:ok, team} = Teams.create_team(user, %{"name" => "Acme"})
+      {:ok, _} = Teams.invite_member(team, %{"email" => "m@example.com"})
+      {:ok, %{api_key: _}} = ApiKeys.generate_api_key(user, %{"name" => "k"})
+
+      assert {:ok, updated} = Billing.downgrade_plan(user, "starter")
+
+      # Data is preserved.
+      assert Teams.get_team_for_owner(updated) != nil
+      assert length(Teams.list_members(team)) == 2
+      assert length(ApiKeys.list_api_keys(updated)) == 1
+    end
+
+    test "downgrade revokes pro-only feature access via plan_allows?" do
+      user = create_user(%{plan: "pro"})
+      assert Accounts.plan_allows?(user, :team)
+      assert Accounts.plan_allows?(user, :api_access)
+      assert Accounts.plan_allows?(user, :custom_branding)
+
+      {:ok, updated} = Billing.downgrade_plan(user, "starter")
+
+      refute Accounts.plan_allows?(updated, :team)
+      refute Accounts.plan_allows?(updated, :api_access)
+      refute Accounts.plan_allows?(updated, :custom_branding)
+      # Starter features still available.
+      assert Accounts.plan_allows?(updated, :analytics)
+    end
+  end
+
+  describe "restricted_features/2" do
+    test "lists pro features lost when going pro -> starter" do
+      lost = Billing.restricted_features("pro", "starter")
+      assert :team in lost
+      assert :api_access in lost
+      assert :custom_branding in lost
+    end
+
+    test "lists features lost when going starter -> free" do
+      lost = Billing.restricted_features("starter", "free")
+      assert :ai_reminders in lost
+      assert :analytics in lost
+    end
+
+    test "is empty for an upgrade" do
+      assert Billing.restricted_features("free", "pro") == []
+    end
+  end
 end

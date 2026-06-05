@@ -78,6 +78,44 @@ defmodule AutoMyInvoice.Billing do
     end
   end
 
+  ## 다운그레이드 (AMI-48)
+  #
+  # Pro → Starter → Free 방향으로만 허용하며, 팀/API 키 등 Pro 전용 데이터는
+  # 삭제하지 않고 보존합니다. 플랜 문자열만 변경하여 plan_allows?/2 가 해당
+  # 기능 접근을 자동으로 차단하도록 합니다(데이터는 재업그레이드 시 복원).
+
+  @plan_rank %{"free" => 0, "starter" => 1, "pro" => 2}
+
+  @spec downgrade_plan(AutoMyInvoice.Accounts.User.t(), String.t()) ::
+          {:ok, AutoMyInvoice.Accounts.User.t()}
+          | {:error, :invalid_plan | :not_a_downgrade | Ecto.Changeset.t()}
+  def downgrade_plan(user, target_plan) do
+    current_rank = Map.get(@plan_rank, user.plan)
+    target_rank = Map.get(@plan_rank, target_plan)
+
+    cond do
+      is_nil(target_rank) ->
+        {:error, :invalid_plan}
+
+      is_nil(current_rank) or target_rank >= current_rank ->
+        {:error, :not_a_downgrade}
+
+      true ->
+        Accounts.update_profile(user, %{plan: target_plan})
+    end
+  end
+
+  @doc """
+  현재 플랜에서 목표 플랜으로 내려갈 때 접근이 제한되는 기능 목록.
+
+  다운그레이드 확인 UI에서 "무엇이 비활성화되는지" 경고를 표시하는 데 사용합니다.
+  업그레이드 방향이면 빈 목록을 반환합니다.
+  """
+  @spec restricted_features(String.t(), String.t()) :: [atom()]
+  def restricted_features(current_plan, target_plan) do
+    Accounts.features_for_plan(current_plan) -- Accounts.features_for_plan(target_plan)
+  end
+
   ## 조회
 
   @spec get_active_subscription(binary()) :: Subscription.t() | nil

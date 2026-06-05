@@ -12,6 +12,7 @@ defmodule AutoMyInvoice.Workers.OverdueNotificationWorker do
   alias AutoMyInvoice.Invoices.Invoice
   alias AutoMyInvoice.Emails.OverdueEmail
   alias AutoMyInvoice.Mailer
+  alias AutoMyInvoice.Notifications.PushNotifier
   alias AutoMyInvoice.PubSubTopics
 
   @impl Oban.Worker
@@ -73,6 +74,9 @@ defmodule AutoMyInvoice.Workers.OverdueNotificationWorker do
           PubSubTopics.user_invoices(invoice.user_id),
           {:invoice_updated, invoice}
         )
+
+        # AMI-41/72: additive push fan-out alongside the existing email.
+        PushNotifier.invoice_overdue(invoice)
 
         :ok
 

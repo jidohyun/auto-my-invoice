@@ -11,6 +11,9 @@ defmodule AutoMyInvoiceWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug :fetch_current_scope_for_user
+    # AMI-49: resolve Gettext locale from the user preference / session.
+    # Must run after fetch_current_scope_for_user so current_user is set.
+    plug AutoMyInvoiceWeb.Plugs.Locale
   end
 
   pipeline :api do
@@ -93,6 +96,7 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/invoices/:id/mark_paid", InvoiceController, :mark_paid
     post "/invoices/:id/record_payment", InvoiceController, :record_payment
     post "/invoices/:id/send_reminder", InvoiceController, :send_reminder
+    get "/invoices/:id/pdf", InvoiceController, :pdf
 
     # Client Analytics (ranking must come before :id routes)
     get "/clients/ranking", ClientAnalyticsController, :ranking
@@ -107,6 +111,11 @@ defmodule AutoMyInvoiceWeb.Router do
     # Upload & Extraction
     post "/upload", UploadController, :create
     get "/extraction/:id", UploadController, :show
+
+    # Push notification devices (AMI-41/72)
+    get "/devices", DeviceController, :index
+    post "/devices", DeviceController, :create
+    delete "/devices/:token", DeviceController, :delete
 
     # Settings
     get "/settings", SettingsController, :show
@@ -131,7 +140,10 @@ defmodule AutoMyInvoiceWeb.Router do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
     live_session :redirect_if_user_is_authenticated,
-      on_mount: [{AutoMyInvoiceWeb.UserAuth, :redirect_if_user_is_authenticated}] do
+      on_mount: [
+        {AutoMyInvoiceWeb.UserAuth, :redirect_if_user_is_authenticated},
+        {AutoMyInvoiceWeb.UserAuth, :restore_locale}
+      ] do
       live "/users/register", UserRegistrationLive
       live "/users/log_in", UserLoginLive
       live "/users/reset_password", UserForgotPasswordLive
@@ -141,6 +153,8 @@ defmodule AutoMyInvoiceWeb.Router do
     post "/users/log_in", UserSessionController, :create
     get "/auth/google", UserOauthController, :request
     get "/auth/google/callback", UserOauthController, :callback
+    get "/auth/github", UserOauthController, :request
+    get "/auth/github/callback", UserOauthController, :callback
   end
 
   # Authenticated app routes
@@ -149,7 +163,10 @@ defmodule AutoMyInvoiceWeb.Router do
 
     live_session :require_authenticated_user,
       layout: {AutoMyInvoiceWeb.Layouts, :app},
-      on_mount: [{AutoMyInvoiceWeb.UserAuth, :ensure_authenticated}] do
+      on_mount: [
+        {AutoMyInvoiceWeb.UserAuth, :ensure_authenticated},
+        {AutoMyInvoiceWeb.UserAuth, :restore_locale}
+      ] do
       live "/", DashboardLive
       live "/invoices", InvoiceLive.Index
       live "/invoices/new", InvoiceLive.New
@@ -164,6 +181,7 @@ defmodule AutoMyInvoiceWeb.Router do
       live "/upload", UploadLive
       live "/settings", UserSettingsLive
       live "/settings/billing", BillingLive
+      live "/settings/reminders", ReminderTemplateLive
     end
 
     get "/invoices/:id/pdf", InvoicePDFController, :download

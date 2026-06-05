@@ -18,6 +18,35 @@ import Config
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
   config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint, server: true
+
+  # ChromicPDF: 릴리스(컨테이너)에서 nobody 유저로 Chromium 을 띄우므로
+  # Chrome sandbox 를 끈다. CHROME_BIN(Dockerfile 에서 /usr/bin/chromium)
+  # 이 있으면 명시 경로를 사용한다. 미설정 시 ChromicPDF 기본 탐색.
+  chromic_executable_opt =
+    case System.get_env("CHROME_BIN") do
+      nil -> []
+      "" -> []
+      path -> [chrome_executable: path]
+    end
+
+  # 컨테이너에서 Chromium 이 브라우저 컨텍스트 생성 단계에서 멈추는(Timeout
+  # in Channel.run_protocol/3) 문제를 막는 안정화 인자.
+  #   --disable-dev-shm-usage: 컨테이너 기본 /dev/shm(64MB)가 작아 Chrome 이
+  #     공유메모리 부족으로 행에 빠지는 것을 /tmp 사용으로 회피(주원인).
+  #   --disable-gpu / --disable-software-rasterizer: 헤드리스에서 불필요한
+  #     GPU 경로를 꺼 기동 안정성 확보.
+  chromic_opts =
+    [
+      {:no_sandbox, true},
+      {:chrome_args, "--disable-dev-shm-usage --disable-gpu --disable-software-rasterizer"},
+      # 512MB shared-cpu 머신에서 Chromium cold start 가 기본 5초 init/print
+      # 타임아웃을 초과해 "Timeout in Channel.run_protocol/3"(SpawnSession 단계)
+      # 으로 PDF 가 500 나는 문제 → 풀 타임아웃을 20초로 넉넉히 늘린다.
+      {:session_pool, [init_timeout: 20_000, checkout_timeout: 20_000, timeout: 20_000]}
+      | chromic_executable_opt
+    ]
+
+  config :auto_my_invoice, ChromicPDF, chromic_opts
 end
 
 config :auto_my_invoice, AutoMyInvoiceWeb.Endpoint,
@@ -34,10 +63,27 @@ config :auto_my_invoice,
   paddle_api_key: System.get_env("PADDLE_API_KEY"),
   paddle_price_id_starter: System.get_env("PADDLE_PRICE_ID_STARTER"),
   paddle_price_id_pro: System.get_env("PADDLE_PRICE_ID_PRO"),
+  # Paddle 환경: PADDLE_SANDBOX 가 "false"/"0" 이면 production API(api.paddle.com),
+  # 그 외(미설정 포함)는 sandbox. prod 결제는 PADDLE_SANDBOX=false 를 설정한다.
+  paddle_sandbox: System.get_env("PADDLE_SANDBOX") not in ~w(false 0),
+  # 결제 완료 후 돌아올 URL. 미설정 시 운영 호스트 기준.
+  paddle_checkout_return_url:
+    System.get_env("PADDLE_CHECKOUT_RETURN_URL") ||
+      "https://#{System.get_env("PHX_HOST") || "automyinvoice.fly.dev"}/payment/success",
   openai_api_key: System.get_env("OPENAI_API_KEY"),
   # AMI-20: comma-separated origin allow-list. nil/empty → AutoMyInvoiceWeb.Cors
   # falls back to :self in prod, "*" in dev.
   cors_origins: System.get_env("CORS_ALLOWED_ORIGINS")
+
+# OAuth client credentials (Ueberauth). nil 이면 해당 provider 로그인 시도 시
+# 실패 콜백으로 떨어지며(앱은 정상), email/password 로그인은 영향 없음.
+config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+
+config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+  client_id: System.get_env("GITHUB_CLIENT_ID"),
+  client_secret: System.get_env("GITHUB_CLIENT_SECRET")
 
 # Sentry DSN — same reasoning. Sentry library happily accepts a nil DSN
 # (it short-circuits send), so dev/test stay quiet without any DSN set.
@@ -63,8 +109,9 @@ config :auto_my_invoice,
 
 case System.get_env("MAILER_ADAPTER") do
   "smtp" ->
-    relay = System.get_env("MAILER_SMTP_RELAY") ||
-      raise "MAILER_ADAPTER=smtp requires MAILER_SMTP_RELAY"
+    relay =
+      System.get_env("MAILER_SMTP_RELAY") ||
+        raise "MAILER_ADAPTER=smtp requires MAILER_SMTP_RELAY"
 
     port = String.to_integer(System.get_env("MAILER_SMTP_PORT") || "587")
     ssl = System.get_env("MAILER_SMTP_SSL") in [nil, "true", "1"]

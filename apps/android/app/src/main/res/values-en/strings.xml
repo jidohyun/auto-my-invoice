@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- auth -->
+    <string name="auth_login_title">Sign In</string>
+    <string name="auth_login_subtitle">Automate your invoice reminders</string>
+    <string name="auth_login_google">Continue with Google</string>
+    <string name="auth_login_github">Continue with GitHub</string>
+    <string name="auth_login_button">Sign In</string>
+    <string name="auth_login_loading">Signing in…</string>
+    <string name="auth_login_to_register">Don\'t have an account? Sign up</string>
+    <string name="auth_login_social_coming_soon">Social login is coming soon</string>
+    <string name="auth_forgot_password">Forgot your password?</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_register_title">Sign Up</string>
+    <string name="auth_register_subtitle">Create your free account</string>
+    <string name="auth_register_google">Sign up with Google</string>
+    <string name="auth_register_github">Sign up with GitHub</string>
+    <string name="auth_register_password_label">Password (8+ characters)</string>
+    <string name="auth_register_company_label">Company name (optional)</string>
+    <string name="auth_register_button">Sign Up</string>
+    <string name="auth_register_loading">Signing up…</string>
+    <string name="auth_register_to_login">Already have an account? Sign in</string>
+    <string name="auth_register_social_coming_soon">Social sign-up is coming soon</string>
+
+    <!-- settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saving">Saving…</string>
+    <string name="settings_logout">Log out</string>
+    <string name="settings_profile">Profile</string>
+    <string name="settings_company_name">Company name</string>
+    <string name="settings_payment_terms">Payment terms</string>
+    <string name="settings_default_currency">Default currency</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notify_payment">Payment received notifications</string>
+    <string name="settings_notify_overdue">Overdue notifications</string>
+    <string name="settings_notify_reminder">Reminder sent notifications</string>
+
+    <!-- dashboard -->
+    <string name="dashboard_title">Overview</string>
+    <string name="dashboard_action_create">New invoice</string>
+    <string name="dashboard_action_clients">Clients</string>
+    <string name="dashboard_action_analytics">Analytics</string>
+    <string name="dashboard_action_settings">Settings</string>
+    <string name="dashboard_retry">Try again</string>
+    <string name="dashboard_recent_title">Recent invoices</string>
+    <string name="dashboard_view_all">View all</string>
+    <string name="dashboard_kpi_outstanding">Outstanding</string>
+    <string name="dashboard_kpi_overdue_count">%d overdue</string>
+    <string name="dashboard_kpi_collection_rate">Collection rate</string>
+    <string name="dashboard_kpi_this_month_label">This month</string>
+    <string name="dashboard_kpi_collected_this_month">Collected this month</string>
+    <string name="dashboard_invoice_number_fallback">Invoice #%s</string>
+    <string name="dashboard_empty_title">No invoices yet</string>
+    <string name="dashboard_empty_subtitle">Issue your first invoice to get started.</string>
+    <string name="dashboard_empty_create">Create invoice</string>
+    <string name="dashboard_load_error">Couldn\'t load the dashboard</string>
+
+    <!-- invoices -->
+    <string name="invoices_photo_saved">Photo saved: %s</string>
+    <string name="invoices_camera_permission_required">Camera permission is required</string>
+    <string name="invoices_scan_ocr_desc">Scan invoice (OCR)</string>
+    <string name="invoices_scan_qr_desc">Scan QR</string>
+    <string name="invoices_photo_capture_desc">Capture invoice</string>
+    <string name="invoices_empty">No invoices match your filters</string>
+    <string name="invoices_filter_all">All</string>
+    <string name="invoices_filter_draft">Draft</string>
+    <string name="invoices_filter_sent">Sent</string>
+    <string name="invoices_filter_overdue">Overdue</string>
+    <string name="invoices_filter_paid">Paid</string>
+    <string name="invoices_filter_partially_paid">Partially paid</string>
+    <string name="invoices_search_placeholder">Search invoice number, client, or notes</string>
+    <string name="invoices_pdf_share_chooser">Share invoice PDF</string>
+    <string name="invoices_detail_title">Invoice details</string>
+    <string name="invoices_back">Back</string>
+    <string name="invoices_delete">Delete</string>
+    <string name="invoices_delete_dialog_title">Delete invoice</string>
+    <string name="invoices_delete_dialog_message">Delete this invoice? This cannot be undone.</string>
+    <string name="invoices_cancel">Cancel</string>
+    <string name="invoices_record_payment">Record partial payment</string>
+    <string name="invoices_record_payment_message">Enter the amount received. It cannot exceed the balance.</string>
+    <string name="invoices_amount_label">Amount</string>
+    <string name="invoices_record">Record</string>
+    <string name="invoices_number_header">Invoice #%s</string>
+    <string name="invoices_field_client">Client: %s</string>
+    <string name="invoices_field_amount">Amount: %1$s %2$s</string>
+    <string name="invoices_field_paid">Paid: %1$s %2$s</string>
+    <string name="invoices_field_due_date">Due date: %s</string>
+    <string name="invoices_field_sent_at">Sent on: %s</string>
+    <string name="invoices_field_paid_at">Paid on: %s</string>
+    <string name="invoices_field_notes">Notes: %s</string>
+    <string name="invoices_action_send">Send</string>
+    <string name="invoices_mark_paid">Mark as paid</string>
+    <string name="invoices_send_reminder">Send reminder</string>
+    <string name="invoices_download_pdf">Download PDF</string>
+    <string name="invoices_processing">Processing…</string>
+    <string name="invoices_create_title">New invoice</string>
+    <string name="invoices_select_client">Select a client</string>
+    <string name="invoices_items">Items</string>
+    <string name="invoices_add_item">Add item</string>
+    <string name="invoices_item_description">Description</string>
+    <string name="invoices_item_quantity">Quantity</string>
+    <string name="invoices_item_unit_price">Unit price</string>
+    <string name="invoices_total">Total</string>
+    <string name="invoices_currency">Currency: %s</string>
+    <string name="invoices_due_date">Due date: %s</string>
+    <string name="invoices_notes_label">Notes (optional)</string>
+    <string name="invoices_creating">Creating…</string>
+    <string name="invoices_create_button">Create invoice</string>
+    <string name="invoices_confirm">OK</string>
+
+    <!-- clients -->
+    <string name="clients_title">Clients</string>
+    <string name="clients_add">Add client</string>
+    <string name="clients_empty">No clients yet</string>
+    <string name="clients_back">Back</string>
+    <string name="clients_edit">Edit</string>
+    <string name="clients_form_new_title">New client</string>
+    <string name="clients_form_edit_title">Edit client</string>
+    <string name="clients_field_name">Name *</string>
+    <string name="clients_field_email">Email</string>
+    <string name="clients_field_company">Company</string>
+    <string name="clients_field_phone">Phone</string>
+    <string name="clients_saving">Saving…</string>
+    <string name="clients_save_changes">Save changes</string>
+    <string name="clients_detail_title">Client details</string>
+    <string name="clients_stat_invoice_count">Invoices</string>
+    <string name="clients_count_suffix">%d</string>
+    <string name="clients_stat_total_billed">Total billed</string>
+    <string name="clients_analytics_title">Payment analytics</string>
+    <string name="clients_analytics_total_paid">Total collected</string>
+    <string name="clients_analytics_outstanding">Outstanding</string>
+    <string name="clients_analytics_avg_payment">Avg. days to pay</string>
+    <string name="clients_days_value">%.0f days</string>
+    <string name="clients_analytics_ontime_rate">On-time rate</string>
+    <string name="clients_percent_value">%.0f%%</string>
+    <string name="clients_info_phone">Phone</string>
+    <string name="clients_info_tax_id">Tax ID</string>
+    <string name="clients_info_notes">Notes</string>
+
+    <!-- analytics (i18n batch 2) -->
+    <string name="analytics_aging_days_label">%s days</string>
+    <string name="analytics_aging_section">Receivables Aging</string>
+    <string name="analytics_avg_payment_days_label">Avg. Days to Payment</string>
+    <string name="analytics_collected_amount">Collected %s</string>
+    <string name="analytics_count_unit">%d items</string>
+    <string name="analytics_invoiced_amount">Invoiced %s</string>
+    <string name="analytics_load_error">Failed to load analytics</string>
+    <string name="analytics_monthly_section">Monthly Invoiced &amp; Collected</string>
+    <string name="analytics_no_data">No data available.</string>
+    <string name="analytics_ranking_section">Client Payment Ranking</string>
+    <string name="analytics_reminder_click_rate">Click Rate</string>
+    <string name="analytics_reminder_conversion_rate">Payment Conversion Rate</string>
+    <string name="analytics_reminder_open_rate">Open Rate</string>
+    <string name="analytics_reminder_section">Reminder Effectiveness</string>
+    <string name="analytics_reminder_sent">Sent</string>
+    <string name="analytics_reminder_sent_count">%d items</string>
+    <string name="analytics_status_section">Status Distribution</string>
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_back">Back</string>
+    <string name="analytics_reminder_rate_value">%.1f%%</string>
+    <string name="analytics_reminder_avg_days_value">%.1f days</string>
+    <string name="analytics_ranking_avg_days">Avg. %.0f days</string>
+    <string name="analytics_ranking_on_time">On-time %.0f%%</string>
+
+    <!-- clients (i18n batch 2) -->
+    <string name="clients_save_failed">Failed to save client</string>
+
+    <!-- qr scanner (i18n batch 2) -->
+    <string name="qr_back">Back</string>
+    <string name="qr_error_not_invoice_qr">This is not an invoice payment QR code</string>
+    <string name="qr_grant_permission">Grant permission</string>
+    <string name="qr_permission_rationale">Camera permission is required to scan QR codes</string>
+    <string name="qr_title">QR Scan</string>
+
+    <!-- OCR upload (i18n batch 2) -->
+    <string name="upload_back">Back</string>
+    <string name="upload_completed">Done! Navigating...</string>
+    <string name="upload_error_extract_failed">Extraction failed</string>
+    <string name="upload_error_failed">Upload failed</string>
+    <string name="upload_error_timeout">Extraction timed out. Please try again.</string>
+    <string name="upload_idle_hint">Select an invoice photo to automatically recognize items\nand fill out a new invoice for you.</string>
+    <string name="upload_pick_image">Select Image</string>
+    <string name="upload_processing">Extracting data from invoice...</string>
+    <string name="upload_title">Scan Invoice (OCR)</string>
+    <string name="upload_uploading">Uploading image...</string>
+
+    <!-- invoices (viewmodel messages) (i18n batch 2) -->
+    <string name="invoices_action_failed">Action failed</string>
+    <string name="invoices_create_failed">Failed to create invoice</string>
+    <string name="invoices_delete_failed">Failed to delete invoice</string>
+    <string name="invoices_delete_success">Invoice deleted</string>
+    <string name="invoices_mark_paid_success">Marked as paid</string>
+    <string name="invoices_pdf_download_failed">Failed to download PDF</string>
+    <string name="invoices_record_payment_success">Payment recorded</string>
+    <string name="invoices_reminder_failed">Failed to send reminder</string>
+    <string name="invoices_send_success">Invoice sent</string>
+
+    <!-- settings (viewmodel messages) (i18n batch 2) -->
+    <string name="settings_error_load_failed">Failed to load settings</string>
+    <string name="settings_error_save_failed">Failed to save</string>
+    <string name="settings_saved">Saved</string>
+
+    <!-- notifications (i18n batch 2) -->
+    <string name="notifications_channel_description">Payment / overdue / reminder-sent notices</string>
+    <string name="notifications_channel_name">Default notifications</string>
+
+    <!-- shared components (i18n batch 2) -->
+    <string name="common_or_continue_with_email">or continue with email</string>
+    <string name="common_retry">Try again</string>
+</resources>

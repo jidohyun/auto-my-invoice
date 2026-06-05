@@ -82,5 +82,34 @@ defmodule AutoMyInvoice.PDF.InvoicePDFTest do
 
       assert {:ok, _} = result
     end
+
+    # AMI-27: 공급자 비즈니스 정보를 포함해도 PDF 가 정상 생성된다.
+    # logo_url 이 있어도 외부 이미지를 PDF 에 넣지 않으므로(page_load 타임아웃/SSRF
+    # 방지) 죽은 URL 이라도 PDF 생성이 안전하다.
+    test "renders with supplier business info and ignores external logo url" do
+      user = %{
+        company_name: "마이컴퍼니",
+        business_address: "서울특별시 강남구 테헤란로 1",
+        business_registration_number: "123-45-67890",
+        logo_url: "https://example.com/logo.png"
+      }
+
+      result =
+        InvoicePDF.generate(%{invoice: sample_invoice(), client: sample_client(), user: user})
+
+      assert {:ok, pdf_data} = result
+      {:ok, decoded} = Base.decode64(pdf_data)
+      assert String.starts_with?(decoded, "%PDF")
+    end
+
+    # AMI-27: user 가 없거나 부분 정보만 있어도 폴백 동작한다.
+    test "renders without user (falls back to default brand)" do
+      result =
+        InvoicePDF.generate(%{invoice: sample_invoice(), client: sample_client(), user: nil})
+
+      assert {:ok, pdf_data} = result
+      {:ok, decoded} = Base.decode64(pdf_data)
+      assert String.starts_with?(decoded, "%PDF")
+    end
   end
 end

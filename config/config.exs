@@ -90,6 +90,19 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# OAuth providers (Ueberauth). Provider 목록은 compile-time, client_id/secret 은
+# runtime.exs 에서 주입한다(AMI-13 시크릿 정책). default_scope 는 이메일+프로필.
+config :ueberauth, Ueberauth,
+  providers: [
+    google: {Ueberauth.Strategy.Google, [default_scope: "email profile"]},
+    github: {Ueberauth.Strategy.Github, [default_scope: "user:email"]}
+  ]
+
+# AMI-49: i18n. Korean is the source language (msgids are Korean), so the
+# default locale ("ko") falls back to the msgid itself and Korean users
+# always see the original strings. en/ja translations live in priv/gettext.
+config :gettext, :default_locale, "ko"
+
 # NOTE (AMI-13): All third-party secrets — Paddle, OpenAI, Sentry — are
 # injected at runtime in config/runtime.exs. config.exs runs at compile
 # time, and any System.get_env/1 call here would bake whatever the build

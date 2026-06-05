@@ -42,7 +42,9 @@ defmodule AutoMyInvoiceWeb.HttpsHardeningTest do
     end
 
     @tag :force_ssl_config
-    test ":prod force_ssl pins HSTS + preload + 1-year expiry + edge proxy rewrite", %{force_ssl: force_ssl} do
+    test ":prod force_ssl pins HSTS + preload + 1-year expiry + edge proxy rewrite", %{
+      force_ssl: force_ssl
+    } do
       # In dev/test the force_ssl key is empty (correct — we don't want
       # HSTS on localhost). The shape assertion below is meaningful only
       # in prod; skip otherwise.
@@ -56,6 +58,7 @@ defmodule AutoMyInvoiceWeb.HttpsHardeningTest do
         assert :x_forwarded_proto in Keyword.get(force_ssl, :rewrite_on, [])
 
         exclude = Keyword.get(force_ssl, :exclude, [])
+
         assert "/health" in exclude,
                "force_ssl exclude must list /health so load balancers can probe over plain HTTP"
       end

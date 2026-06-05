@@ -2,22 +2,22 @@ package com.invoiceflow.features.settings.data.model
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import com.invoiceflow.features.clients.data.model.AddressDto
 
 @JsonClass(generateAdapter = true)
 data class UserSettingsDto(
     val id: String,
-    @Json(name = "user_id") val userId: String,
+    val plan: String? = null,
+    val email: String? = null,
+    @Json(name = "inserted_at") val insertedAt: String? = null,
+    val timezone: String? = null,
+    @Json(name = "avatar_url") val avatarUrl: String? = null,
+    @Json(name = "brand_tone") val brandTone: String? = null,
+    // Backend returns the business name as `company_name`; the settings screen reads it via `businessName`.
+    @Json(name = "company_name") val businessName: String? = null,
+    // Write-only on the backend (PUT /settings accepts these but GET /settings omits them),
+    // so they must default for the read screen.
     @Json(name = "default_currency") val defaultCurrency: String = "KRW",
-    @Json(name = "default_tax_rate") val defaultTaxRate: Double = 10.0,
-    @Json(name = "invoice_prefix") val invoicePrefix: String = "INV",
-    @Json(name = "next_invoice_number") val nextInvoiceNumber: Int = 1,
     @Json(name = "payment_terms_days") val paymentTermsDays: Int = 30,
-    @Json(name = "business_name") val businessName: String? = null,
-    @Json(name = "business_address") val businessAddress: AddressDto? = null,
-    @Json(name = "business_tax_id") val businessTaxId: String? = null,
-    @Json(name = "logo_url") val logoUrl: String? = null,
-    @Json(name = "updated_at") val updatedAt: String,
 )
 
 @JsonClass(generateAdapter = true)

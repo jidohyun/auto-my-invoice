@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import UIKit
 
 @main
 struct InVoiceFlow_iOSApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var auth = AuthViewModel()
 
     init() {
@@ -24,7 +26,40 @@ struct InVoiceFlow_iOSApp: App {
         WindowGroup {
             ContentView()
                 .environment(auth)
-                .task { auth.bootstrap() }
+                .task {
+                    // Wire the centralized 401 self-heal BEFORE any request so a
+                    // stale/invalid token on any endpoint logs out and routes
+                    // back to LoginView instead of stranding a dead shell.
+                    APIClient.shared.onUnauthorized = { [auth] in auth.logOut() }
+                    await auth.bootstrap()
+                    // AMI-41: register for APNs after launch. Gated on the
+                    // user's push preference inside PushManager.
+                    await PushManager.shared.registerIfEnabled()
+                }
+        }
+    }
+}
+
+/// AMI-41 (iOS): UIKit app delegate, bridged into SwiftUI via
+/// `UIApplicationDelegateAdaptor`, purely to receive the APNs remote-token
+/// callbacks (SwiftUI's `App` has no hook for these). Token handling is
+/// delegated to `PushManager`, which POSTs to `/api/v1/devices`.
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Task { @MainActor in
+            PushManager.shared.didRegister(deviceToken: deviceToken)
+        }
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        Task { @MainActor in
+            PushManager.shared.didFailToRegister(error: error)
         }
     }
 }

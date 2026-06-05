@@ -3,24 +3,31 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AuthViewModel.self) private var auth
     @State private var vm = DashboardViewModel()
+    @State private var showUpload = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let error = vm.error {
-                        Text(error)
-                            .font(.footnote)
-                            .foregroundStyle(.red)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.08), in: .rect(cornerRadius: 8))
+                        ErrorStateView(message: error) {
+                            Task { await vm.refresh() }
+                        }
                     }
 
                     KpiRow(kpi: vm.kpi, isLoading: vm.isLoading)
 
+                    Button {
+                        showUpload = true
+                    } label: {
+                        Label("송장 사진으로 만들기", systemImage: "doc.viewfinder")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppColor.primary)
+
                     HStack {
-                        Text("최근 송장").font(.headline)
+                        Text("최근 송장").appFont(.headline)
                         Spacer()
                     }
 
@@ -42,15 +49,16 @@ struct DashboardView: View {
                     Button("로그아웃") { auth.logOut() }
                 }
             }
+            .sheet(isPresented: $showUpload, onDismiss: { Task { await vm.refresh() } }) {
+                UploadView()
+            }
         }
     }
 }
 
 private struct KpiRow: View {
     let kpi: KpiSummaryDTO?
-    let isLoading: Boolean
-
-    typealias Boolean = Bool
+    let isLoading: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -81,16 +89,16 @@ private struct KpiCard: View {
     let sub: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
-            Text(value).font(.title3.weight(.semibold)).lineLimit(1)
+        VStack(alignment: .leading, spacing: AppSpacing.xs) {
+            Text(label).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
+            Text(value).font(AppFont.money(20, weight: .semibold)).lineLimit(1)
             if !sub.isEmpty {
-                Text(sub).font(.caption2).foregroundStyle(.secondary)
+                Text(sub).appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.6))
             }
         }
-        .padding(10)
+        .padding(AppSpacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial, in: .rect(cornerRadius: 10))
+        .appCard()
     }
 }
 
@@ -100,10 +108,15 @@ private struct RecentInvoiceRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("#\(invoice.invoiceNumber)").font(.body.weight(.semibold))
-                Text(invoice.status.uppercased()).font(.caption).foregroundStyle(.secondary)
+                Text(invoice.status.uppercased())
+                    .appFont(.caption)
+                    .foregroundStyle(AppColor.statusColor(for: invoice.status).fg)
+                    .padding(.horizontal, AppSpacing.sm)
+                    .padding(.vertical, AppSpacing.xs)
+                    .background(AppColor.statusColor(for: invoice.status).bg, in: Capsule())
             }
             Spacer()
-            Text("\(invoice.currency) \(invoice.amount)").font(.body)
+            Text("\(invoice.currency) \(invoice.amount)").font(AppFont.money())
         }
         .padding(.vertical, 6)
     }
@@ -112,12 +125,12 @@ private struct RecentInvoiceRow: View {
 private struct EmptyRecentInvoices: View {
     var body: some View {
         VStack(spacing: 6) {
-            Text("아직 송장이 없습니다").font(.body)
-            Text("웹에서 첫 송장을 발행해 보세요.").font(.caption).foregroundStyle(.secondary)
+            Text("아직 송장이 없습니다").font(.body).foregroundStyle(AppColor.baseContent.opacity(0.7))
+            Text("웹에서 첫 송장을 발행해 보세요.").appFont(.caption).foregroundStyle(AppColor.baseContent.opacity(0.5))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .background(.regularMaterial, in: .rect(cornerRadius: 10))
+        .padding(.vertical, AppSpacing.lg)
+        .appCard()
     }
 }
 

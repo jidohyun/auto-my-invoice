@@ -18,7 +18,10 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
      socket
      |> assign(:page_title, invoice.invoice_number)
      |> assign(:invoice, invoice)
-     |> assign(:reminders, reminders)}
+     |> assign(:reminders, reminders)
+     |> assign(:show_reminder_form, false)
+     |> assign(:reminder_subject, "")
+     |> assign(:reminder_body, "")}
   end
 
   @impl true
@@ -70,6 +73,38 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
   end
 
   @impl true
+  def handle_event("toggle_reminder_form", _params, socket) do
+    {:noreply, assign(socket, :show_reminder_form, !socket.assigns.show_reminder_form)}
+  end
+
+  @impl true
+  def handle_event("send_reminder", params, socket) do
+    custom = %{
+      subject: Map.get(params, "subject", ""),
+      body: Map.get(params, "body", "")
+    }
+
+    case Reminders.send_manual_reminder(socket.assigns.invoice, custom) do
+      {:ok, _reminder} ->
+        reminders = Reminders.list_reminders_for_invoice(socket.assigns.invoice.id)
+
+        {:noreply,
+         socket
+         |> assign(:reminders, reminders)
+         |> assign(:show_reminder_form, false)
+         |> assign(:reminder_subject, "")
+         |> assign(:reminder_body, "")
+         |> put_flash(:info, "리마인더가 발송 예약되었습니다")}
+
+      {:error, :invalid_status} ->
+        {:noreply, put_flash(socket, :error, "이 상태에서는 리마인더를 보낼 수 없습니다")}
+
+      {:error, :rate_limited} ->
+        {:noreply, put_flash(socket, :error, "오늘 이미 리마인더를 보냈습니다. 내일 다시 시도하세요.")}
+    end
+  end
+
+  @impl true
   def handle_info({:invoice_updated, invoice}, socket) do
     reminders = Reminders.list_reminders_for_invoice(invoice.id)
 
@@ -82,8 +117,9 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
   defp status_actions(status) do
     case status do
       "draft" -> [:send, :edit, :delete]
-      "sent" -> [:mark_paid]
-      "overdue" -> [:mark_paid]
+      "sent" -> [:mark_paid, :send_reminder]
+      "overdue" -> [:mark_paid, :send_reminder]
+      "partially_paid" -> [:mark_paid, :send_reminder]
       _ -> []
     end
   end
@@ -119,6 +155,13 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
           <.icon name="hero-check-circle" class="size-4" /> 결제완료
         </button>
         <button
+          :if={:send_reminder in @actions}
+          class="btn btn-warning btn-sm"
+          phx-click="toggle_reminder_form"
+        >
+          <.icon name="hero-bell-alert" class="size-4" /> 리마인더 보내기
+        </button>
+        <button
           :if={:delete in @actions}
           class="btn btn-error btn-sm"
           phx-click="delete"
@@ -132,6 +175,50 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
         <.link navigate={~p"/invoices"} class="btn btn-ghost btn-sm">← 목록</.link>
       </:actions>
     </.page_header>
+
+    <div :if={@show_reminder_form} class="card bg-base-100 shadow mb-6" id="reminder-form-card">
+      <div class="card-body">
+        <h2 class="card-title text-lg">리마인더 보내기</h2>
+        <p class="text-sm text-base-content/60">
+          제목과 본문을 비워두면 기본 템플릿으로 발송됩니다.
+        </p>
+        <form phx-submit="send_reminder" class="space-y-4 mt-2">
+          <div class="form-control">
+            <label class="label" for="reminder_subject">
+              <span class="label-text">제목 (선택)</span>
+            </label>
+            <input
+              type="text"
+              name="subject"
+              id="reminder_subject"
+              value={@reminder_subject}
+              class="input input-bordered w-full"
+              placeholder="결제 안내드립니다"
+            />
+          </div>
+          <div class="form-control">
+            <label class="label" for="reminder_body">
+              <span class="label-text">메시지 (선택)</span>
+            </label>
+            <textarea
+              name="body"
+              id="reminder_body"
+              rows="5"
+              class="textarea textarea-bordered w-full"
+              placeholder="추가로 전달할 내용을 입력하세요"
+            >{@reminder_body}</textarea>
+          </div>
+          <div class="flex gap-2">
+            <button type="submit" phx-disable-with="발송 중..." class="btn btn-warning">
+              발송
+            </button>
+            <button type="button" phx-click="toggle_reminder_form" class="btn btn-ghost">
+              취소
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div class="card bg-base-100 shadow lg:col-span-2">
@@ -276,6 +363,27 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
       </div>
     </div>
 
+    <% upcoming = upcoming_reminders(@reminders) %>
+    <div :if={upcoming != []} class="card bg-base-100 shadow mb-6" id="upcoming-reminders">
+      <div class="card-body">
+        <h2 class="card-title text-lg">예정된 리마인더</h2>
+        <ul class="space-y-2 mt-2">
+          <li
+            :for={r <- upcoming}
+            class="flex items-center justify-between border-b border-base-200 pb-2 last:border-0"
+          >
+            <span class="flex items-center gap-2">
+              <.icon name="hero-clock" class="size-4 text-base-content/40" />
+              <span class="font-medium">{r.step}단계 리마인더</span>
+            </span>
+            <span class="text-sm text-base-content/60">
+              {format_scheduled_at(r.scheduled_at)} 발송 예정
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
     <div :if={@reminders != []} class="card bg-base-100 shadow">
       <div class="card-body">
         <h2 class="card-title text-lg">리마인더 타임라인</h2>
@@ -283,7 +391,7 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
           <:item
             :for={r <- @reminders}
             title={"#{r.step}단계 리마인더"}
-            description={status_text(r)}
+            description={timeline_description(r)}
             datetime={format_reminder_time(r)}
             status={to_string(reminder_status(r))}
           />
@@ -291,6 +399,13 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
       </div>
     </div>
     """
+  end
+
+  defp timeline_description(reminder) do
+    case tracking_text(reminder) do
+      nil -> status_text(reminder)
+      tracking -> "#{status_text(reminder)} · #{tracking}"
+    end
   end
 
   defp format_reminder_time(r) do
@@ -318,4 +433,28 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.Show do
       _ -> :error
     end
   end
+
+  # AMI-30: upcoming reminders are scheduled-but-not-yet-sent entries
+  # (excluding the manual step 0), ordered by their scheduled time.
+  defp upcoming_reminders(reminders) do
+    reminders
+    |> Enum.filter(fn r ->
+      r.status in ~w(pending scheduled) and r.step > 0 and is_nil(r.sent_at)
+    end)
+    |> Enum.sort_by(& &1.scheduled_at, {:asc, DateTime})
+  end
+
+  defp format_scheduled_at(nil), do: "-"
+
+  defp format_scheduled_at(%DateTime{} = dt) do
+    Calendar.strftime(dt, "%Y년 %m월 %d일 %H:%M")
+  end
+
+  # AMI-30: open/click counts shown in the timeline once a reminder is sent.
+  defp tracking_text(%{open_count: opens, click_count: clicks})
+       when opens > 0 or clicks > 0 do
+    "열람 #{opens}회 · 클릭 #{clicks}회"
+  end
+
+  defp tracking_text(_reminder), do: nil
 end

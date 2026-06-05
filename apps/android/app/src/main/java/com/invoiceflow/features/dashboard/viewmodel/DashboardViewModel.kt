@@ -1,11 +1,14 @@
 package com.invoiceflow.features.dashboard.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.invoiceflow.R
 import com.invoiceflow.features.dashboard.data.DashboardRepository
 import com.invoiceflow.features.dashboard.data.model.KpiSummaryDto
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +26,7 @@ data class DashboardState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: DashboardRepository,
+    @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DashboardState())
@@ -40,7 +44,7 @@ class DashboardViewModel @Inject constructor(
             }.onSuccess { (kpi, recent) ->
                 _state.update { it.copy(kpi = kpi, recent = recent, isLoading = false) }
             }.onFailure { e ->
-                _state.update { it.copy(error = e.message ?: "대시보드를 불러오지 못했습니다", isLoading = false) }
+                _state.update { it.copy(error = e.message ?: appContext.getString(R.string.dashboard_load_error), isLoading = false) }
             }
         }
     }

@@ -108,6 +108,46 @@ defmodule AutoMyInvoice.ExtractionTest do
     end
   end
 
+  describe "record_feedback/2" do
+    # AMI-38: 사용자가 추출 결과를 수정하면 corrected_data로 저장
+    test "stores corrections merged over the original extracted data" do
+      user = create_user()
+      job = create_job(user)
+
+      extracted = %{"amount" => "1500.00", "currency" => "USD", "notes" => "Net 30"}
+      {:ok, completed} = Extraction.save_result(job, %{}, extracted, 0.7)
+
+      corrections = %{"amount" => "1600.00", "currency" => "KRW"}
+      assert {:ok, updated} = Extraction.record_feedback(completed, corrections)
+
+      # corrected_data merges the edits over the originals
+      assert updated.corrected_data["amount"] == "1600.00"
+      assert updated.corrected_data["currency"] == "KRW"
+      assert updated.corrected_data["notes"] == "Net 30"
+      assert updated.feedback_submitted_at != nil
+      # original extraction is preserved untouched
+      assert updated.extracted_data == extracted
+    end
+
+    test "accepts atom-keyed corrections and persists them as strings" do
+      user = create_user()
+      job = create_job(user)
+      {:ok, completed} = Extraction.save_result(job, %{}, %{"amount" => "10"}, 0.5)
+
+      assert {:ok, updated} = Extraction.record_feedback(completed, %{amount: "20"})
+      assert updated.corrected_data["amount"] == "20"
+    end
+
+    test "works when there was no extracted_data" do
+      user = create_user()
+      job = create_job(user)
+
+      assert {:ok, updated} = Extraction.record_feedback(job, %{"amount" => "500"})
+      assert updated.corrected_data == %{"amount" => "500"}
+      assert updated.feedback_submitted_at != nil
+    end
+  end
+
   describe "mark_failed/2" do
     # E-5: 추출 실패 시 에러 저장
     test "marks job as failed with error message" do

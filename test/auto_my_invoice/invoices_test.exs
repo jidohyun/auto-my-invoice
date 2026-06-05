@@ -56,6 +56,49 @@ defmodule AutoMyInvoice.InvoicesTest do
       assert invoice.client_id == client.id
     end
 
+    # AMI-28: 사용자 invoice_prefix 가 자동채번에 반영된다
+    test "uses the user's invoice_prefix in the generated invoice_number" do
+      %{user: user} = create_user()
+      {:ok, user} = Accounts.update_profile(user, %{invoice_prefix: "ACME"})
+      client = create_client(user)
+      attrs = valid_invoice_attrs(client.id)
+
+      assert {:ok, %Invoice{} = invoice} = Invoices.create_invoice(user, attrs)
+      assert invoice.invoice_number =~ ~r/^ACME-\d{6}-[A-F0-9]{4}$/
+    end
+
+    # AMI-28: prefix 미설정 시 INV 로 폴백 (하위호환)
+    test "falls back to INV prefix when user has none" do
+      %{user: user} = create_user()
+      client = create_client(user)
+      attrs = valid_invoice_attrs(client.id)
+
+      assert {:ok, %Invoice{} = invoice} = Invoices.create_invoice(user, attrs)
+      assert invoice.invoice_number =~ ~r/^INV-\d{6}-[A-F0-9]{4}$/
+    end
+
+    # AMI-25: currency 미지정 시 사용자 default_currency 로 채워진다
+    test "prefills currency from user's default_currency when not provided" do
+      %{user: user} = create_user()
+      {:ok, user} = Accounts.update_profile(user, %{default_currency: "EUR"})
+      client = create_client(user)
+      attrs = valid_invoice_attrs(client.id) |> Map.delete(:currency)
+
+      assert {:ok, %Invoice{} = invoice} = Invoices.create_invoice(user, attrs)
+      assert invoice.currency == "EUR"
+    end
+
+    # AMI-25: 폼에서 명시한 currency 가 사용자 기본값보다 우선한다
+    test "explicit currency overrides user's default_currency" do
+      %{user: user} = create_user()
+      {:ok, user} = Accounts.update_profile(user, %{default_currency: "EUR"})
+      client = create_client(user)
+      attrs = valid_invoice_attrs(client.id) |> Map.put(:currency, "USD")
+
+      assert {:ok, %Invoice{} = invoice} = Invoices.create_invoice(user, attrs)
+      assert invoice.currency == "USD"
+    end
+
     # I-2: 금액 0 이하 거부
     test "rejects amount less than or equal to zero" do
       %{user: user} = create_user()

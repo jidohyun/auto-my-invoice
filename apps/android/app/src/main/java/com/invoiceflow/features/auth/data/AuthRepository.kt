@@ -4,7 +4,6 @@ import com.invoiceflow.core.data.TokenRepository
 import com.invoiceflow.core.network.ApiService
 import com.invoiceflow.features.auth.data.model.AuthData
 import com.invoiceflow.features.auth.data.model.LoginRequest
-import com.invoiceflow.features.auth.data.model.RefreshTokenRequest
 import com.invoiceflow.features.auth.data.model.RegisterRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -18,20 +17,15 @@ class AuthRepository @Inject constructor(
 ) {
     suspend fun login(email: String, password: String): AuthData {
         val response = apiService.login(LoginRequest(email, password))
-        tokenRepository.saveTokens(response.data.accessToken, response.data.refreshToken)
+        tokenRepository.saveToken(response.data.token)
         return response.data
     }
 
-    suspend fun register(email: String, password: String, name: String): AuthData {
-        val response = apiService.register(RegisterRequest(email, password, name))
-        tokenRepository.saveTokens(response.data.accessToken, response.data.refreshToken)
-        return response.data
-    }
-
-    suspend fun refreshToken(): AuthData {
-        val refreshToken = tokenRepository.getRefreshToken() ?: throw Exception("No refresh token")
-        val response = apiService.refreshToken(RefreshTokenRequest(refreshToken))
-        tokenRepository.saveTokens(response.data.accessToken, response.data.refreshToken)
+    suspend fun register(email: String, password: String, companyName: String?): AuthData {
+        val response = apiService.register(
+            RegisterRequest(email, password, companyName?.takeIf { it.isNotBlank() })
+        )
+        tokenRepository.saveToken(response.data.token)
         return response.data
     }
 

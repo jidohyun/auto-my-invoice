@@ -67,3 +67,4 @@ npm-debug.log
 /invoice_flow/
 .gstack/
 .playwright-mcp/
+.claude/

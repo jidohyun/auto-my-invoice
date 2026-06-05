@@ -39,7 +39,17 @@ defmodule AutoMyInvoice.Accounts do
 
   @spec find_or_create_oauth_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def find_or_create_oauth_user(%{email: email, google_uid: uid} = attrs) do
-    case Repo.get_by(User, google_uid: uid) || Repo.get_by(User, email: email) do
+    upsert_oauth_user(attrs, email, :google_uid, uid)
+  end
+
+  def find_or_create_oauth_user(%{email: email, github_uid: uid} = attrs) do
+    upsert_oauth_user(attrs, email, :github_uid, uid)
+  end
+
+  # provider uid 로 먼저 찾고, 없으면 이메일로 기존 계정에 자동 연결,
+  # 그래도 없으면 새 계정 생성. 이메일은 OAuth 제공자가 검증한 값 전제.
+  defp upsert_oauth_user(attrs, email, uid_field, uid) do
+    case Repo.get_by(User, [{uid_field, uid}]) || Repo.get_by(User, email: email) do
       nil ->
         %User{}
         |> User.oauth_changeset(Map.put(attrs, :confirmed_at, NaiveDateTime.utc_now()))
@@ -63,6 +73,13 @@ defmodule AutoMyInvoice.Accounts do
   def update_profile(%User{} = user, attrs) do
     user
     |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @spec update_locale(User.t(), String.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_locale(%User{} = user, locale) do
+    user
+    |> User.profile_changeset(%{"locale" => locale})
     |> Repo.update()
   end
 
@@ -118,31 +135,35 @@ defmodule AutoMyInvoice.Accounts do
 
   ## 플랜 확인
 
+  @plan_features %{
+    "free" => [:invoice_crud, :basic_template],
+    "starter" => [
+      :invoice_crud,
+      :basic_template,
+      :ai_reminders,
+      :paddle_integration,
+      :analytics
+    ],
+    "pro" => [
+      :invoice_crud,
+      :basic_template,
+      :ai_reminders,
+      :paddle_integration,
+      :analytics,
+      :team,
+      :custom_branding,
+      :api_access
+    ]
+  }
+
   @spec plan_allows?(User.t(), atom()) :: boolean()
   def plan_allows?(%User{plan: plan}, feature) do
-    plan_features = %{
-      "free" => [:invoice_crud, :basic_template],
-      "starter" => [
-        :invoice_crud,
-        :basic_template,
-        :ai_reminders,
-        :paddle_integration,
-        :analytics
-      ],
-      "pro" => [
-        :invoice_crud,
-        :basic_template,
-        :ai_reminders,
-        :paddle_integration,
-        :analytics,
-        :team,
-        :custom_branding,
-        :api_access
-      ]
-    }
-
-    feature in Map.get(plan_features, plan, [])
+    feature in features_for_plan(plan)
   end
+
+  @doc "Returns the list of feature atoms enabled for the given plan string."
+  @spec features_for_plan(String.t()) :: [atom()]
+  def features_for_plan(plan), do: Map.get(@plan_features, plan, [])
 
   ## 비밀번호 재설정
 

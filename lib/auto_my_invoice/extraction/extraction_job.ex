@@ -17,6 +17,11 @@ defmodule AutoMyInvoice.Extraction.ExtractionJob do
     field :extracted_data, :map
     field :confidence_score, :float
 
+    # AMI-38: user corrections to the AI-extracted data, captured before the
+    # invoice is created. feedback_submitted_at marks when it was recorded.
+    field :corrected_data, :map
+    field :feedback_submitted_at, :utc_datetime
+
     field :processing_started_at, :utc_datetime
     field :processing_completed_at, :utc_datetime
     field :oban_job_id, :integer
@@ -37,6 +42,8 @@ defmodule AutoMyInvoice.Extraction.ExtractionJob do
       :raw_response,
       :extracted_data,
       :confidence_score,
+      :corrected_data,
+      :feedback_submitted_at,
       :processing_started_at,
       :processing_completed_at,
       :oban_job_id,

@@ -11,6 +11,7 @@ defmodule AutoMyInvoice.Invoices do
   alias AutoMyInvoice.Mailer
   alias AutoMyInvoice.Billing.PaddleClient
   alias AutoMyInvoice.Clients
+  alias AutoMyInvoice.Notifications.PushNotifier
 
   ## 조회
 
@@ -62,11 +63,51 @@ defmodule AutoMyInvoice.Invoices do
   def create_invoice(user, attrs) do
     if Accounts.can_create_invoice?(user) do
       %Invoice{user_id: user.id}
-      |> Invoice.create_changeset(attrs)
+      |> Invoice.create_changeset(apply_user_defaults(user, attrs))
       |> Repo.insert()
       |> tap_ok(&broadcast_invoice_change/1)
     else
       {:error, :plan_limit}
+    end
+  end
+
+  # AMI-25/28: thread the user's invoice number prefix into the changeset so
+  # generate_invoice_number/1 uses it instead of the hardcoded "INV". Falls
+  # back to "INV" when the user has none. The default_currency is only used as
+  # a fallback — an explicit currency from the form always wins.
+  defp apply_user_defaults(user, attrs) do
+    prefix = Map.get(user, :invoice_prefix) || "INV"
+    currency = Map.get(user, :default_currency) || "KRW"
+
+    attrs
+    |> put_attr(:invoice_prefix, prefix)
+    |> put_attr_new(:currency, currency)
+  end
+
+  # Sets a key respecting whether the incoming map uses string or atom keys,
+  # and only when not already present (used for fallback defaults).
+  defp put_attr_new(attrs, key, value) when is_map(attrs) do
+    cond do
+      Map.has_key?(attrs, key) ->
+        attrs
+
+      Map.has_key?(attrs, to_string(key)) ->
+        attrs
+
+      match?([{k, _} | _] when is_binary(k), Map.to_list(attrs)) ->
+        Map.put(attrs, to_string(key), value)
+
+      true ->
+        Map.put(attrs, key, value)
+    end
+  end
+
+  # Sets a key unconditionally, matching the existing key style of the map.
+  defp put_attr(attrs, key, value) when is_map(attrs) do
+    if match?([{k, _} | _] when is_binary(k), Map.to_list(attrs)) do
+      Map.put(attrs, to_string(key), value)
+    else
+      Map.put(attrs, key, value)
     end
   end
 
@@ -271,6 +312,8 @@ defmodule AutoMyInvoice.Invoices do
 
             broadcast_invoice_change(updated)
             AutoMyInvoice.Clients.recalculate_stats(updated.client_id)
+            # AMI-41/72: additive push fan-out on payment receipt.
+            PushNotifier.payment_received(updated)
             {:ok, updated}
 
           {:error, _, reason, _} ->

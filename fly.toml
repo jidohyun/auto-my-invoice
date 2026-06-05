@@ -26,6 +26,8 @@ primary_region = "nrt"
     soft_limit = 1000
 
 [[vm]]
-  memory = "512mb"
+  # 1GB: ChromicPDF(Chromium) PDF 생성이 512MB에서 렌더러 OOM(targetCrashed)
+  # 으로 실패. BEAM+Phoenix와 Chromium 동시 구동에 1GB 필요.
+  memory = "1024mb"
   cpu_kind = "shared"
   cpus = 1

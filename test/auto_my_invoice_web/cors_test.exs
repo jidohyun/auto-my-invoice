@@ -18,6 +18,7 @@ defmodule AutoMyInvoiceWeb.CorsTest do
   defp with_origins(origins, fun) do
     prev = Application.get_env(:auto_my_invoice, :cors_origins)
     Application.put_env(:auto_my_invoice, :cors_origins, origins)
+
     try do
       fun.()
     after
@@ -67,7 +68,8 @@ defmodule AutoMyInvoiceWeb.CorsTest do
         assert get_resp_header(conn, "access-control-allow-origin") ==
                  ["https://app.example.com"]
 
-        assert ["GET" <> _ | _] = get_resp_header(conn, "access-control-allow-methods") |> List.wrap()
+        assert ["GET" <> _ | _] =
+                 get_resp_header(conn, "access-control-allow-methods") |> List.wrap()
       end)
     end
 
