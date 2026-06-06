@@ -73,7 +73,10 @@ defmodule AutoMyInvoiceWeb.Router do
 
     post "/auth/register", AuthController, :register
     post "/auth/login", AuthController, :login
-    post "/auth/google", AuthController, :google
+    # NOTE: POST /auth/google (mobile ID-token login) is not implemented yet —
+    # verify_google_id_token was a stub that always failed. Re-enable once the
+    # Google ID-token JWT verification is implemented. Web OAuth (GET /auth/google
+    # via UserOauthController + Ueberauth) is unaffected and remains live.
   end
 
   # Authenticated API routes

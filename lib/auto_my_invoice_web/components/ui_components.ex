@@ -200,12 +200,10 @@ defmodule AutoMyInvoiceWeb.UiComponents do
   defp format_date(date, "full"), do: format_date_full(date)
   defp format_date(date, _), do: format_date_short(date)
 
-  defp format_date_short(nil), do: "-"
   defp format_date_short(%Date{} = date), do: Calendar.strftime(date, "%b %d, %Y")
   defp format_date_short(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%b %d, %Y")
   defp format_date_short(%DateTime{} = dt), do: Calendar.strftime(dt, "%b %d, %Y")
 
-  defp format_date_full(nil), do: ""
   defp format_date_full(%Date{} = date), do: Calendar.strftime(date, "%Y-%m-%d")
   defp format_date_full(%NaiveDateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M")
   defp format_date_full(%DateTime{} = dt), do: Calendar.strftime(dt, "%Y-%m-%d %H:%M")

@@ -161,9 +161,6 @@ defmodule AutoMyInvoiceWeb.Api.InvoiceController do
         conn
         |> put_status(:too_many_requests)
         |> json(%{error: "오늘 이미 리마인더를 보냈습니다. 내일 다시 시도하세요."})
-
-      error ->
-        error
     end
   rescue
     Ecto.NoResultsError -> {:error, :not_found}

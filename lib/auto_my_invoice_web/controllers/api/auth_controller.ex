@@ -38,36 +38,17 @@ defmodule AutoMyInvoiceWeb.Api.AuthController do
     json(conn, %{data: %{token: token, user: JsonHelpers.render_user(user)}})
   end
 
-  def google(conn, %{"id_token" => id_token}) do
-    with {:ok, claims} <- verify_google_id_token(id_token),
-         {:ok, user} <-
-           Accounts.find_or_create_oauth_user(%{
-             email: claims["email"],
-             google_uid: claims["sub"],
-             avatar_url: claims["picture"]
-           }) do
-      token = ApiAuth.sign_token(user.id)
-      json(conn, %{data: %{token: token, user: JsonHelpers.render_user(user)}})
-    else
-      {:error, :invalid_token} ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: %{code: "invalid_token", message: "Invalid Google ID token"}})
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
+  # NOTE: Mobile Google ID-token login (POST /api/v1/auth/google) is intentionally
+  # not wired up. The previous google/2 + verify_google_id_token/1 were a stub that
+  # always returned {:error, :invalid_token}, so the endpoint never worked (Elixir
+  # 1.20 type inference flagged the unreachable {:ok, claims} clause). The route has
+  # been removed; re-add google/2 with real Google ID-token JWT verification
+  # (validate signature against Google's public keys + aud/exp claims) to restore it.
+  # Web OAuth (Ueberauth via UserOauthController) is separate and unaffected.
 
   def logout(conn, _params) do
     conn
     |> put_status(:no_content)
     |> text("")
-  end
-
-  defp verify_google_id_token(_id_token) do
-    # TODO: Implement Google ID token verification via Google's tokeninfo endpoint
-    # For now, return error to prevent unauthorized access
-    {:error, :invalid_token}
   end
 end

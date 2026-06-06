@@ -45,9 +45,6 @@ defmodule AutoMyInvoiceWeb.PaddleWebhookController do
 
       {:error, :duplicate_event} ->
         conn |> put_status(200) |> json(%{status: "already_processed"})
-
-      {:error, reason} ->
-        conn |> put_status(422) |> json(%{error: inspect(reason)})
     end
   end
 

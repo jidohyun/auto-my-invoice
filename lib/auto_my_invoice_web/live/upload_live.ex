@@ -63,7 +63,7 @@ defmodule AutoMyInvoiceWeb.UploadLive do
       job ->
         {:ok, updated} = Extraction.record_feedback(job, corrections)
 
-        updated = Map.put(updated, :__file_name__, Map.get(job, :__file_name__))
+        updated = %{updated | file_name: job.file_name}
 
         jobs =
           Enum.map(socket.assigns.extraction_jobs, fn j ->
@@ -127,10 +127,9 @@ defmodule AutoMyInvoiceWeb.UploadLive do
               |> Extraction.ExtractionJob.changeset(%{oban_job_id: oban_job.id})
               |> AutoMyInvoice.Repo.update()
 
-            # Stash the user-facing filename on the in-memory struct so the UI
-            # can show which file each job came from. The DB column doesn't
-            # need it.
-            job = Map.put(job, :__file_name__, result.file_name)
+            # Stash the user-facing filename on the in-memory struct (virtual
+            # field) so the UI can show which file each job came from. Not persisted.
+            job = %{job | file_name: result.file_name}
             {[job | jobs_acc], err_acc}
 
           {:error, _changeset} ->
@@ -155,7 +154,7 @@ defmodule AutoMyInvoiceWeb.UploadLive do
     refreshed =
       Enum.map(socket.assigns.extraction_jobs, fn job ->
         latest = Extraction.get_job!(job.id)
-        Map.put(latest, :__file_name__, Map.get(job, :__file_name__))
+        %{latest | file_name: job.file_name}
       end)
 
     {:noreply, assign(socket, :extraction_jobs, refreshed)}
@@ -251,7 +250,7 @@ defmodule AutoMyInvoiceWeb.UploadLive do
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
                 <p class="font-medium truncate">
-                  {Map.get(job, :__file_name__) || job.file_url}
+                  {job.file_name || job.file_url}
                 </p>
                 <p class="text-xs text-base-content/60">{status_label(job.status)}</p>
               </div>
