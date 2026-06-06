@@ -26,6 +26,12 @@ defmodule AutoMyInvoice.Extraction.ExtractionJob do
     field :processing_completed_at, :utc_datetime
     field :oban_job_id, :integer
 
+    # UI-only: the original uploaded file name, attached at runtime for display in
+    # the upload LiveView. Virtual so it is a real struct field (avoids Elixir 1.20
+    # "incompatible types given to Map.get/2" on an unknown struct key) but is never
+    # persisted.
+    field :file_name, :string, virtual: true
+
     belongs_to :user, AutoMyInvoice.Accounts.User
     belongs_to :invoice, AutoMyInvoice.Invoices.Invoice
 
