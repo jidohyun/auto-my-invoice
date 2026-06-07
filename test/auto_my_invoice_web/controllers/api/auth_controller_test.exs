@@ -1,5 +1,10 @@
 defmodule AutoMyInvoiceWeb.Api.AuthControllerTest do
-  use AutoMyInvoiceWeb.ConnCase
+  # async: false — this suite hits POST /api/v1/auth/login, which shares the
+  # global rate-limit ETS bucket. RateLimitTest toggles :rate_limit_enabled on
+  # globally; if this suite ran concurrently it could pollute that bucket (or be
+  # rate-limited itself), making RateLimitTest's 11th-request assertion flaky.
+  # Serializing the two login-hitting suites removes that race.
+  use AutoMyInvoiceWeb.ConnCase, async: false
 
   alias AutoMyInvoice.Accounts
   alias AutoMyInvoiceWeb.Plugs.ApiAuth

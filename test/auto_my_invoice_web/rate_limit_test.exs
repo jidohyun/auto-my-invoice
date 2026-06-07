@@ -12,6 +12,15 @@ defmodule AutoMyInvoiceWeb.RateLimitTest do
   alias AutoMyInvoice.RateLimiter
 
   setup do
+    # Clear the shared Hammer ETS bucket (table is named after the limiter module)
+    # so counters from earlier tests/runs never bleed into this scenario. Guard
+    # against the table not existing yet.
+    try do
+      :ets.delete_all_objects(RateLimiter)
+    rescue
+      ArgumentError -> :ok
+    end
+
     prev = Application.get_env(:auto_my_invoice, :rate_limit_enabled)
     Application.put_env(:auto_my_invoice, :rate_limit_enabled, true)
 
@@ -76,10 +85,15 @@ defmodule AutoMyInvoiceWeb.RateLimitTest do
   end
 
   defp unique_ip do
-    # ETS buckets persist across tests in the same VM run, so each test
-    # uses a private RFC 5737 documentation IP it's never used before.
-    n = System.unique_integer([:positive]) |> rem(254)
-    {198, 51, 100, n + 1}
+    # ETS buckets persist across tests in the same VM run, so each test must use
+    # an IP it has never used before. The old `rem(254)` collapsed every id into a
+    # single /24 (only 254 distinct IPs), so once enough tests ran the documentation
+    # block wrapped around and buckets bled between tests — making the 11th-request
+    # assertion flaky (a reused IP could already be over/under the limit).
+    # Spread the unique id across two octets of the 10.0.0.0/8 test range so the
+    # effective space is ~65k distinct IPs, far beyond any single run's test count.
+    n = System.unique_integer([:positive])
+    {10, 0, div(n, 254) |> rem(254), rem(n, 254) + 1}
   end
 
   # Sanity: the limiter itself counts hits per key correctly.
