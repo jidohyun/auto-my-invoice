@@ -18,48 +18,48 @@ enum AppColor {
 
     // MARK: - Brand
 
-    /// 브랜드 메인 컬러 (violet). light #6917E6 / dark #A855F7
-    static let primary = dynamic(light: 0x6917E6, dark: 0xA855F7)
+    /// 브랜드 메인 컬러 (Apple Action Blue). light #0066CC / dark #2997FF
+    static let primary = dynamic(light: 0x0066CC, dark: 0x2997FF)
 
-    /// primary 위에 올라가는 텍스트/아이콘 색. #F8F5FF (라이트·다크 공통)
-    static let primaryContent = solid(0xF8F5FF)
+    /// primary 위에 올라가는 텍스트/아이콘 색. #FFFFFF (라이트·다크 공통)
+    static let primaryContent = solid(0xFFFFFF)
 
-    /// 보조 컬러 (blue). #3B5FE0
-    static let secondary = solid(0x3B5FE0)
+    /// 보조 컬러 — 단일 블루 원칙에 따라 primary 계열로 흡수. #0071E3
+    static let secondary = solid(0x0071E3)
 
-    /// secondary content. 어두운 배경 위 텍스트용. #F8F5FF
-    static let secondaryContent = solid(0xF8F5FF)
+    /// secondary content. 어두운 배경 위 텍스트용. #FFFFFF
+    static let secondaryContent = solid(0xFFFFFF)
 
-    /// 강조 컬러 (periwinkle). #4B71CC
-    static let accent = solid(0x4B71CC)
+    /// 강조 컬러 — 단일 블루 원칙에 따라 primary 계열로 흡수. #2997FF
+    static let accent = solid(0x2997FF)
 
-    /// accent content. #F8F5FF
-    static let accentContent = solid(0xF8F5FF)
+    /// accent content. #FFFFFF
+    static let accentContent = solid(0xFFFFFF)
 
-    /// 뉴트럴(짙은 남색). light #1A1D35 / dark 도 동일 톤 유지
-    static let neutral = dynamic(light: 0x1A1D35, dark: 0x1A1D35)
+    /// 뉴트럴(Apple ink). light #1D1D1F / dark 도 동일 톤 유지
+    static let neutral = dynamic(light: 0x1D1D1F, dark: 0x1D1D1F)
 
-    /// neutral content. 짙은 배경 위 텍스트. #F8F5FF
-    static let neutralContent = solid(0xF8F5FF)
+    /// neutral content. 짙은 배경 위 텍스트. #FFFFFF
+    static let neutralContent = solid(0xFFFFFF)
 
     // MARK: - Base (배경 / 표면 / 보더 / 텍스트)
 
-    /// 화면 배경. base-100. light #FAFAFA / dark #151829
-    static let base100 = dynamic(light: 0xFAFAFA, dark: 0x151829)
+    /// 화면 배경. base-100. light #F5F5F7 / dark #272729
+    static let base100 = dynamic(light: 0xF5F5F7, dark: 0x272729)
 
-    /// 카드/표면. base-200. light #FFFFFF / dark #1E2235
-    static let base200 = dynamic(light: 0xFFFFFF, dark: 0x1E2235)
+    /// 카드/표면. base-200. light #FFFFFF / dark #2A2A2C
+    static let base200 = dynamic(light: 0xFFFFFF, dark: 0x2A2A2C)
 
-    /// 보더/구분선. base-300. light #E8E9EF / dark #2C3050
-    static let base300 = dynamic(light: 0xE8E9EF, dark: 0x2C3050)
+    /// 보더/구분선. base-300 (hairline). light #E0E0E0 / dark #3A3A3C
+    static let base300 = dynamic(light: 0xE0E0E0, dark: 0x3A3A3C)
 
-    /// 기본 텍스트. base-content. light #3D4266 / dark #C8CDE3
-    static let baseContent = dynamic(light: 0x3D4266, dark: 0xC8CDE3)
+    /// 기본 텍스트. base-content. light #1D1D1F / dark #F5F5F7
+    static let baseContent = dynamic(light: 0x1D1D1F, dark: 0xF5F5F7)
 
     // MARK: - Semantic (라이트·다크 공통)
 
-    /// 정보(파랑). #2563EB
-    static let info = solid(0x2563EB)
+    /// 정보(파랑, Apple info). #0071E3
+    static let info = solid(0x0071E3)
     static let infoContent = solid(0xFFFFFF)
 
     /// 성공(그린). #22C9A0

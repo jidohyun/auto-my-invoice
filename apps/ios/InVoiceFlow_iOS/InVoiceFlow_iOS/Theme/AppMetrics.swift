@@ -10,12 +10,12 @@ import SwiftUI
 /// 코너 반경 토큰. 웹 --radius-* / Android Shape.kt 매핑과 일치.
 /// badge(=full/9999)는 SwiftUI에서 `Capsule()` 로 표현하므로 상수 대신 도형을 사용한다.
 enum AppRadius {
-    /// field: 0.375rem — 입력 필드 등
-    static let field: CGFloat = 6
-    /// button / selector: 0.5rem — 버튼, 셀렉터
+    /// field: 8pt — 입력 필드 등 (Apple field 반경)
+    static let field: CGFloat = 8
+    /// button / selector: 8pt — 버튼, 셀렉터
     static let button: CGFloat = 8
-    /// box / card: 0.75rem — 카드, 박스
-    static let card: CGFloat = 12
+    /// box / card: 18pt — 카드, 박스 (Apple store-utility-card 반경)
+    static let card: CGFloat = 18
 }
 
 // MARK: - Border (테두리 두께)
@@ -39,8 +39,8 @@ enum AppSpacing {
 
 // MARK: - Card ViewModifier
 
-/// 표준 카드 스타일. 웹 .card(bg-base-100, rounded-box, shadow, 1.5px base-300 border)
-/// 및 Android CardBorderRadius/CardBorderWidth 와 동일한 룩을 적용한다.
+/// 표준 카드 스타일. Apple 카드는 무그림자 + hairline 보더 룩을 따른다.
+/// (base-200 표면, 18 코너, base-300 hairline 보더, 그림자 없음)
 /// 색은 `AppColor` 의 base-200/base-300 적응형 토큰을 사용하므로 다크모드도 대응한다.
 ///
 /// 사용: `someView.appCard()`  (패딩은 호출부 책임 — 콘텐츠 패딩과 분리)
@@ -53,13 +53,12 @@ struct AppCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: AppRadius.card, style: .continuous)
                     .strokeBorder(AppColor.base300, lineWidth: AppBorder.width)
             )
-            // subtle shadow — 웹 카드의 옅은 그림자에 대응
-            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+            // Apple 카드는 그림자 없음 — 깊이는 hairline 보더로만 표현
     }
 }
 
 extension View {
-    /// 표준 카드 스타일을 적용한다. (base-200 배경, 12 코너, 1.5 base-300 테두리, 옅은 그림자)
+    /// 표준 카드 스타일을 적용한다. (base-200 배경, 18 코너, 1.5 base-300 hairline 테두리, 무그림자)
     func appCard() -> some View {
         modifier(AppCardModifier())
     }
