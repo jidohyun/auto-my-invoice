@@ -29,7 +29,16 @@ defmodule AutoMyInvoice.Analytics do
         group_by: fragment("to_char(?, 'YYYY-MM')", i.inserted_at),
         select: %{
           month: fragment("to_char(?, 'YYYY-MM')", i.inserted_at),
-          invoiced: coalesce(sum(coalesce(i.amount_krw, i.amount)), 0),
+          invoiced:
+            coalesce(
+              sum(
+                coalesce(
+                  i.amount_krw,
+                  fragment("CASE WHEN ? = 'KRW' THEN ? ELSE 0 END", i.currency, i.amount)
+                )
+              ),
+              0
+            ),
           count: count(i.id)
         }
       )
@@ -76,7 +85,16 @@ defmodule AutoMyInvoice.Analytics do
       select: %{
         status: i.status,
         count: count(i.id),
-        total: coalesce(sum(coalesce(i.amount_krw, i.amount)), 0)
+        total:
+          coalesce(
+            sum(
+              coalesce(
+                i.amount_krw,
+                fragment("CASE WHEN ? = 'KRW' THEN ? ELSE 0 END", i.currency, i.amount)
+              )
+            ),
+            0
+          )
       }
     )
     |> Repo.all()
@@ -97,7 +115,11 @@ defmodule AutoMyInvoice.Analytics do
         where: not is_nil(i.due_date),
         select: %{
           # AMI-90: KRW-equivalent so aging buckets sum correctly across currencies.
-          amount: coalesce(i.amount_krw, i.amount),
+          amount:
+            coalesce(
+              i.amount_krw,
+              fragment("CASE WHEN ? = 'KRW' THEN ? ELSE 0 END", i.currency, i.amount)
+            ),
           paid_amount: i.paid_amount,
           currency: i.currency,
           due_date: i.due_date
@@ -145,7 +167,11 @@ defmodule AutoMyInvoice.Analytics do
         on: c.id == i.client_id,
         select: %{
           # AMI-90: KRW-equivalent so cashflow forecast sums correctly.
-          amount: coalesce(i.amount_krw, i.amount),
+          amount:
+            coalesce(
+              i.amount_krw,
+              fragment("CASE WHEN ? = 'KRW' THEN ? ELSE 0 END", i.currency, i.amount)
+            ),
           paid_amount: i.paid_amount,
           currency: i.currency,
           due_date: i.due_date,

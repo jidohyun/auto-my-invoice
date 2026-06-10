@@ -138,6 +138,71 @@ defmodule AutoMyInvoice.InvoicesAmountKrwTest do
     end
   end
 
+  describe "total_outstanding — missing FX rate must not inflate KRW total (regression)" do
+    # Regression for the dashboard bug where USD $14,000 + GBP £7,100 showed as
+    # ₩21,100 — foreign amounts were summed 1:1 as if 1 USD == 1 KRW because the
+    # coalesce(amount_krw, amount) fallback used the native amount when no rate
+    # was cached. The fix excludes uncached foreign-currency invoices (counts 0).
+    test "foreign-currency invoices without a cached rate are excluded, not summed 1:1" do
+      user = register_user!()
+      client = create_client!(user)
+
+      # No FX rate cached for USD/GBP → amount_krw stays nil on these.
+      {:ok, _} =
+        Invoices.create_invoice(user, invoice_attrs(client, %{amount: 14_000, currency: "USD"}))
+        |> mark_sent()
+
+      {:ok, _} =
+        Invoices.create_invoice(user, invoice_attrs(client, %{amount: 7_100, currency: "GBP"}))
+        |> mark_sent()
+
+      {total, _overdue, "KRW"} = Invoices.total_outstanding(user)
+
+      # The bug produced 14_000 + 7_100 = 21_100. With the fix, uncached foreign
+      # invoices contribute 0 to the KRW total (NOT their native amount).
+      refute Decimal.eq?(total, Decimal.new("21100.00")),
+             "foreign amounts must not be summed 1:1 as KRW"
+
+      assert Decimal.eq?(total, Decimal.new(0)),
+             "uncached foreign-currency invoices should contribute 0 KRW"
+    end
+
+    test "KRW invoices still fall back correctly when amount_krw is nil" do
+      user = register_user!()
+      client = create_client!(user)
+
+      # Force amount_krw to nil on a KRW invoice (simulates pre-backfill state).
+      {:ok, invoice} =
+        Invoices.create_invoice(user, invoice_attrs(client, %{amount: 50_000, currency: "KRW"}))
+        |> mark_sent()
+
+      {:ok, _} = invoice |> Ecto.Changeset.change(amount_krw: nil) |> Repo.update()
+
+      {total, _overdue, "KRW"} = Invoices.total_outstanding(user)
+
+      # KRW invoice with nil amount_krw still falls back to its amount.
+      assert Decimal.eq?(total, Decimal.new("50000.00"))
+    end
+
+    test "mixed KRW + uncached-foreign: only KRW counts" do
+      user = register_user!()
+      client = create_client!(user)
+
+      {:ok, _} =
+        Invoices.create_invoice(user, invoice_attrs(client, %{amount: 50_000, currency: "KRW"}))
+        |> mark_sent()
+
+      {:ok, _} =
+        Invoices.create_invoice(user, invoice_attrs(client, %{amount: 14_000, currency: "USD"}))
+        |> mark_sent()
+
+      {total, _overdue, "KRW"} = Invoices.total_outstanding(user)
+
+      # Only the KRW invoice contributes; the uncached USD one is excluded.
+      assert Decimal.eq?(total, Decimal.new("50000.00"))
+    end
+  end
+
   defp mark_sent({:ok, invoice}) do
     invoice
     |> Invoice.update_changeset(%{status: "sent"})

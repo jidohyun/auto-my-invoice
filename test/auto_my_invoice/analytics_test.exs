@@ -39,7 +39,10 @@ defmodule AutoMyInvoice.AnalyticsTest do
         Map.merge(
           %{
             amount: Decimal.new("1000.00"),
-            currency: "USD",
+            # KRW by default so aging/cashflow/status tests exercise amount
+            # aggregation without depending on a cached FX rate. Multi-currency
+            # behavior is covered explicitly in the currency_breakdown describe.
+            currency: "KRW",
             due_date: Date.add(Date.utc_today(), 30),
             client_id: client.id
           },
@@ -285,7 +288,7 @@ defmodule AutoMyInvoice.AnalyticsTest do
     defp create_invoice!(user, client, attrs) do
       defaults = %{
         amount: Decimal.new("1000"),
-        currency: "USD",
+        currency: "KRW",
         due_date: Date.add(Date.utc_today(), 30),
         client_id: client.id,
         status: "draft",
