@@ -66,25 +66,27 @@ defmodule AutoMyInvoice.Invoices.Invoice do
     invoice
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_number(:amount, greater_than: 0)
     |> validate_inclusion(:currency, ~w(USD EUR KRW GBP JPY))
     |> validate_inclusion(:status, @statuses)
     |> validate_due_date_not_past()
     |> generate_invoice_number()
-    |> put_amount_krw()
     |> cast_assoc(:items, with: &AutoMyInvoice.Invoices.InvoiceItem.changeset/2)
+    |> put_amount_from_items()
+    |> validate_number(:amount, greater_than: 0)
+    |> put_amount_krw()
     |> foreign_key_constraint(:client_id)
   end
 
   def update_changeset(invoice, attrs) do
     invoice
     |> cast(attrs, @required_fields ++ @optional_fields)
-    |> validate_number(:amount, greater_than: 0)
     |> validate_inclusion(:currency, ~w(USD EUR KRW GBP JPY))
     |> validate_inclusion(:status, @statuses)
     |> validate_status_transition()
-    |> put_amount_krw()
     |> cast_assoc(:items, with: &AutoMyInvoice.Invoices.InvoiceItem.changeset/2)
+    |> put_amount_from_items()
+    |> validate_number(:amount, greater_than: 0)
+    |> put_amount_krw()
   end
 
   def status_changeset(invoice, status) do
@@ -100,6 +102,32 @@ defmodule AutoMyInvoice.Invoices.Invoice do
   end
 
   ## Private
+
+  # When the invoice has line items, the authoritative total is the sum of the
+  # items (quantity * unit_price), so :amount is recomputed from them and the
+  # user-entered :amount is ignored. Without items, the directly-entered
+  # :amount stands (e.g. quick invoices). This keeps the header total and the
+  # line-item table from drifting apart.
+  defp put_amount_from_items(changeset) do
+    # Only recompute when this changeset actually casts line items. We read the
+    # cast_assoc *change* (not get_field) so an invoice whose :items association
+    # is not loaded — e.g. a status-only update — is left untouched instead of
+    # raising "association not loaded".
+    case get_change(changeset, :items) do
+      item_changes when is_list(item_changes) and item_changes != [] ->
+        total =
+          Enum.reduce(item_changes, Decimal.new(0), fn item_cs, acc ->
+            qty = Ecto.Changeset.get_field(item_cs, :quantity) || Decimal.new(0)
+            price = Ecto.Changeset.get_field(item_cs, :unit_price) || Decimal.new(0)
+            Decimal.add(acc, Decimal.mult(qty, price))
+          end)
+
+        put_change(changeset, :amount, Decimal.round(total, 2))
+
+      _ ->
+        changeset
+    end
+  end
 
   # Compute & cache amount_krw whenever amount or currency are about to be
   # written. Falls back to leaving the existing value alone when the FX rate

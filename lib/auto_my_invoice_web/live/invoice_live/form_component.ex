@@ -133,7 +133,19 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.FormComponent do
   end
 
   defp assign_form(socket, changeset) do
-    assign(socket, :form, to_form(changeset))
+    socket
+    |> assign(:form, to_form(changeset))
+    |> assign(:has_items?, has_line_items?(changeset))
+  end
+
+  # True when the form currently carries at least one line item. When items
+  # exist, :amount is derived from them (see Invoice.put_amount_from_items/1),
+  # so the amount input is shown read-only to avoid a confusing mismatch.
+  defp has_line_items?(changeset) do
+    case Ecto.Changeset.get_field(changeset, :items) do
+      items when is_list(items) -> items != []
+      _ -> false
+    end
   end
 
   # AMI-25/26: prefill the new-invoice form with the user's default currency
@@ -186,7 +198,19 @@ defmodule AutoMyInvoiceWeb.InvoiceLive.FormComponent do
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <.input field={@form[:due_date]} type="date" label="지급 기한" required />
-          <.input field={@form[:amount]} type="number" label="총 금액" step="0.01" required />
+          <div>
+            <.input
+              field={@form[:amount]}
+              type="number"
+              label="총 금액"
+              step="0.01"
+              required={!@has_items?}
+              readonly={@has_items?}
+            />
+            <p :if={@has_items?} class="text-xs text-base-content/60 mt-1">
+              품목 합계로 자동 계산됩니다.
+            </p>
+          </div>
         </div>
 
         <.input field={@form[:notes]} type="textarea" label="메모" />

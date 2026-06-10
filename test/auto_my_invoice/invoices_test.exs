@@ -103,7 +103,12 @@ defmodule AutoMyInvoice.InvoicesTest do
     test "rejects amount less than or equal to zero" do
       %{user: user} = create_user()
       client = create_client(user)
-      attrs = valid_invoice_attrs(client.id) |> Map.put(:amount, Decimal.new("-100"))
+      # No line items, so the entered amount is validated directly. (With items,
+      # amount is recomputed from the item sum, so it can't be negative.)
+      attrs =
+        valid_invoice_attrs(client.id)
+        |> Map.put(:amount, Decimal.new("-100"))
+        |> Map.delete(:items)
 
       assert {:error, changeset} = Invoices.create_invoice(user, attrs)
       assert errors_on(changeset).amount != []
@@ -148,6 +153,63 @@ defmodule AutoMyInvoice.InvoicesTest do
 
       attrs = valid_invoice_attrs(client.id)
       assert {:error, :plan_limit} = Invoices.create_invoice(user, attrs)
+    end
+
+    # Regression: invoice.amount must equal the sum of line items so the header
+    # total and the line-item table never drift apart (bug: amount ₩500,000 while
+    # the only item summed to ₩10,000).
+    test "amount is recomputed from line items, ignoring the entered amount" do
+      %{user: user} = create_user()
+      client = create_client(user)
+
+      attrs = %{
+        amount: Decimal.new("500000"),
+        currency: "KRW",
+        due_date: Date.add(Date.utc_today(), 30),
+        client_id: client.id,
+        items: [
+          %{description: "노트북 수리", quantity: Decimal.new(1), unit_price: Decimal.new("10000")}
+        ]
+      }
+
+      assert {:ok, invoice} = Invoices.create_invoice(user, attrs)
+      # entered 500000 is overridden by the item sum (10000)
+      assert Decimal.eq?(invoice.amount, Decimal.new("10000.00"))
+    end
+
+    test "amount equals the sum across multiple line items" do
+      %{user: user} = create_user()
+      client = create_client(user)
+
+      attrs = %{
+        amount: Decimal.new("1"),
+        currency: "KRW",
+        due_date: Date.add(Date.utc_today(), 30),
+        client_id: client.id,
+        items: [
+          %{description: "A", quantity: Decimal.new(2), unit_price: Decimal.new("10000")},
+          %{description: "B", quantity: Decimal.new(3), unit_price: Decimal.new("5000")}
+        ]
+      }
+
+      assert {:ok, invoice} = Invoices.create_invoice(user, attrs)
+      # 2*10000 + 3*5000 = 35000
+      assert Decimal.eq?(invoice.amount, Decimal.new("35000.00"))
+    end
+
+    test "amount stands when there are no line items (quick invoice)" do
+      %{user: user} = create_user()
+      client = create_client(user)
+
+      attrs = %{
+        amount: Decimal.new("50000"),
+        currency: "KRW",
+        due_date: Date.add(Date.utc_today(), 30),
+        client_id: client.id
+      }
+
+      assert {:ok, invoice} = Invoices.create_invoice(user, attrs)
+      assert Decimal.eq?(invoice.amount, Decimal.new("50000"))
     end
   end
 
@@ -259,13 +321,22 @@ defmodule AutoMyInvoice.InvoicesTest do
       %{user: user} = create_user()
       client = create_client(user)
 
-      {:ok, inv1} = Invoices.create_invoice(user, valid_invoice_attrs(client.id))
+      {:ok, inv1} =
+        Invoices.create_invoice(
+          user,
+          valid_invoice_attrs(client.id)
+          |> Map.put(:amount, Decimal.new("1000.00"))
+          |> Map.delete(:items)
+        )
+
       {:ok, _sent1} = Invoices.mark_as_sent(inv1)
 
       {:ok, inv2} =
         Invoices.create_invoice(
           user,
-          valid_invoice_attrs(client.id) |> Map.put(:amount, Decimal.new("2000.00"))
+          valid_invoice_attrs(client.id)
+          |> Map.put(:amount, Decimal.new("2000.00"))
+          |> Map.delete(:items)
         )
 
       {:ok, sent2} = Invoices.mark_as_sent(inv2)
