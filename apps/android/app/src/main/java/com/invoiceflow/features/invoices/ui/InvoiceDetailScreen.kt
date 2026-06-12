@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.invoiceflow.R
+import com.invoiceflow.core.util.MoneyFormatter
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
@@ -243,8 +244,8 @@ private fun InvoiceDetailContent(
         StatusPill(statusString = invoice.status)
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.invoices_field_client, invoice.client?.name ?: "-"), style = MaterialTheme.typography.bodyLarge)
-        Text(text = stringResource(R.string.invoices_field_amount, invoice.currency, invoice.amount), style = MaterialTheme.typography.bodyLarge)
-        Text(text = stringResource(R.string.invoices_field_paid, invoice.currency, invoice.paidAmount), style = MaterialTheme.typography.bodyLarge)
+        Text(text = stringResource(R.string.invoices_field_amount, MoneyFormatter.format(invoice.amount, invoice.currency)), style = MaterialTheme.typography.bodyLarge)
+        Text(text = stringResource(R.string.invoices_field_paid, MoneyFormatter.format(invoice.paidAmount, invoice.currency)), style = MaterialTheme.typography.bodyLarge)
         Text(text = stringResource(R.string.invoices_field_due_date, invoice.dueDate ?: "-"), style = MaterialTheme.typography.bodyLarge)
         invoice.sentAt?.let { Text(text = stringResource(R.string.invoices_field_sent_at, it), style = MaterialTheme.typography.bodyMedium) }
         invoice.paidAt?.let { Text(text = stringResource(R.string.invoices_field_paid_at, it), style = MaterialTheme.typography.bodyMedium) }

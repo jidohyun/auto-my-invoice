@@ -4,14 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.annotation.StringRes
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.invoiceflow.R
 import com.invoiceflow.ui.theme.StatusCancelledBg
 import com.invoiceflow.ui.theme.StatusCancelledFg
 import com.invoiceflow.ui.theme.StatusDraftBg
@@ -26,16 +29,16 @@ import com.invoiceflow.ui.theme.StatusSent
 import com.invoiceflow.ui.theme.StatusSentBg
 
 enum class InvoiceStatus(
-    val label: String,
+    @StringRes val labelRes: Int,
     val fg: Color,
     val bg: Color,
 ) {
-    PAID("Paid", StatusPaid, StatusPaidBg),
-    SENT("Sent", StatusSent, StatusSentBg),
-    OVERDUE("Overdue", StatusOverdue, StatusOverdueBg),
-    PARTIALLY_PAID("Partial", StatusPartiallyPaid, StatusPartiallyPaidBg),
-    DRAFT("Draft", StatusDraftFg, StatusDraftBg),
-    CANCELLED("Cancelled", StatusCancelledFg, StatusCancelledBg);
+    PAID(R.string.invoices_filter_paid, StatusPaid, StatusPaidBg),
+    SENT(R.string.invoices_filter_sent, StatusSent, StatusSentBg),
+    OVERDUE(R.string.invoices_filter_overdue, StatusOverdue, StatusOverdueBg),
+    PARTIALLY_PAID(R.string.invoices_filter_partially_paid, StatusPartiallyPaid, StatusPartiallyPaidBg),
+    DRAFT(R.string.invoices_filter_draft, StatusDraftFg, StatusDraftBg),
+    CANCELLED(R.string.invoice_status_cancelled, StatusCancelledFg, StatusCancelledBg);
 
     companion object {
         fun from(value: String): InvoiceStatus = entries
@@ -56,7 +59,7 @@ fun StatusPill(
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = status.label,
+            text = stringResource(status.labelRes),
             color = status.fg,
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,

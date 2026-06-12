@@ -71,6 +71,7 @@
     <string name="invoices_filter_overdue">Overdue</string>
     <string name="invoices_filter_paid">Paid</string>
     <string name="invoices_filter_partially_paid">Partially paid</string>
+    <string name="invoice_status_cancelled">Cancelled</string>
     <string name="invoices_search_placeholder">Search invoice number, client, or notes</string>
     <string name="invoices_pdf_share_chooser">Share invoice PDF</string>
     <string name="invoices_detail_title">Invoice details</string>
@@ -85,8 +86,8 @@
     <string name="invoices_record">Record</string>
     <string name="invoices_number_header">Invoice #%s</string>
     <string name="invoices_field_client">Client: %s</string>
-    <string name="invoices_field_amount">Amount: %1$s %2$s</string>
-    <string name="invoices_field_paid">Paid: %1$s %2$s</string>
+    <string name="invoices_field_amount">Amount: %s</string>
+    <string name="invoices_field_paid">Paid: %s</string>
     <string name="invoices_field_due_date">Due date: %s</string>
     <string name="invoices_field_sent_at">Sent on: %s</string>
     <string name="invoices_field_paid_at">Paid on: %s</string>

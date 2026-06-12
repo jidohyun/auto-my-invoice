@@ -72,6 +72,7 @@
     <string name="invoices_filter_overdue">연체</string>
     <string name="invoices_filter_paid">결제완료</string>
     <string name="invoices_filter_partially_paid">부분결제</string>
+    <string name="invoice_status_cancelled">취소됨</string>
     <string name="invoices_search_placeholder">송장 번호, 거래처, 메모 검색</string>
     <string name="invoices_pdf_share_chooser">송장 PDF 공유</string>
     <string name="invoices_detail_title">송장 상세</string>
@@ -86,8 +87,8 @@
     <string name="invoices_record">기록</string>
     <string name="invoices_number_header">송장 #%s</string>
     <string name="invoices_field_client">거래처: %s</string>
-    <string name="invoices_field_amount">금액: %1$s %2$s</string>
-    <string name="invoices_field_paid">결제액: %1$s %2$s</string>
+    <string name="invoices_field_amount">금액: %s</string>
+    <string name="invoices_field_paid">결제액: %s</string>
     <string name="invoices_field_due_date">지급 기한: %s</string>
     <string name="invoices_field_sent_at">발송일: %s</string>
     <string name="invoices_field_paid_at">결제일: %s</string>

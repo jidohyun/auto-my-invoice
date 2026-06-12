@@ -52,6 +52,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.invoiceflow.R
+import com.invoiceflow.core.util.MoneyFormatter
+import com.invoiceflow.ui.components.InvoiceStatus
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
@@ -221,17 +223,14 @@ private fun InvoiceListItem(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${invoice.currency} ${invoice.amount}",
+                    text = MoneyFormatter.format(invoice.amount, invoice.currency),
                     style = MaterialTheme.typography.titleMedium,
                 )
+                val status = InvoiceStatus.from(invoice.status)
                 Text(
-                    text = invoice.status.uppercase(),
+                    text = stringResource(status.labelRes),
                     style = MaterialTheme.typography.labelLarge,
-                    color = when (invoice.status) {
-                        "paid" -> MaterialTheme.colorScheme.secondary
-                        "overdue" -> MaterialTheme.colorScheme.error
-                        else -> MaterialTheme.colorScheme.onSurface
-                    }
+                    color = status.fg,
                 )
             }
         }
