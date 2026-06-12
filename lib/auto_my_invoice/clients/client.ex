@@ -34,7 +34,21 @@ defmodule AutoMyInvoice.Clients.Client do
     |> validate_length(:name, min: 1, max: 200)
     |> validate_length(:company, max: 200)
     |> validate_length(:notes, max: 2000)
+    |> validate_timezone(:timezone)
     |> unique_constraint([:user_id, :email], message: "이미 등록된 클라이언트 이메일입니다")
+  end
+
+  # Reject anything that is not a real IANA timezone. The client timezone is fed
+  # straight into DateTime.from_naive/2 when scheduling reminders, so an invalid
+  # value (e.g. "Asia/Seoul (KST)") would silently fall back to UTC and deliver
+  # reminders at the wrong local time.
+  defp validate_timezone(changeset, field) do
+    validate_change(changeset, field, fn ^field, tz ->
+      case DateTime.now(tz) do
+        {:error, :time_zone_not_found} -> [{field, "유효한 시간대가 아닙니다"}]
+        _ -> []
+      end
+    end)
   end
 
   def stats_changeset(client, attrs) do

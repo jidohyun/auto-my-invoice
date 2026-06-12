@@ -7,16 +7,16 @@ defmodule AutoMyInvoiceWeb.ClientLive.New do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "New Client")
+     |> assign(:page_title, gettext("새 거래처"))
      |> assign(:client, %Client{})}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <.page_header title="New Client">
+    <.page_header title={gettext("새 거래처")}>
       <:actions>
-        <.link navigate={~p"/clients"} class="btn btn-ghost btn-sm">← Back</.link>
+        <.link navigate={~p"/clients"} class="btn btn-ghost btn-sm">{gettext("← 목록")}</.link>
       </:actions>
     </.page_header>
 

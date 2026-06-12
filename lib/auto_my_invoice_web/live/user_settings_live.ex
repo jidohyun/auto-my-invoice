@@ -360,7 +360,7 @@ defmodule AutoMyInvoiceWeb.UserSettingsLive do
               type="color"
               name="brand[brand_color]"
               id="brand_brand_color"
-              value={@brand_form[:brand_color].value || "#6d28d9"}
+              value={@brand_form[:brand_color].value || "#0066cc"}
               class="input input-bordered h-12 w-24 p-1"
             />
             <label class="label">

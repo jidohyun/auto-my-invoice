@@ -214,11 +214,11 @@ defmodule AutoMyInvoiceWeb.UiComponents do
     days = Date.diff(date, Date.utc_today())
 
     cond do
-      days == 0 -> "Today"
-      days == 1 -> "Tomorrow"
-      days == -1 -> "Yesterday"
-      days > 1 -> "In #{days} days"
-      days < -1 -> "#{abs(days)} days ago"
+      days == 0 -> gettext("오늘")
+      days == 1 -> gettext("내일")
+      days == -1 -> gettext("어제")
+      days > 1 -> gettext("%{count}일 후", count: days)
+      days < -1 -> gettext("%{count}일 전", count: abs(days))
     end
   end
 

@@ -12,82 +12,82 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 
 msgid "can't be blank"
-msgstr ""
+msgstr "필수 입력 항목입니다"
 
 msgid "has already been taken"
-msgstr ""
+msgstr "이미 사용 중입니다"
 
 msgid "is invalid"
-msgstr ""
+msgstr "올바르지 않습니다"
 
 msgid "must be accepted"
-msgstr ""
+msgstr "동의가 필요합니다"
 
 msgid "has invalid format"
-msgstr ""
+msgstr "형식이 올바르지 않습니다"
 
 msgid "has an invalid entry"
-msgstr ""
+msgstr "잘못된 항목이 포함되어 있습니다"
 
 msgid "is reserved"
-msgstr ""
+msgstr "사용할 수 없는 값입니다"
 
 msgid "does not match confirmation"
-msgstr ""
+msgstr "확인 값과 일치하지 않습니다"
 
 msgid "is still associated with this entry"
-msgstr ""
+msgstr "이 항목과 아직 연결되어 있습니다"
 
 msgid "are still associated with this entry"
-msgstr ""
+msgstr "이 항목과 아직 연결되어 있습니다"
 
 msgid "should have %{count} item(s)"
 msgid_plural "should have %{count} item(s)"
-msgstr[0] ""
+msgstr[0] "%{count}개의 항목이 필요합니다"
 
 msgid "should be %{count} character(s)"
 msgid_plural "should be %{count} character(s)"
-msgstr[0] ""
+msgstr[0] "%{count}자여야 합니다"
 
 msgid "should be %{count} byte(s)"
 msgid_plural "should be %{count} byte(s)"
-msgstr[0] ""
+msgstr[0] "%{count}바이트여야 합니다"
 
 msgid "should have at least %{count} item(s)"
 msgid_plural "should have at least %{count} item(s)"
-msgstr[0] ""
+msgstr[0] "최소 %{count}개의 항목이 필요합니다"
 
 msgid "should be at least %{count} character(s)"
 msgid_plural "should be at least %{count} character(s)"
-msgstr[0] ""
+msgstr[0] "최소 %{count}자 이상이어야 합니다"
 
 msgid "should be at least %{count} byte(s)"
 msgid_plural "should be at least %{count} byte(s)"
-msgstr[0] ""
+msgstr[0] "최소 %{count}바이트 이상이어야 합니다"
 
 msgid "should have at most %{count} item(s)"
 msgid_plural "should have at most %{count} item(s)"
-msgstr[0] ""
+msgstr[0] "최대 %{count}개의 항목까지 가능합니다"
 
 msgid "should be at most %{count} character(s)"
 msgid_plural "should be at most %{count} character(s)"
-msgstr[0] ""
+msgstr[0] "최대 %{count}자까지 가능합니다"
 
 msgid "should be at most %{count} byte(s)"
 msgid_plural "should be at most %{count} byte(s)"
-msgstr[0] ""
+msgstr[0] "최대 %{count}바이트까지 가능합니다"
 
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "%{number}보다 작아야 합니다"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "%{number}보다 커야 합니다"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "%{number} 이하여야 합니다"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "%{number} 이상이어야 합니다"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "%{number}와(과) 같아야 합니다"

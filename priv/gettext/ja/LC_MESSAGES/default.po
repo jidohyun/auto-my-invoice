@@ -11,8 +11,8 @@ msgstr ""
 "Language: ja\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:122
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:59
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:135
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "%{plan} 플랜"
 msgstr "%{plan} プラン"
@@ -27,7 +27,7 @@ msgstr "%{status} の請求書はありません。"
 msgid "(선택)"
 msgstr "(任意)"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:157
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:175
 #, elixir-autogen, elixir-format
 msgid "AI가 생성하는 리마인더 이메일 톤에 반영됩니다"
 msgstr "AIが生成するリマインダーメールのトーンに反映されます"
@@ -47,7 +47,7 @@ msgstr "AutoMyInvoice を始める"
 msgid "GitHub으로 가입"
 msgstr "GitHubで登録"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:56
+#: lib/auto_my_invoice_web/live/user_login_live.ex:59
 #, elixir-autogen, elixir-format
 msgid "GitHub으로 로그인"
 msgstr "GitHubでログイン"
@@ -71,7 +71,7 @@ msgstr "閉じる"
 #: lib/auto_my_invoice_web/components/layouts.ex:112
 #: lib/auto_my_invoice_web/live/client_live/index.ex:13
 #: lib/auto_my_invoice_web/live/client_live/index.ex:29
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:168
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:181
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:199
 #, elixir-autogen, elixir-format
 msgid "거래처"
@@ -102,7 +102,7 @@ msgstr "検索条件に一致する %{status} の請求書はありません。"
 msgid "검색 조건에 맞는 송장이 없습니다."
 msgstr "検索条件に一致する請求書はありません。"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:29
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:30
 #, elixir-autogen, elixir-format
 msgid "격식 있음"
 msgstr "フォーマル"
@@ -114,14 +114,14 @@ msgid "결제"
 msgstr "お支払い"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:53
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:222
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:235
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:13
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:142
 #, elixir-autogen, elixir-format
 msgid "결제완료"
 msgstr "支払済み"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:48
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "계정"
 msgstr "アカウント"
@@ -136,12 +136,12 @@ msgstr "アカウントを作成"
 msgid "계정 생성 중..."
 msgstr "アカウントを作成中..."
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:119
+#: lib/auto_my_invoice_web/live/user_login_live.ex:122
 #, elixir-autogen, elixir-format
 msgid "계정이 없으신가요?"
 msgstr "アカウントをお持ちでないですか？"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:169
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:182
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:201
 #, elixir-autogen, elixir-format
 msgid "금액"
@@ -164,13 +164,13 @@ msgstr "ダッシュボード"
 msgid "등록된 거래처가 없습니다"
 msgstr "登録された取引先がありません"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:62
+#: lib/auto_my_invoice_web/live/user_login_live.ex:65
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:65
 #, elixir-autogen, elixir-format
 msgid "또는 이메일로 계속"
 msgstr "またはメールで続行"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:137
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "또는 클릭해서 파일 선택 (PDF, PNG, JPG)"
 msgstr "またはクリックしてファイルを選択 (PDF, PNG, JPG)"
@@ -180,7 +180,7 @@ msgstr "またはクリックしてファイルを選択 (PDF, PNG, JPG)"
 msgid "로그아웃"
 msgstr "ログアウト"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:113
+#: lib/auto_my_invoice_web/live/user_login_live.ex:116
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:150
 #, elixir-autogen, elixir-format
 msgid "로그인"
@@ -192,7 +192,7 @@ msgid "로그인하여 송장을 관리하세요"
 msgstr "ログインして請求書を管理しましょう"
 
 #: lib/auto_my_invoice_web/components/layouts.ex:155
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:228
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:713
 #, elixir-autogen, elixir-format
 msgid "무료"
 msgstr "無料"
@@ -202,26 +202,26 @@ msgstr "無料"
 msgid "문제가 발생했습니다"
 msgstr "問題が発生しました"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:68
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:70
 #, elixir-autogen, elixir-format
 msgid "미수금 총액"
 msgstr "未収金の合計"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:54
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:223
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:236
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:11
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:140
 #, elixir-autogen, elixir-format
 msgid "발송"
 msgstr "送信済み"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:164
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:301
 #, elixir-autogen, elixir-format
 msgid "변경사항 저장"
 msgstr "変更を保存"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:56
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:225
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:238
 #, elixir-autogen, elixir-format
 msgid "부분결제"
 msgstr "一部支払い"
@@ -232,58 +232,60 @@ msgstr "一部支払い"
 msgid "분석"
 msgstr "分析"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:140
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:158
 #, elixir-autogen, elixir-format
 msgid "브랜드 톤"
 msgstr "ブランドトーン"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:90
+#: lib/auto_my_invoice_web/live/user_login_live.ex:93
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:101
 #, elixir-autogen, elixir-format
 msgid "비밀번호"
 msgstr "パスワード"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:97
+#: lib/auto_my_invoice_web/live/user_login_live.ex:100
 #, elixir-autogen, elixir-format
 msgid "비밀번호를 입력하세요"
 msgstr "パスワードを入力してください"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:106
+#: lib/auto_my_invoice_web/live/user_login_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "비밀번호를 잊으셨나요?"
 msgstr "パスワードをお忘れですか？"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:171
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:184
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:203
 #, elixir-autogen, elixir-format
 msgid "상태"
 msgstr "ステータス"
 
 #: lib/auto_my_invoice_web/live/client_live/index.ex:34
+#: lib/auto_my_invoice_web/live/client_live/new.ex:10
+#: lib/auto_my_invoice_web/live/client_live/new.ex:17
 #, elixir-autogen, elixir-format
 msgid "새 거래처"
 msgstr "新規取引先"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:60
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:62
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:151
 #, elixir-autogen, elixir-format
 msgid "새 송장"
 msgstr "新規請求書"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:86
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "선택한 언어가 화면 전체에 적용됩니다"
 msgstr "選択した言語が画面全体に適用されます"
 
 #: lib/auto_my_invoice_web/components/layouts.ex:42
 #: lib/auto_my_invoice_web/components/layouts.ex:117
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:44
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:180
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:62
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:535
 #, elixir-autogen, elixir-format
 msgid "설정"
 msgstr "設定"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:217
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:580
 #, elixir-autogen, elixir-format
 msgid "설정이 저장되었습니다."
 msgstr "設定を保存しました。"
@@ -301,13 +303,13 @@ msgstr "請求書"
 msgid "송장 리마인더를 자동화하고 더 빠르게 수금하세요."
 msgstr "請求書のリマインダーを自動化し、より早く回収しましょう。"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:158
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:171
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:189
 #, elixir-autogen, elixir-format
 msgid "송장 만들기"
 msgstr "請求書を作成"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:167
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:180
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:198
 #, elixir-autogen, elixir-format
 msgid "송장 번호"
@@ -323,7 +325,7 @@ msgstr "請求書番号、取引先、メモで検索..."
 msgid "송장이 없습니다"
 msgstr "請求書がありません"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:79
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:92
 #, elixir-autogen, elixir-format
 msgid "수금률"
 msgstr "回収率"
@@ -334,32 +336,33 @@ msgid "수정"
 msgstr "編集"
 
 #: lib/auto_my_invoice_web/components/layouts.ex:156
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:229
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:714
 #, elixir-autogen, elixir-format
 msgid "스타터"
 msgstr "スターター"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:121
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:101
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:139
 #, elixir-autogen, elixir-format
 msgid "시간대"
 msgstr "タイムゾーン"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:51
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:53
 #, elixir-autogen, elixir-format
 msgid "실시간"
 msgstr "リアルタイム"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:152
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:165
 #, elixir-autogen, elixir-format
 msgid "아직 송장이 없습니다"
 msgstr "まだ請求書がありません"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:68
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:86
 #, elixir-autogen, elixir-format
 msgid "언어"
 msgstr "言語"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:195
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:558
 #, elixir-autogen, elixir-format
 msgid "언어를 변경하지 못했습니다."
 msgstr "言語を変更できませんでした。"
@@ -370,35 +373,37 @@ msgstr "言語を変更できませんでした。"
 msgid "업로드"
 msgstr "アップロード"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:136
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "여기로 송장 파일을 끌어다 놓으세요"
 msgstr "ここに請求書ファイルをドラッグ＆ドロップしてください"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:55
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:224
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:237
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:12
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:141
 #, elixir-autogen, elixir-format
 msgid "연체"
 msgstr "延滞"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:74
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "연체 %{count}건"
 msgstr "延滞 %{count} 件"
 
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:93
 #: lib/auto_my_invoice_web/live/client_live/index.ex:69
 #, elixir-autogen, elixir-format
 msgid "이름"
 msgstr "名前"
 
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:94
 #: lib/auto_my_invoice_web/live/client_live/index.ex:70
 #, elixir-autogen, elixir-format
 msgid "이메일"
 msgstr "メール"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:75
+#: lib/auto_my_invoice_web/live/user_login_live.ex:78
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:81
 #, elixir-autogen, elixir-format
 msgid "이메일 주소"
@@ -409,7 +414,7 @@ msgstr "メールアドレス"
 msgid "이미 계정이 있으신가요?"
 msgstr "すでにアカウントをお持ちですか？"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:106
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:119
 #, elixir-autogen, elixir-format
 msgid "이번 달 송장:"
 msgstr "今月の請求書:"
@@ -420,14 +425,14 @@ msgid "인터넷 연결을 찾을 수 없습니다"
 msgstr "インターネット接続が見つかりません"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:57
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:226
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:239
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:10
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:139
 #, elixir-autogen, elixir-format
 msgid "임시저장"
 msgstr "下書き"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:94
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:107
 #, elixir-autogen, elixir-format
 msgid "자동 팔로업"
 msgstr "自動フォローアップ"
@@ -437,7 +442,7 @@ msgstr "自動フォローアップ"
 msgid "작성일"
 msgstr "作成日"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:172
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:185
 #, elixir-autogen, elixir-format
 msgid "작업"
 msgstr "操作"
@@ -448,7 +453,8 @@ msgstr "操作"
 msgid "재연결 중..."
 msgstr "再接続中..."
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:163
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:106
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:300
 #, elixir-autogen, elixir-format
 msgid "저장 중..."
 msgstr "保存中..."
@@ -458,28 +464,28 @@ msgstr "保存中..."
 msgid "전체"
 msgstr "すべて"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:146
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "전체 보기"
 msgstr "すべて表示"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:57
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:59
 #, elixir-autogen, elixir-format
 msgid "즉시 QR"
 msgstr "即時QR"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:170
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:183
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:205
 #, elixir-autogen, elixir-format
 msgid "지급 기한"
 msgstr "支払期限"
 
-#: lib/auto_my_invoice_web/components/ui_components.ex:283
+#: lib/auto_my_invoice_web/components/ui_components.ex:281
 #, elixir-autogen, elixir-format
 msgid "지원 형식: %{formats} (최대 %{size})"
 msgstr "対応形式: %{formats} (最大 %{size})"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:91
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:104
 #, elixir-autogen, elixir-format
 msgid "진행 중인 리마인더"
 msgstr "進行中のリマインダー"
@@ -489,7 +495,7 @@ msgstr "進行中のリマインダー"
 msgid "첫 거래처를 등록하고 송장을 발행해 보세요."
 msgstr "最初の取引先を登録して請求書を発行しましょう。"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:153
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:166
 #: lib/auto_my_invoice_web/live/invoice_live/index.ex:130
 #, elixir-autogen, elixir-format
 msgid "첫 송장을 발행해 시작해 보세요."
@@ -500,7 +506,7 @@ msgstr "最初の請求書を発行して始めましょう。"
 msgid "총 청구액"
 msgstr "請求総額"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:144
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:157
 #, elixir-autogen, elixir-format
 msgid "최근 송장"
 msgstr "最近の請求書"
@@ -511,54 +517,54 @@ msgid "최소 8자 이상"
 msgstr "8文字以上"
 
 #: lib/auto_my_invoice_web/components/ui_components.ex:58
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:227
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:240
 #, elixir-autogen, elixir-format
 msgid "취소"
 msgstr "キャンセル"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:28
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:29
 #, elixir-autogen, elixir-format
 msgid "친근함"
 msgstr "フレンドリー"
 
-#: lib/auto_my_invoice_web/components/ui_components.ex:287
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:138
+#: lib/auto_my_invoice_web/components/ui_components.ex:285
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:151
 #, elixir-autogen, elixir-format
 msgid "파일 선택"
 msgstr "ファイルを選択"
 
-#: lib/auto_my_invoice_web/components/ui_components.ex:281
+#: lib/auto_my_invoice_web/components/ui_components.ex:279
 #, elixir-autogen, elixir-format
 msgid "파일을 여기로 끌어다 놓거나 클릭해서 업로드하세요"
 msgstr "ここにファイルをドラッグ＆ドロップするか、クリックしてアップロードしてください"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:73
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "표시 언어"
 msgstr "表示言語"
 
 #: lib/auto_my_invoice_web/components/layouts.ex:157
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:230
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:715
 #, elixir-autogen, elixir-format
 msgid "프로"
 msgstr "プロ"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:27
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:28
 #, elixir-autogen, elixir-format
 msgid "프로페셔널"
 msgstr "プロフェッショナル"
 
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:96
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:114
 #, elixir-autogen, elixir-format
 msgid "프로필"
 msgstr "プロフィール"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:118
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:131
 #, elixir-autogen, elixir-format
 msgid "플랜 업그레이드"
 msgstr "プランをアップグレード"
 
-#: lib/auto_my_invoice_web/live/dashboard_live.ex:48
+#: lib/auto_my_invoice_web/live/dashboard_live.ex:50
 #, elixir-autogen, elixir-format
 msgid "한눈에 보기"
 msgstr "一目で確認"
@@ -568,19 +574,102 @@ msgstr "一目で確認"
 msgid "회사"
 msgstr "会社"
 
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:95
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:124
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:107
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:125
 #, elixir-autogen, elixir-format
 msgid "회사명"
 msgstr "会社名"
 
 #: lib/auto_my_invoice_web/live/user_registration_live.ex:132
-#: lib/auto_my_invoice_web/live/user_settings_live.ex:115
+#: lib/auto_my_invoice_web/live/user_settings_live.ex:133
 #, elixir-autogen, elixir-format
 msgid "회사명을 입력하세요"
 msgstr "会社名を入力してください"
 
-#: lib/auto_my_invoice_web/live/user_login_live.ex:124
+#: lib/auto_my_invoice_web/live/user_login_live.ex:127
 #, elixir-autogen, elixir-format
 msgid "회원가입"
 msgstr "新規登録"
+
+#: lib/auto_my_invoice_web/components/ui_components.ex:221
+#, elixir-autogen, elixir-format
+msgid "%{count}일 전"
+msgstr ""
+
+#: lib/auto_my_invoice_web/components/ui_components.ex:220
+#, elixir-autogen, elixir-format
+msgid "%{count}일 후"
+msgstr ""
+
+#: lib/auto_my_invoice_web/controllers/user_oauth_controller.ex:51
+#, elixir-autogen, elixir-format
+msgid "계정을 생성하지 못했습니다."
+msgstr ""
+
+#: lib/auto_my_invoice_web/components/ui_components.ex:218
+#, elixir-autogen, elixir-format
+msgid "내일"
+msgstr ""
+
+#: lib/auto_my_invoice_web/controllers/user_oauth_controller.ex:45
+#, elixir-autogen, elixir-format
+msgid "로그인되었습니다."
+msgstr ""
+
+#: lib/auto_my_invoice_web/controllers/user_oauth_controller.ex:27
+#, elixir-autogen, elixir-format
+msgid "소셜 로그인에 실패했습니다. 다시 시도해 주세요."
+msgstr ""
+
+#: lib/auto_my_invoice_web/controllers/user_oauth_controller.ex:20
+#, elixir-autogen, elixir-format
+msgid "소셜 로그인을 사용할 수 없습니다."
+msgstr ""
+
+#: lib/auto_my_invoice_web/components/ui_components.ex:219
+#, elixir-autogen, elixir-format
+msgid "어제"
+msgstr ""
+
+#: lib/auto_my_invoice_web/components/ui_components.ex:217
+#, elixir-autogen, elixir-format
+msgid "오늘"
+msgstr ""
+
+#: lib/auto_my_invoice_web/controllers/user_oauth_controller.ex:38
+#, elixir-autogen, elixir-format
+msgid "이메일 정보를 가져오지 못했습니다. 이메일 공개를 허용해 주세요."
+msgstr ""
+
+#: lib/auto_my_invoice_web/live/client_live/edit.ex:13
+#: lib/auto_my_invoice_web/live/client_live/edit.ex:20
+#, elixir-autogen, elixir-format
+msgid "%{name} 수정"
+msgstr ""
+
+#: lib/auto_my_invoice_web/live/client_live/edit.ex:23
+#: lib/auto_my_invoice_web/live/client_live/new.ex:19
+#, elixir-autogen, elixir-format
+msgid "← 목록"
+msgstr ""
+
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:107
+#, elixir-autogen, elixir-format, fuzzy
+msgid "거래처 저장"
+msgstr "取引先"
+
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:104
+#, elixir-autogen, elixir-format
+msgid "메모"
+msgstr ""
+
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:96
+#, elixir-autogen, elixir-format
+msgid "전화번호"
+msgstr ""
+
+#: lib/auto_my_invoice_web/live/client_live/form_component.ex:97
+#, elixir-autogen, elixir-format
+msgid "주소"
+msgstr ""

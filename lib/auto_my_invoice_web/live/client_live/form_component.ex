@@ -4,17 +4,21 @@ defmodule AutoMyInvoiceWeb.ClientLive.FormComponent do
   alias AutoMyInvoice.Clients
   alias AutoMyInvoice.Clients.Client
 
+  # {label, value} tuples for options_for_select. The value MUST be a valid IANA
+  # timezone identifier (e.g. "Asia/Seoul"), because it is stored on the client
+  # and passed straight to DateTime.from_naive/2 when scheduling reminders. The
+  # human-readable abbreviation belongs in the label only.
   @timezones [
     {"UTC", "UTC"},
-    {"Asia/Seoul", "Asia/Seoul (KST)"},
-    {"Asia/Tokyo", "Asia/Tokyo (JST)"},
-    {"America/New_York", "America/New_York (EST)"},
-    {"America/Los_Angeles", "America/Los_Angeles (PST)"},
-    {"America/Chicago", "America/Chicago (CST)"},
-    {"Europe/London", "Europe/London (GMT)"},
-    {"Europe/Paris", "Europe/Paris (CET)"},
-    {"Europe/Berlin", "Europe/Berlin (CET)"},
-    {"Australia/Sydney", "Australia/Sydney (AEST)"}
+    {"Asia/Seoul (KST)", "Asia/Seoul"},
+    {"Asia/Tokyo (JST)", "Asia/Tokyo"},
+    {"America/New_York (EST)", "America/New_York"},
+    {"America/Los_Angeles (PST)", "America/Los_Angeles"},
+    {"America/Chicago (CST)", "America/Chicago"},
+    {"Europe/London (GMT)", "Europe/London"},
+    {"Europe/Paris (CET)", "Europe/Paris"},
+    {"Europe/Berlin (CET)", "Europe/Berlin"},
+    {"Australia/Sydney (AEST)", "Australia/Sydney"}
   ]
 
   @impl true
@@ -50,7 +54,7 @@ defmodule AutoMyInvoiceWeb.ClientLive.FormComponent do
       {:ok, client} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Client created successfully")
+         |> put_flash(:info, "거래처가 생성되었습니다")
          |> push_navigate(to: ~p"/clients/#{client.id}")}
 
       {:error, changeset} ->
@@ -63,7 +67,7 @@ defmodule AutoMyInvoiceWeb.ClientLive.FormComponent do
       {:ok, client} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Client updated successfully")
+         |> put_flash(:info, "거래처가 수정되었습니다")
          |> push_navigate(to: ~p"/clients/#{client.id}")}
 
       {:error, changeset} ->
@@ -86,16 +90,21 @@ defmodule AutoMyInvoiceWeb.ClientLive.FormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <.input field={@form[:name]} type="text" label="Name" required />
-        <.input field={@form[:email]} type="email" label="Email" required />
-        <.input field={@form[:company]} type="text" label="Company" />
-        <.input field={@form[:phone]} type="tel" label="Phone" />
-        <.input field={@form[:address]} type="text" label="Address" />
-        <.input field={@form[:timezone]} type="select" label="Timezone" options={@timezones} />
-        <.input field={@form[:notes]} type="textarea" label="Notes" />
+        <.input field={@form[:name]} type="text" label={gettext("이름")} required />
+        <.input field={@form[:email]} type="email" label={gettext("이메일")} required />
+        <.input field={@form[:company]} type="text" label={gettext("회사명")} />
+        <.input field={@form[:phone]} type="tel" label={gettext("전화번호")} />
+        <.input field={@form[:address]} type="text" label={gettext("주소")} />
+        <.input
+          field={@form[:timezone]}
+          type="select"
+          label={gettext("시간대")}
+          options={@timezones}
+        />
+        <.input field={@form[:notes]} type="textarea" label={gettext("메모")} />
         <:actions>
-          <.button type="submit" phx-disable-with="Saving..." class="btn btn-primary">
-            Save Client
+          <.button type="submit" phx-disable-with={gettext("저장 중...")} class="btn btn-primary">
+            {gettext("거래처 저장")}
           </.button>
         </:actions>
       </.simple_form>

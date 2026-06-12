@@ -28,6 +28,26 @@ defmodule AutoMyInvoice.ClientsTest do
       assert client.user_id == user.id
     end
 
+    # C-TZ-1: 유효한 IANA 시간대만 저장 (회귀: 라벨이 value로 새던 버그)
+    test "accepts a valid IANA timezone value" do
+      %{user: user} = create_user()
+
+      attrs = %{name: "TZ", email: "tz@example.com", timezone: "Asia/Seoul"}
+      assert {:ok, %Client{} = client} = Clients.create_client(user.id, attrs)
+      assert client.timezone == "Asia/Seoul"
+      # 저장된 값이 실제 시간대 계산에 사용 가능해야 한다.
+      assert {:ok, _dt} = DateTime.now(client.timezone)
+    end
+
+    # C-TZ-2: 라벨 형태의 잘못된 시간대는 거부
+    test "rejects a label-shaped timezone like 'Asia/Seoul (KST)'" do
+      %{user: user} = create_user()
+
+      attrs = %{name: "TZ", email: "tz2@example.com", timezone: "Asia/Seoul (KST)"}
+      assert {:error, changeset} = Clients.create_client(user.id, attrs)
+      assert %{timezone: ["유효한 시간대가 아닙니다"]} = errors_on(changeset)
+    end
+
     # C-2: 필수 필드 누락 시 실패
     test "fails without required fields" do
       %{user: user} = create_user()

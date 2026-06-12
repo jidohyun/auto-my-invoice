@@ -10,16 +10,18 @@ defmodule AutoMyInvoiceWeb.ClientLive.Edit do
 
     {:ok,
      socket
-     |> assign(:page_title, "Edit #{client.name}")
+     |> assign(:page_title, gettext("%{name} 수정", name: client.name))
      |> assign(:client, client)}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <.page_header title={"Edit #{@client.name}"}>
+    <.page_header title={gettext("%{name} 수정", name: @client.name)}>
       <:actions>
-        <.link navigate={~p"/clients/#{@client.id}"} class="btn btn-ghost btn-sm">← Back</.link>
+        <.link navigate={~p"/clients/#{@client.id}"} class="btn btn-ghost btn-sm">
+          {gettext("← 목록")}
+        </.link>
       </:actions>
     </.page_header>
 
