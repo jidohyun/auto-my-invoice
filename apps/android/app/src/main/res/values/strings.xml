@@ -93,6 +93,14 @@
     <string name="invoices_field_sent_at">발송일: %s</string>
     <string name="invoices_field_paid_at">결제일: %s</string>
     <string name="invoices_field_notes">메모: %s</string>
+    <!-- invoice detail: structured section headings + meta-row labels -->
+    <string name="invoices_section_client">거래처</string>
+    <string name="invoices_section_details">결제 정보</string>
+    <string name="invoices_section_notes">메모</string>
+    <string name="invoices_meta_paid">결제액</string>
+    <string name="invoices_meta_due_date">지급 기한</string>
+    <string name="invoices_meta_sent_at">발송일</string>
+    <string name="invoices_meta_paid_at">결제일</string>
     <string name="invoices_action_send">발송</string>
     <string name="invoices_mark_paid">결제 완료로 표시</string>
     <string name="invoices_send_reminder">리마인더 발송</string>

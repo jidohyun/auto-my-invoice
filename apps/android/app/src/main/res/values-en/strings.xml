@@ -92,6 +92,14 @@
     <string name="invoices_field_sent_at">Sent on: %s</string>
     <string name="invoices_field_paid_at">Paid on: %s</string>
     <string name="invoices_field_notes">Notes: %s</string>
+    <!-- invoice detail: structured section headings + meta-row labels -->
+    <string name="invoices_section_client">Client</string>
+    <string name="invoices_section_details">Payment details</string>
+    <string name="invoices_section_notes">Notes</string>
+    <string name="invoices_meta_paid">Paid</string>
+    <string name="invoices_meta_due_date">Due date</string>
+    <string name="invoices_meta_sent_at">Sent on</string>
+    <string name="invoices_meta_paid_at">Paid on</string>
     <string name="invoices_action_send">Send</string>
     <string name="invoices_mark_paid">Mark as paid</string>
     <string name="invoices_send_reminder">Send reminder</string>

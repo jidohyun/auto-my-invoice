@@ -21,6 +21,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,9 +46,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.invoiceflow.R
+import com.invoiceflow.core.util.DateFormat
 import com.invoiceflow.core.util.MoneyFormatter
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -238,23 +242,17 @@ private fun InvoiceDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(text = stringResource(R.string.invoices_number_header, invoice.invoiceNumber), style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        StatusPill(statusString = invoice.status)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.invoices_field_client, invoice.client?.name ?: "-"), style = MaterialTheme.typography.bodyLarge)
-        Text(text = stringResource(R.string.invoices_field_amount, MoneyFormatter.format(invoice.amount, invoice.currency)), style = MaterialTheme.typography.bodyLarge)
-        Text(text = stringResource(R.string.invoices_field_paid, MoneyFormatter.format(invoice.paidAmount, invoice.currency)), style = MaterialTheme.typography.bodyLarge)
-        Text(text = stringResource(R.string.invoices_field_due_date, invoice.dueDate ?: "-"), style = MaterialTheme.typography.bodyLarge)
-        invoice.sentAt?.let { Text(text = stringResource(R.string.invoices_field_sent_at, it), style = MaterialTheme.typography.bodyMedium) }
-        invoice.paidAt?.let { Text(text = stringResource(R.string.invoices_field_paid_at, it), style = MaterialTheme.typography.bodyMedium) }
-        invoice.notes?.takeIf { it.isNotBlank() }?.let {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = stringResource(R.string.invoices_field_notes, it), style = MaterialTheme.typography.bodyMedium)
-        }
+        // Header card: number + status, the headline amount, and the due date —
+        // mirrors the iOS detail header instead of a flat "label: value" dump.
+        HeaderCard(invoice)
 
-        Spacer(modifier = Modifier.height(24.dp))
+        invoice.client?.let { ClientSection(it) }
+
+        DetailsSection(invoice)
+
+        invoice.notes?.takeIf { it.isNotBlank() }?.let { NotesSection(it) }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -281,7 +279,6 @@ private fun InvoiceDetailContent(
         }
 
         if (isUnpaid) {
-            Spacer(modifier = Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -303,7 +300,6 @@ private fun InvoiceDetailContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(
             onClick = onDownloadPdf,
             enabled = !isDownloadingPdf,
@@ -315,6 +311,106 @@ private fun InvoiceDetailContent(
                 Text(stringResource(R.string.invoices_download_pdf))
             }
         }
+    }
+}
+
+@Composable
+private fun HeaderCard(invoice: InvoiceDto) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.invoices_number_header, invoice.invoiceNumber),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                StatusPill(statusString = invoice.status)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = MoneyFormatter.format(invoice.amount, invoice.currency),
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            DateFormat.date(invoice.dueDate)?.let { due ->
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.invoices_field_due_date, due),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientSection(client: com.invoiceflow.features.clients.data.model.ClientDto) {
+    SectionCard(stringResource(R.string.invoices_section_client)) {
+        Text(client.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        client.email?.takeIf { it.isNotBlank() }?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        client.company?.takeIf { it.isNotBlank() }?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun DetailsSection(invoice: InvoiceDto) {
+    SectionCard(stringResource(R.string.invoices_section_details)) {
+        MetaRow(
+            stringResource(R.string.invoices_meta_paid),
+            MoneyFormatter.format(invoice.paidAmount, invoice.currency),
+        )
+        DateFormat.instant(invoice.sentAt)?.let {
+            MetaRow(stringResource(R.string.invoices_meta_sent_at), it)
+        }
+        DateFormat.instant(invoice.paidAt)?.let {
+            MetaRow(stringResource(R.string.invoices_meta_paid_at), it)
+        }
+    }
+}
+
+@Composable
+private fun NotesSection(notes: String) {
+    SectionCard(stringResource(R.string.invoices_section_notes)) {
+        Text(notes, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+/** A titled card used by the client / details / notes sections. */
+@Composable
+private fun SectionCard(title: String, content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            content()
+        }
+    }
+}
+
+/** A label/value row for the payment-details meta items. */
+@Composable
+private fun MetaRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
     }
 }
 
