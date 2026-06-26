@@ -211,4 +211,12 @@
     <!-- shared components (i18n batch 2) -->
     <string name="common_or_continue_with_email">or continue with email</string>
     <string name="common_retry">Try again</string>
+
+    <!-- network error fallbacks (used when the server sends no error body) -->
+    <string name="error_network">Can\'t reach the network. Check your connection.</string>
+    <string name="error_unauthorized">Incorrect email or password.</string>
+    <string name="error_forbidden">You don\'t have permission to do that.</string>
+    <string name="error_not_found">We couldn\'t find what you requested.</string>
+    <string name="error_server">A temporary server error occurred. Please try again shortly.</string>
+    <string name="error_unknown">Something went wrong.</string>
 </resources>

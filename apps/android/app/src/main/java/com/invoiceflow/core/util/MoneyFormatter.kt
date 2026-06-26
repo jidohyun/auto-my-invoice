@@ -24,6 +24,22 @@ object MoneyFormatter {
         return fmt.format(n)
     }
 
+    /**
+     * Compact KRW for the 3-up dashboard KPI cards, where the full grouped
+     * figure ("₩60,185,000") wrapped onto three lines. Uses 억/만 (Korean
+     * myriad) units so large totals stay on one line: ₩6,018만, ₩1.2억. Amounts
+     * under 10,000 fall back to the plain grouped figure.
+     */
+    fun formatKrwCompact(raw: String?): String {
+        val n = raw?.toBigDecimalOrNull()?.toLong() ?: return "₩0"
+        val abs = kotlin.math.abs(n)
+        return when {
+            abs >= 100_000_000L -> "₩%,.1f억".format(n / 100_000_000.0)
+            abs >= 10_000L -> "₩%,d만".format(n / 10_000L)
+            else -> NumberFormat.getCurrencyInstance(Locale.KOREA).format(n)
+        }
+    }
+
     private fun localeFor(code: String): Locale =
         when (code) {
             "KRW" -> Locale.KOREA

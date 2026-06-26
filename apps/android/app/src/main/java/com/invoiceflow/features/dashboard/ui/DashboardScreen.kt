@@ -16,13 +16,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.invoiceflow.R
+import com.invoiceflow.core.util.MoneyFormatter
 import com.invoiceflow.features.dashboard.viewmodel.DashboardViewModel
 import com.invoiceflow.features.dashboard.data.model.KpiSummaryDto
 import com.invoiceflow.features.invoices.data.model.InvoiceDto
+import com.invoiceflow.ui.components.StatusPill
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -109,7 +112,7 @@ private fun KpiRow(kpi: KpiSummaryDto?, refreshing: Boolean) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         KpiCard(
             label = stringResource(R.string.dashboard_kpi_outstanding),
-            value = kpi?.outstandingAmount?.let { formatKrw(it) } ?: if (refreshing) "..." else "₩0",
+            value = kpi?.outstandingAmount?.let { MoneyFormatter.formatKrwCompact(it) } ?: if (refreshing) "..." else "₩0",
             sub = kpi?.overdueCount?.let { stringResource(R.string.dashboard_kpi_overdue_count, it) } ?: "",
             modifier = Modifier.weight(1f),
         )
@@ -121,7 +124,7 @@ private fun KpiRow(kpi: KpiSummaryDto?, refreshing: Boolean) {
         )
         KpiCard(
             label = stringResource(R.string.dashboard_kpi_collected_this_month),
-            value = kpi?.collectedThisMonth?.let { formatKrw(it) } ?: if (refreshing) "..." else "₩0",
+            value = kpi?.collectedThisMonth?.let { MoneyFormatter.formatKrwCompact(it) } ?: if (refreshing) "..." else "₩0",
             sub = "",
             modifier = Modifier.weight(1f),
         )
@@ -132,12 +135,27 @@ private fun KpiRow(kpi: KpiSummaryDto?, refreshing: Boolean) {
 private fun KpiCard(label: String, value: String, sub: String, modifier: Modifier = Modifier) {
     Card(modifier = modifier) {
         Column(Modifier.padding(12.dp)) {
-            Text(label, style = MaterialTheme.typography.labelMedium)
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
             Spacer(Modifier.height(4.dp))
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            // KRW totals can be 8+ digits; titleLarge overflowed the narrow
+            // 3-up card and wrapped to three lines ("₩60,185,/000"). Compact the
+            // figure (₩60.2M) so it stays on one line at a comfortable size.
+            Text(
+                value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+            )
             if (sub.isNotEmpty()) {
                 Spacer(Modifier.height(2.dp))
-                Text(sub, style = MaterialTheme.typography.labelSmall)
+                Text(sub, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -158,10 +176,11 @@ private fun RecentInvoiceRow(invoice: InvoiceDto, onClick: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(invoice.status.uppercase(), style = MaterialTheme.typography.labelSmall)
+                Spacer(Modifier.height(4.dp))
+                StatusPill(statusString = invoice.status)
             }
             Text(
-                "${invoice.currency} ${invoice.amount}",
+                MoneyFormatter.format(invoice.amount, invoice.currency),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
             )

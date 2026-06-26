@@ -3,6 +3,7 @@ package com.invoiceflow.core.di
 import com.invoiceflow.BuildConfig
 import com.invoiceflow.core.network.ApiService
 import com.invoiceflow.core.network.AuthInterceptor
+import com.invoiceflow.core.network.ErrorMappingInterceptor
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -40,8 +41,12 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor: AuthInterceptor,
+        errorMappingInterceptor: ErrorMappingInterceptor,
         loggingInterceptor: HttpLoggingInterceptor,
     ): OkHttpClient = OkHttpClient.Builder()
+        // Order matters: error mapping wraps the inner chain so it observes the
+        // final response (and IOExceptions) after auth + logging have run.
+        .addInterceptor(errorMappingInterceptor)
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .build()
