@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -61,6 +62,7 @@ import java.time.ZoneOffset
 fun InvoiceCreateScreen(
     onBack: () -> Unit,
     onCreated: (String) -> Unit,
+    onNavigateToClients: () -> Unit = {},
     prefillAmount: String? = null,
     prefillCurrency: String? = null,
     prefillDueDate: String? = null,
@@ -81,6 +83,7 @@ fun InvoiceCreateScreen(
     }
 
     var clientMenuOpen by remember { mutableStateOf(false) }
+    var showNoClientDialog by remember { mutableStateOf(false) }
     var currencyMenuOpen by remember { mutableStateOf(false) }
     var amount by rememberSaveable { mutableStateOf(prefillAmount.orEmpty()) }
     var currency by rememberSaveable { mutableStateOf(prefillCurrency ?: "KRW") }
@@ -118,7 +121,13 @@ fun InvoiceCreateScreen(
             // Client picker
             Box {
                 OutlinedButton(
-                    onClick = { clientMenuOpen = true },
+                    onClick = {
+                        if (clientState.clients.isEmpty()) {
+                            showNoClientDialog = true
+                        } else {
+                            clientMenuOpen = true
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(selectedClient?.name ?: stringResource(R.string.invoices_select_client))
@@ -292,6 +301,27 @@ fun InvoiceCreateScreen(
                     Text(stringResource(R.string.invoices_create_button))
                 }
             }
+        }
+
+        if (showNoClientDialog) {
+            AlertDialog(
+                onDismissRequest = { showNoClientDialog = false },
+                title = { Text(stringResource(R.string.invoices_no_client_dialog_title)) },
+                text = { Text(stringResource(R.string.invoices_no_client_dialog_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showNoClientDialog = false
+                        onNavigateToClients()
+                    }) {
+                        Text(stringResource(R.string.invoices_no_client_go_to_clients))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showNoClientDialog = false }) {
+                        Text(stringResource(R.string.invoices_cancel))
+                    }
+                },
+            )
         }
 
         if (showDatePicker) {

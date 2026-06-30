@@ -108,6 +108,9 @@
     <string name="invoices_processing">처리 중...</string>
     <string name="invoices_create_title">새 송장</string>
     <string name="invoices_select_client">거래처를 선택하세요</string>
+    <string name="invoices_no_client_dialog_title">거래처가 없습니다</string>
+    <string name="invoices_no_client_dialog_message">송장을 만들려면 거래처를 먼저 등록해야 합니다.</string>
+    <string name="invoices_no_client_go_to_clients">거래처 등록하기</string>
     <string name="invoices_items">품목</string>
     <string name="invoices_add_item">항목 추가</string>
     <string name="invoices_item_description">설명</string>

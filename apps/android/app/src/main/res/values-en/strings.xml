@@ -107,6 +107,9 @@
     <string name="invoices_processing">Processing…</string>
     <string name="invoices_create_title">New invoice</string>
     <string name="invoices_select_client">Select a client</string>
+    <string name="invoices_no_client_dialog_title">No clients yet</string>
+    <string name="invoices_no_client_dialog_message">You need to register a client before creating an invoice.</string>
+    <string name="invoices_no_client_go_to_clients">Register a client</string>
     <string name="invoices_items">Items</string>
     <string name="invoices_add_item">Add item</string>
     <string name="invoices_item_description">Description</string>
