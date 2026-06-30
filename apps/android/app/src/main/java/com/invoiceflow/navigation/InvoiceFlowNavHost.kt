@@ -129,6 +129,9 @@ fun InvoiceFlowNavHost(
                     navController.popBackStack()
                     navController.navigate(NavRoutes.InvoiceDetail.createRoute(id))
                 },
+                onNavigateToClients = {
+                    navController.navigate(NavRoutes.ClientCreate.route)
+                },
                 prefillAmount = backStackEntry.arguments?.getString("amount"),
                 prefillCurrency = backStackEntry.arguments?.getString("currency"),
                 prefillDueDate = backStackEntry.arguments?.getString("dueDate"),
