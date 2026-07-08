@@ -45,6 +45,11 @@ config :auto_my_invoice, Oban, testing: :inline
 # rates and lives under test/support.
 config :auto_my_invoice, AutoMyInvoice.FxRates, client: AutoMyInvoice.FxRatesStub
 
+# HttpClient unit tests exercise the real parsing/inversion logic against a
+# Req.Test stub instead of the live open.er-api.com endpoint.
+config :auto_my_invoice, AutoMyInvoice.FxRates.HttpClient,
+  req_options: [plug: {Req.Test, AutoMyInvoice.FxRates.HttpClient}, retry: false]
+
 # ChromicPDF: disable Chrome sandbox so tests can boot inside Docker (or any
 # unprivileged container) without requiring a user-namespace sandbox profile.
 config :auto_my_invoice, ChromicPDF, chrome_args: "--no-sandbox"
