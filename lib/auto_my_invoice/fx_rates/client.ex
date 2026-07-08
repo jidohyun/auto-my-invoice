@@ -7,21 +7,27 @@ end
 
 defmodule AutoMyInvoice.FxRates.HttpClient do
   @moduledoc """
-  Live FX rate client backed by exchangerate.host (free, no key).
+  Live FX rate client backed by open.er-api.com (ExchangeRate-API open
+  endpoint, free, no key). Attribution is required by their terms and lives
+  in the analytics footnote.
 
-  The endpoint returns rates as "1 base = N target". We invert each pair so
-  we end up with "1 target = M base" (i.e. how many KRW for 1 USD).
+  The endpoint returns every rate as "1 base = N target" and ignores symbol
+  filters, so we take only the requested targets and invert each pair to
+  "1 target = M base" (i.e. how many KRW for 1 USD).
   """
 
   @behaviour AutoMyInvoice.FxRates.Client
 
-  @endpoint "https://api.exchangerate.host/latest"
+  @endpoint "https://open.er-api.com/v6/latest"
 
   @impl true
   def fetch_rates("KRW" = base, targets) do
-    case Req.get(@endpoint, params: [base: base, symbols: Enum.join(targets, ",")]) do
-      {:ok, %Req.Response{status: 200, body: %{"rates" => rates}}} ->
-        {:ok, invert_rates(rates)}
+    case Req.get("#{@endpoint}/#{base}", req_options()) do
+      {:ok, %Req.Response{status: 200, body: %{"result" => "success", "rates" => rates}}} ->
+        {:ok, rates |> Map.take(targets) |> invert_rates()}
+
+      {:ok, %Req.Response{status: 200, body: %{"result" => "error", "error-type" => type}}} ->
+        {:error, {:api_error, type}}
 
       {:ok, %Req.Response{status: status, body: body}} ->
         {:error, {:http_status, status, body}}
@@ -43,4 +49,9 @@ defmodule AutoMyInvoice.FxRates.HttpClient do
   defp decimal_from(n) when is_float(n), do: Decimal.from_float(n)
   defp decimal_from(n) when is_integer(n), do: Decimal.new(n)
   defp decimal_from(n) when is_binary(n), do: Decimal.new(n)
+
+  defp req_options do
+    Application.get_env(:auto_my_invoice, __MODULE__, [])
+    |> Keyword.get(:req_options, [])
+  end
 end

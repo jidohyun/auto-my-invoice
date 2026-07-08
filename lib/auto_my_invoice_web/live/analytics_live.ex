@@ -124,6 +124,9 @@ defmodule AutoMyInvoiceWeb.AnalyticsLive do
 
       <p :if={@currency_breakdown.multi_currency?} class="text-xs text-base-content/40 mt-3">
         환율은 최신 캐시된 KRW 기준 환율이며, 매일 자동 갱신됩니다.
+        <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener" class="link">
+          Rates By Exchange Rate API
+        </a>
       </p>
     </div>
 

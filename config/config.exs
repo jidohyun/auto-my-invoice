@@ -46,9 +46,9 @@ config :auto_my_invoice, Oban,
      crontab: [
        {"0 * * * *", AutoMyInvoice.Workers.ReminderScheduler},
        {"0 9 * * *", AutoMyInvoice.Workers.OverdueScanner},
-       # AMI-90: 18:00 UTC = 03:00 Asia/Seoul, right after exchangerate.host
-       # rotates its daily rates and well before Korean business hours.
-       {"0 18 * * *", AutoMyInvoice.Workers.FxRateRefreshWorker}
+       # AMI-90: open.er-api.com rotates its daily rates at ~00:06 UTC, so
+       # 01:00 UTC (10:00 Asia/Seoul) always picks up same-day quotes.
+       {"0 1 * * *", AutoMyInvoice.Workers.FxRateRefreshWorker}
      ]}
   ]
 
